@@ -1,16 +1,27 @@
-import pygame, math, sys, time, end, game
-from pygame.locals import *
+import game
+import pyglet
+from pyglet.window import key
+import sys
+
+window = pyglet.window.Window(1024,768)
+
+@window.event
+def on_key_press(symbol, modifiers):
+    if symbol == key.SPACE:
+        window.close()
+        game1 = game.Game(1024,768)
+        game1.run_game()
+
+    elif symbol == key.ESCAPE:
+        sys.exit(0)
+
+image = pyglet.resource.image("images/Plane_start_pic.png")
+
+@window.event
+def on_draw():
+    window.clear()
+    image.blit(0, 0)
+
+pyglet.app.run()
 
 
-pygame.init()
-screen = pygame.display.set_mode((1024, 768))
-while 1:
-    screen.fill((0,0,0))
-    for event in pygame.event.get():
-                if not hasattr(event, 'key'): continue
-                if event.key == K_SPACE: 
-                    game.Game()
-                elif event.key == K_ESCAPE: sys.exit(0)  
-    img = pygame.image.load("images/Plane_start_pic.png")
-    screen.blit(img,(0,0))
-    pygame.display.flip()

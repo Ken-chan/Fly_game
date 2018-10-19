@@ -1,6 +1,6 @@
 ##Run command:
 ```
-python Main_Menu.py
+python game.py
 ```
 ##Controls:
 - Up Arrow: Acceleration
@@ -14,16 +14,20 @@ python Main_Menu.py
   - Python
   
   Library:
-  - Pygame
+  - Pyglet
 
   Design:
   - Ken-chan
 
 ##Goals:
-  - Free space with walls
-  - Realistic fly
-  - 2 players
-  - Plane models
+  - dynamic
+  - battle logic
+  - pause
+  - end of game
+  - game history
+  - replay
+  
   
 ##Project History
 Start: 12/10/18
+first pyglet version: 19/10/18
