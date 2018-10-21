@@ -5,7 +5,7 @@ import pyglet
 class Bot:
     MAX_FORWARD_SPEED = 10
     MAX_REVERSE_SPEED = 0
-    ACCELERATION = 1
+    ACCELERATION = 100
     TURN_SPEED = 2
 
     def __init__(self, x, y):
@@ -16,7 +16,7 @@ class Bot:
         self.k_left = self.k_right = self.k_down = self.k_up = False
 
     ### Here you can use multiprocessing to play
-    def update(self):
+    def update(self, dt):
         self.speed = 1
         if self.speed > self.MAX_FORWARD_SPEED:
             self.speed = self.MAX_FORWARD_SPEED
