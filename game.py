@@ -1,12 +1,8 @@
-#initialize the screen
 import pyglet
-from bot import Bot
-from player import Player
-from pyglet.window import key
+from view import Renderer
 from messages import Messenger
 import messages
 from controller import GUIcontrols
-import sys
 
 class GameState:
     Start, ActiveGame, Menu, Exit = range(4)
@@ -17,8 +13,7 @@ class Game:
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.messenger = Messenger()
-        self.player = Player(100, 100)
-        self.bot = Bot(500, 800)
+        self.renderer = Renderer(self.screen_width, self.screen_height)
         self.gui_controls = GUIcontrols(self.messenger, screen_width, screen_height)
         self.gui_controls.start()
 
@@ -42,20 +37,20 @@ class Game:
 
             self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
 
+
     def update_player(self, delta_speed, delta_angle):
-        self.player.speed += delta_speed
-        self.player.direction += delta_angle
+        self.renderer.update_player(delta_speed, delta_angle)
+
+    def update_graphics(self, dt):
+        self.renderer.update(dt)
+        self.game_window.clear()
+        self.renderer.batch.draw()
 
     def run_game(self):
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
         pyglet.gl.glClearColor(0, 0, 1, 1)
 
         self.game_state = GameState.ActiveGame
-
-
-        def update(dt):
-            self.bot.update(dt)
-            self.player.update(dt)
 
 
         """@self.game_window.event
@@ -91,22 +86,20 @@ class Game:
         def on_key_release(key, modif):
             self.messenger.controls_handle_key(False, key)
 
-        @self.game_window.event
+        """@self.game_window.event
         def on_draw():
             self.game_window.clear()
             self.bot.Bot_sprite.draw()
-            self.player.Player_sprite.draw()
+            self.player.Player_sprite.draw()"""
 
         @self.game_window.event
         def on_close():
             self.quit()
 
-        pyglet.clock.schedule_interval(update, 1.0 / 30)
+        #pyglet.clock.schedule_interval(self.update, 1.0 / 30)
+        pyglet.clock.schedule_interval(self.update_graphics, 1.0 / 30)
         pyglet.clock.schedule_interval(self.read_messages, 1/30.0)
         pyglet.app.run()
-
-
-
 
 game = Game(1024,768)
 game.run_game()

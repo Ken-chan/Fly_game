@@ -62,7 +62,7 @@ class Game:
 
     #THE GAME LOOP
     while True:
-        bot.update()
+        bot.update(,
         #USER INPUT
         t1 = time.time()
         dt = t1-t0
