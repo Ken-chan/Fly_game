@@ -1,14 +1,21 @@
 import pyglet
+from multiprocessing import Process
 from view import Renderer
 from messages import Messenger
 import messages
-from controller import GUIcontrols
+from gui_controls import GUIcontrols
+from objects import Objects
+from obj_def import *
+import math
 
 class GameState:
     Start, ActiveGame, Menu, Exit = range(4)
 
-class Game:
+
+
+class Game(Process):
     def __init__(self, screen_width, screen_height):
+        super(Game, self).__init__()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -17,13 +24,16 @@ class Game:
         self.gui_controls = GUIcontrols(self.messenger, screen_width, screen_height)
         self.gui_controls.start()
 
-        self.functions = {messages.Game.Quit: self.quit,
-                          messages.Objects.PlayerSetDirection: self.update_player}
+        self.objects = Objects(messenger=self.messenger)
+        self.objects.start()
 
+        self.functions = {messages.Game.Quit: self.quit,
+                          messages.Game.UpdateObjects: self.update_objects}
 
     def quit(self):
         self.game_state = GameState.Exit
         self.messenger.shutdown()
+        self.objects.join()
         self.gui_controls.join()
         pyglet.app.exit()
 
@@ -38,45 +48,47 @@ class Game:
             self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
 
 
-    def update_player(self, delta_speed, delta_angle):
-        self.renderer.update_player(delta_speed, delta_angle)
-
     def update_graphics(self, dt):
-        self.renderer.update(dt)
+        self.renderer.update_graphics()
         self.game_window.clear()
         self.renderer.batch.draw()
 
+    def update_objects(self, objects_copy):
+        self.objects = objects_copy
+        self.renderer.update_objects(objects_copy)
+        #print(self.objects)
+
+    def update_units(self, dt):
+        self.objects = self.objects
+        if self.objects[ObjectType.Player1][0] != ObjectType.Absent:
+            self.objects[ObjectType.Player1][ObjectProp.Velocity] += (self.objects[ObjectType.Player1][ObjectProp.K_up] - self.objects[ObjectType.Player1][ObjectProp.K_down]) * 50 * dt
+            self.objects[ObjectType.Player1][ObjectProp.Dir] += (self.objects[ObjectType.Player1][ObjectProp.K_right] - self.objects[ObjectType.Player1][ObjectProp.K_left]) * 20 * dt
+            if (self.objects[ObjectType.Player1][ObjectProp.Dir] >= 360):
+                self.objects[ObjectType.Player1][ObjectProp.Dir] -= 360
+            elif (self.objects[ObjectType.Player1][ObjectProp.Dir] < 0):
+                self.objects[ObjectType.Player1][ObjectProp.Dir] += 360
+
+            rad = self.objects[ObjectType.Player1][ObjectProp.Dir] * math.pi / 180
+            self.objects[ObjectType.Player1][ObjectProp.Xcoord] += self.objects[ObjectType.Player1][ObjectProp.Velocity] * math.sin(rad) * dt
+            self.objects[ObjectType.Player1][ObjectProp.Ycoord] += self.objects[ObjectType.Player1][ObjectProp.Velocity] * math.cos(rad) * dt
+            #print(self.objects[ObjectType.Player1][ObjectProp.Velocity])
+
     def run_game(self):
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
-        pyglet.gl.glClearColor(0, 0, 1, 1)
+        pyglet.gl.glClearColor(0, 1, 1, 1)
+
+        configuration = {ObjectType.Team1: [],
+                         ObjectType.Bot1: [],
+                         ObjectType.Player1: [],
+                         ObjectType.Team2: [],
+                         ObjectType.Bot2: [],
+                         ObjectType.Player2: []}
+        configuration[ObjectType.Player1].append((500, 100))
+
 
         self.game_state = GameState.ActiveGame
-
-
-        """@self.game_window.event
-        def on_key_press(symbol, modifiers):
-            if symbol == key.RIGHT:
-                player.k_right = 1
-            elif symbol == key.LEFT:
-                player.k_left = 1
-            elif symbol == key.DOWN:
-                player.k_down = 1
-            elif symbol == key.UP:
-                player.k_up = 1
-
-            elif symbol == key.ESCAPE:
-                sys.exit(0)
-
-        @self.game_window.event
-        def on_key_release(symbol, modifiers):
-            if symbol == key.RIGHT:
-                player.k_right = 0
-            elif symbol == key.LEFT:
-                player.k_left = 0
-            elif symbol == key.DOWN:
-                player.k_down = 0
-            elif symbol == key.UP:
-                player.k_up = 0"""
+        self.messenger.objects_run_simulation()
+        self.messenger.objects_set_game_settings(configuration)
 
         @self.game_window.event
         def on_key_press(key, modif):
@@ -86,23 +98,20 @@ class Game:
         def on_key_release(key, modif):
             self.messenger.controls_handle_key(False, key)
 
-        """@self.game_window.event
-        def on_draw():
-            self.game_window.clear()
-            self.bot.Bot_sprite.draw()
-            self.player.Player_sprite.draw()"""
-
         @self.game_window.event
         def on_close():
             self.quit()
 
-        #pyglet.clock.schedule_interval(self.update, 1.0 / 30)
+
+
         pyglet.clock.schedule_interval(self.update_graphics, 1.0 / 30)
         pyglet.clock.schedule_interval(self.read_messages, 1/30.0)
+        pyglet.clock.schedule_interval(self.update_units, 1 / 30.0)
         pyglet.app.run()
 
-game = Game(1024,768)
-game.run_game()
+if __name__ == "__main__":
+    game = Game(1024,768)
+    game.run_game()
 
 
 

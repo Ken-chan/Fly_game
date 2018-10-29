@@ -60,23 +60,8 @@ class KbControl(BaseControl):
 
     def dispatch_kb_event(self, pushed, key):
         if key in (pygletkey.UP, pygletkey.DOWN, pygletkey.RIGHT, pygletkey.LEFT):
-            self.recalc_player_direction(pushed, key)
+            self.change_player_direction(pushed, key)
 
-    def recalc_player_direction(self, pushed, key):
-        delta_speed = 0
-        delta_angle = 0
-        if pushed:
-            if key == pygletkey.UP:
-                delta_speed = 50
-            elif key == pygletkey.DOWN:
-                delta_speed = -50
-            elif key == pygletkey.RIGHT:
-                delta_angle = 20
-            elif key == pygletkey.LEFT:
-                delta_angle = -20
-        self.change_player_direction(delta_speed, delta_angle)
-
-
-    def change_player_direction(self, delta_speed, delta_angle):
-        self.messenger.player_set_direction(delta_speed, delta_angle)
+    def change_player_direction(self, pushed, key):
+        self.messenger.player_set_pressed_key(pushed, key)
 

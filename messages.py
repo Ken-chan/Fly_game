@@ -8,8 +8,8 @@ class GuiControls:
 class GuiScreen:
     TerminateScreen, StartNewGame, UpdateRenderedSurface = range(3)
 class Objects:
-    Quit, UpdateField, AddObject, KingSetDestination, PlayerSetDirection, KingSwitchSmell, \
-    KingChangeItem, Pause, Run, UpdateGameSettings, TrainUnit, BuyItem, UseItem = range(13)
+    Quit, UpdateField, AddObject, KingSetDestination, PlayerSetPressedKey, KingSwitchSmell, \
+    KingChangeItem, Pause, Run, UpdateGameSettings, TrainUnit, BuyItem, UseItem, UpdateObjects = range(14)
 
 
 class Messenger:
@@ -61,8 +61,17 @@ class Messenger:
     def controls_start_game(self):
         self.send_message(self.gui_controls_queue, GuiControls.StartGame)
 
-    def player_set_direction(self, delta_speed, delta_angle):
-        self.send_message(self.objects_queue, Objects.PlayerSetDirection, {'delta_speed': delta_speed, 'delta_angle': delta_angle})
+    def player_set_pressed_key(self, pushed, key):
+        self.send_message(self.objects_queue, Objects.PlayerSetPressedKey, {'pushed': pushed, 'key': key})
+
+    def objects_set_game_settings(self, configuration):
+        self.send_message(self.objects_queue, Objects.UpdateGameSettings, {'configuration': configuration})
+
+    def objects_run_simulation(self):
+        self.send_message(self.objects_queue, Objects.Run)
+
+    def game_update_objects(self, objects_copy):
+        self.send_message(self.game_queue, Game.UpdateObjects, {'objects_copy': objects_copy})
 
     def shutdown(self):
         print("terminate controls")
