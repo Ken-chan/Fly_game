@@ -27,10 +27,10 @@ class Renderer:
     def update_graphics(self):
         if self.renderer_state == RendererState.Game:
             if self.objects_copy is not None:
-                if self.objects_copy[ObjectType.Player1][ObjectProp.ObjType] != ObjectType.Absent:
-                    x = self.objects_copy[ObjectType.Player1][ObjectProp.Xcoord]
-                    y = self.objects_copy[ObjectType.Player1][ObjectProp.Ycoord]
-                    dir = self.objects_copy[ObjectType.Player1][ObjectProp.Dir]
+                if self.objects_copy[21][ObjectProp.ObjType] != ObjectType.Absent:
+                    x = self.objects_copy[21][ObjectProp.Xcoord]
+                    y = self.objects_copy[21][ObjectProp.Ycoord]
+                    dir = self.objects_copy[21][ObjectProp.Dir]
                     self.player.update(x=x, y=y, rotation=dir)
 
 
@@ -56,15 +56,9 @@ class Player_sprite(pyglet.sprite.Sprite):
         self.Player_image.anchor_x = self.Player_image.width // 2
         self.Player_image.anchor_y = self.Player_image.height // 2
 
-        super(Player_sprite, self).__init__(img=self.Player_image, x=self.Player_image.anchor_x, y=self.Player_image.anchor_y)
-        self.Player_sprite = pyglet.sprite.Sprite(self.Player_image, x=self.Player_image.anchor_x, y=self.Player_image.anchor_y, batch=batch)
-        self.Player_sprite.position = (x,y)
-        self.Player_sprite.update(scale=0.5)  ###update
+        super(Player_sprite, self).__init__(img=self.Player_image, x=self.Player_image.anchor_x, y=self.Player_image.anchor_y, batch=batch)
+        self.update(scale=0.5)  ###update
 
-
-    def _update(self, dt):
-        #self.Player_sprite.x, self.Player_sprite.y = (x, y)
-        self.Player_sprite.rotation = self.direction
 
 
 

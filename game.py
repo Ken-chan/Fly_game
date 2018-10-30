@@ -33,7 +33,7 @@ class Game(Process):
     def quit(self):
         self.game_state = GameState.Exit
         self.messenger.shutdown()
-        self.objects.join()
+        #self.objects.join()
         self.gui_controls.join()
         pyglet.app.exit()
 

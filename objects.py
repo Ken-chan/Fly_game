@@ -135,8 +135,8 @@ class Objects(Process):
             objects = self.objects.get_objects(link_only=True)
             offset = ObjectType.offsets[5][0]
             if objects[offset][1] != ObjectType.Absent:
-                objects[offset][ObjectProp.Velocity] += (objects[offset][ObjectProp.K_up] - objects[offset][ObjectProp.K_down]) * 50 * dt
-                objects[offset][ObjectProp.Dir] += (objects[offset][ObjectProp.K_right] - objects[offset][ObjectProp.K_left]) * 20 * dt
+                objects[offset][ObjectProp.Velocity] += (objects[offset][ObjectProp.K_up] - objects[offset][ObjectProp.K_down]) * 80 * dt
+                objects[offset][ObjectProp.Dir] += (objects[offset][ObjectProp.K_right] - objects[offset][ObjectProp.K_left]) * 50 * dt
                 if (objects[offset][ObjectProp.Dir] >= 360):
                     objects[offset][ObjectProp.Dir] -= 360
                 elif (objects[offset][ObjectProp.Dir] < 0):
@@ -146,6 +146,8 @@ class Objects(Process):
                 objects[offset][ObjectProp.Xcoord] += objects[offset][ObjectProp.Velocity] * math.sin(rad) * dt
                 objects[offset][ObjectProp.Ycoord] += objects[offset][ObjectProp.Velocity] * math.cos(rad) * dt
                 self.objects.current_objects = objects
+                self.messenger.game_update_objects(self.objects.get_objects())
+
 
 
     def read_mes(self, dt):
