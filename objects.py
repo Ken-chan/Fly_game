@@ -91,14 +91,17 @@ class Objects(Process):
         self.messenger = messenger
         self.configuration = None
         self.objects = ObjectArray(self.messenger)
-        self.player_action = PlayerAction(self.objects)
+        #self.player_action = PlayerAction(self.objects)
         self.functions = {messages.Objects.Quit: self.quit,
                           messages.Objects.AddObject: self.objects.add_object,
-                          messages.Objects.PlayerSetPressedKey: self.player_action.set_pressed_key,
+                          messages.Objects.PlayerSetPressedKey: self.set_pressed_key,
                           messages.Objects.Pause: self.pause_simulation,
                           messages.Objects.Run: self.run_simulation,
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
-        self.objects_state = ObjectsState.Pause
+        #self.objects_state = ObjectsState.Pause
+
+        pyglet.clock.schedule_interval(self.read_mes, 1 / 30.0)
+        pyglet.clock.schedule_interval(self.update_units, 1 / 30.0)
 
     def quit(self):
         self.objects_state = ObjectsState.Exit
@@ -113,52 +116,58 @@ class Objects(Process):
         self.configuration = configuration
         self.objects.set_objects_settings(configuration)
 
-    """def update_units(self, dt):
-        if(self.objects_state != ObjectsState.Exit):
-            objects = self.objects.get_objects()
-
-            if objects[ObjectType.Player1][0] != ObjectType.Absent:
-                objects[ObjectType.Player1][ObjectProp.Velocity] += (objects[ObjectType.Player1][ObjectProp.K_up] - objects[ObjectType.Player1][ObjectProp.K_down]) * 50 * dt
-                objects[ObjectType.Player1][ObjectProp.Dir] += (objects[ObjectType.Player1][ObjectProp.K_right] - objects[ObjectType.Player1][ObjectProp.K_left]) * 20 * dt
-                if (objects[ObjectType.Player1][ObjectProp.Dir] >= 360):
-                    objects[ObjectType.Player1][ObjectProp.Dir] -= 360
-                elif (objects[ObjectType.Player1][ObjectProp.Dir] < 0):
-                    objects[ObjectType.Player1][ObjectProp.Dir] += 360
-
-                rad = objects[ObjectType.Player1][ObjectProp.Dir] * math.pi / 180
-                objects[ObjectType.Player1][ObjectProp.Xcoord] += objects[ObjectType.Player1][ObjectProp.Velocity] * math.sin(rad) * dt
-                objects[ObjectType.Player1][ObjectProp.Ycoord] += objects[ObjectType.Player1][ObjectProp.Velocity] * math.cos(rad) * dt
-                self.objects = objects"""
+    def set_pressed_key(self, pushed, key):
+        objects = self.objects.get_objects(link_only=True)
+        offset = ObjectType.offsets[5][0]
+        if key == pygletkey.UP:
+            objects[offset][ObjectProp.K_up] = pushed
+        elif key == pygletkey.DOWN:
+            objects[offset][ObjectProp.K_down] = pushed
+        elif key == pygletkey.RIGHT:
+            objects[offset][ObjectProp.K_right] = pushed
+        elif key == pygletkey.LEFT:
+            objects[offset][ObjectProp.K_left] = pushed
+        self.objects.current_objects = objects
 
 
-    def run(self):
-        while self.objects_state != ObjectsState.Exit:
+    def update_units(self, dt):
+        if(self.objects_state == ObjectsState.Run):
+            objects = self.objects.get_objects(link_only=True)
+            offset = ObjectType.offsets[5][0]
+            if objects[offset][1] != ObjectType.Absent:
+                objects[offset][ObjectProp.Velocity] += (objects[offset][ObjectProp.K_up] - objects[offset][ObjectProp.K_down]) * 50 * dt
+                objects[offset][ObjectProp.Dir] += (objects[offset][ObjectProp.K_right] - objects[offset][ObjectProp.K_left]) * 20 * dt
+                if (objects[offset][ObjectProp.Dir] >= 360):
+                    objects[offset][ObjectProp.Dir] -= 360
+                elif (objects[offset][ObjectProp.Dir] < 0):
+                    objects[offset][ObjectProp.Dir] += 360
+
+                rad = objects[offset][ObjectProp.Dir] * math.pi / 180
+                objects[offset][ObjectProp.Xcoord] += objects[offset][ObjectProp.Velocity] * math.sin(rad) * dt
+                objects[offset][ObjectProp.Ycoord] += objects[offset][ObjectProp.Velocity] * math.cos(rad) * dt
+                self.objects.current_objects = objects
+
+
+    def read_mes(self, dt):
+        if self.objects_state != ObjectsState.Exit:
             while True:
                 data = self.messenger.get_message(messages.Objects)
                 if data == None:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
-                self.messenger.game_update_objects(self.objects.get_objects())
-
-
-
+                #self.messenger.game_update_objects(self.objects.get_objects())
 
 
                 #self.messenger.controls_update_objects(self.objects.get_objects())
                 #self.messenger.renderer_update_objects(self.objects.get_objects())
 
 
-class PlayerAction:
+"""class PlayerAction:
     def __init__(self, objects_array):
-        self.objects = objects_array.get_objects(link_only=True)
+        self.objects = objects_array.get_objects(link_only=True)"""
 
-    def set_pressed_key(self, pushed, key):
-        if key == pygletkey.UP:
-            self.objects[ObjectType.Player1][ObjectProp.K_up] = pushed
-        elif key == pygletkey.DOWN:
-            self.objects[ObjectType.Player1][ObjectProp.K_down] = pushed
-        elif key == pygletkey.RIGHT:
-            self.objects[ObjectType.Player1][ObjectProp.K_right] = pushed
-        elif key == pygletkey.LEFT:
-            self.objects[ObjectType.Player1][ObjectProp.K_left] = pushed
+
+
+
+
 

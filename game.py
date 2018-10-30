@@ -41,9 +41,7 @@ class Game(Process):
         while True:
             data = self.messenger.get_message(messages.Game)
             if not data:
-                data = self.messenger.get_message(messages.Objects)
-                if not data:
-                    return
+                return
 
             self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
 
@@ -56,22 +54,6 @@ class Game(Process):
     def update_objects(self, objects_copy):
         self.objects = objects_copy
         self.renderer.update_objects(objects_copy)
-        #print(self.objects)
-
-    def update_units(self, dt):
-        self.objects = self.objects
-        if self.objects[ObjectType.Player1][0] != ObjectType.Absent:
-            self.objects[ObjectType.Player1][ObjectProp.Velocity] += (self.objects[ObjectType.Player1][ObjectProp.K_up] - self.objects[ObjectType.Player1][ObjectProp.K_down]) * 50 * dt
-            self.objects[ObjectType.Player1][ObjectProp.Dir] += (self.objects[ObjectType.Player1][ObjectProp.K_right] - self.objects[ObjectType.Player1][ObjectProp.K_left]) * 20 * dt
-            if (self.objects[ObjectType.Player1][ObjectProp.Dir] >= 360):
-                self.objects[ObjectType.Player1][ObjectProp.Dir] -= 360
-            elif (self.objects[ObjectType.Player1][ObjectProp.Dir] < 0):
-                self.objects[ObjectType.Player1][ObjectProp.Dir] += 360
-
-            rad = self.objects[ObjectType.Player1][ObjectProp.Dir] * math.pi / 180
-            self.objects[ObjectType.Player1][ObjectProp.Xcoord] += self.objects[ObjectType.Player1][ObjectProp.Velocity] * math.sin(rad) * dt
-            self.objects[ObjectType.Player1][ObjectProp.Ycoord] += self.objects[ObjectType.Player1][ObjectProp.Velocity] * math.cos(rad) * dt
-            #print(self.objects[ObjectType.Player1][ObjectProp.Velocity])
 
     def run_game(self):
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
@@ -106,7 +88,6 @@ class Game(Process):
 
         pyglet.clock.schedule_interval(self.update_graphics, 1.0 / 30)
         pyglet.clock.schedule_interval(self.read_messages, 1/30.0)
-        pyglet.clock.schedule_interval(self.update_units, 1 / 30.0)
         pyglet.app.run()
 
 if __name__ == "__main__":
