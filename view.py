@@ -18,49 +18,70 @@ class Renderer:
         self.renderer_state = RendererState.Game
 
     def init_sprites(self):
-        self.player = Player_sprite(500, 100, self.batch)
+        self.objects_sprites = []
+        new_obj_sprite = None
+
+        for index in range(0, ObjectType.ObjArrayTotal):
+            object_type = ObjectType.type_by_id(index)
+
+            if object_type == ObjectType.Player1:
+                new_obj_sprite = Player_sprite1(batch=self.batch)
+            elif object_type == ObjectType.Player2:
+                new_obj_sprite = Player_sprite2(batch=self.batch)
+            elif object_type == ObjectType.Bot1:
+                new_obj_sprite = Bot_sprite1(batch=self.batch)
+            elif object_type == ObjectType.Bot2:
+                new_obj_sprite = Bot_sprite2(batch=self.batch)
+
+            self.objects_sprites.append(new_obj_sprite)
+
 
     def update_objects(self, objects):
         self.objects_copy = objects
 
 
     def update_graphics(self):
-        if self.renderer_state == RendererState.Game:
-            if self.objects_copy is not None:
-                if self.objects_copy[21][ObjectProp.ObjType] != ObjectType.Absent:
-                    x = self.objects_copy[21][ObjectProp.Xcoord]
-                    y = self.objects_copy[21][ObjectProp.Ycoord]
-                    dir = self.objects_copy[21][ObjectProp.Dir]
-                    self.player.update(x=x, y=y, rotation=dir)
+        if self.renderer_state == RendererState.Game and self.objects_copy is not None:
+            for index in range(0, len(self.objects_sprites)):
+                #print(self.objects_copy[index])
+                if self.objects_copy[index][ObjectProp.ObjType] == ObjectType.Absent:
+                    self.objects_sprites[index].visible = False
+                else:
+                    self.objects_sprites[index].visible = True
+                    current_object = self.objects_copy[index]
+                    self.objects_sprites[index].update(x=current_object[ObjectProp.Xcoord], y=current_object[ObjectProp.Ycoord], rotation=current_object[ObjectProp.Dir])
+                    #print(current_object)
 
 
-class Bot_sprite(pyglet.sprite.Sprite):
+class Sprite(pyglet.sprite.Sprite):
 
-    def __init__(self, x, y, batch):
-        self.Bot_image = pyglet.image.load("images/Bot2.png")
-        super(Bot_sprite, self).__init__(img=self.Bot_image)
-        self.Bot_sprite = pyglet.sprite.Sprite(self.Bot_image, batch=batch)
-        self.Bot_sprite.position = (x,y)
-        self.Bot_sprite.scale = 0.5  ###update
-        self.Bot_sprite.rotation = 180
+    def __init__(self, batch, img):
+        self.img = img
+        self.img.anchor_x = self.img.width // 2
+        self.img.anchor_y = self.img.height // 2
 
-    def _update(self, dt):
-        pass
-        #self.Bot_sprite.x, self.Bot_sprite.y = (x, y)
-        #self.Bot_sprite.rotation =  #(self.k_right + self.k_left)/5
-
-class Player_sprite(pyglet.sprite.Sprite):
-
-    def __init__(self, x, y, batch):
-        self.Player_image = pyglet.image.load("images/Player2.png")
-        self.Player_image.anchor_x = self.Player_image.width // 2
-        self.Player_image.anchor_y = self.Player_image.height // 2
-
-        super(Player_sprite, self).__init__(img=self.Player_image, x=self.Player_image.anchor_x, y=self.Player_image.anchor_y, batch=batch)
+        super(Sprite, self).__init__(img=self.img, x=self.img.anchor_x, y=self.img.anchor_y, batch=batch)
         self.update(scale=0.5)  ###update
 
+class Bot_sprite1(Sprite):
+    def __init__(self, batch):
+        self.img = pyglet.image.load("images/Bot.png")
+        super(Bot_sprite1, self).__init__(batch=batch, img=self.img)
 
+class Bot_sprite2(Sprite):
+    def __init__(self, batch):
+        self.img = pyglet.image.load("images/bot2.png")
+        super(Bot_sprite2, self).__init__(batch=batch, img=self.img)
 
+class Player_sprite1(Sprite):
+    def __init__(self, batch):
+        self.img = pyglet.image.load("images/plane.png")
+        super(Player_sprite1, self).__init__(batch=batch, img=self.img)
+
+class Player_sprite2(Sprite):
+    def __init__(self, batch):
+        self.img = pyglet.image.load("images/player2.png")
+        super(Player_sprite2, self).__init__(batch=batch, img=self.img)
 
 
 

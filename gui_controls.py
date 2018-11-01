@@ -60,8 +60,13 @@ class KbControl(BaseControl):
 
     def dispatch_kb_event(self, pushed, key):
         if key in (pygletkey.UP, pygletkey.DOWN, pygletkey.RIGHT, pygletkey.LEFT):
-            self.change_player_direction(pushed, key)
+            self.change_player1_direction(pushed, key)
+        elif key in (pygletkey.W, pygletkey.D, pygletkey.A, pygletkey.S):
+            self.change_player2_direction(pushed, key)
 
-    def change_player_direction(self, pushed, key):
-        self.messenger.player_set_pressed_key(pushed, key)
+    def change_player1_direction(self, pushed, key):
+        self.messenger.player1_set_pressed_key(pushed, key)
+
+    def change_player2_direction(self, pushed, key):
+        self.messenger.player2_set_pressed_key(pushed, key)
 

@@ -66,7 +66,7 @@ class ObjectArray:
 
     def add_object(self, unit_type, x, y):
         start, end = ObjectType.offset(unit_type)
-        for ind in range(start, end):
+        for ind in range(start, end+1):
             #search for empty space for object
             if self.current_objects[ind][ObjectProp.ObjType] == ObjectType.Absent:
                 if unit_type == ObjectType.Player1 or unit_type == ObjectType.Bot1:
@@ -94,7 +94,8 @@ class Objects(Process):
         #self.player_action = PlayerAction(self.objects)
         self.functions = {messages.Objects.Quit: self.quit,
                           messages.Objects.AddObject: self.objects.add_object,
-                          messages.Objects.PlayerSetPressedKey: self.set_pressed_key,
+                          messages.Objects.Player1SetPressedKey: self.set_pressed_key1,
+                          messages.Objects.Player2SetPressedKey: self.set_pressed_key2,
                           messages.Objects.Pause: self.pause_simulation,
                           messages.Objects.Run: self.run_simulation,
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
@@ -116,9 +117,9 @@ class Objects(Process):
         self.configuration = configuration
         self.objects.set_objects_settings(configuration)
 
-    def set_pressed_key(self, pushed, key):
+    def set_pressed_key1(self, pushed, key):
         objects = self.objects.get_objects(link_only=True)
-        offset = ObjectType.offsets[5][0]
+        offset = ObjectType.offsets[ObjectType.Player1][0]
         if key == pygletkey.UP:
             objects[offset][ObjectProp.K_up] = pushed
         elif key == pygletkey.DOWN:
@@ -129,24 +130,36 @@ class Objects(Process):
             objects[offset][ObjectProp.K_left] = pushed
         self.objects.current_objects = objects
 
+    def set_pressed_key2(self, pushed, key):
+        objects = self.objects.get_objects(link_only=True)
+        offset = ObjectType.offsets[ObjectType.Player2][0]
+        if key == pygletkey.W:
+            objects[offset][ObjectProp.K_up] = pushed
+        elif key == pygletkey.S:
+            objects[offset][ObjectProp.K_down] = pushed
+        elif key == pygletkey.D:
+            objects[offset][ObjectProp.K_right] = pushed
+        elif key == pygletkey.A:
+            objects[offset][ObjectProp.K_left] = pushed
+        self.objects.current_objects = objects
 
     def update_units(self, dt):
         if(self.objects_state == ObjectsState.Run):
             objects = self.objects.get_objects(link_only=True)
-            offset = ObjectType.offsets[5][0]
-            if objects[offset][1] != ObjectType.Absent:
-                objects[offset][ObjectProp.Velocity] += (objects[offset][ObjectProp.K_up] - objects[offset][ObjectProp.K_down]) * 80 * dt
-                objects[offset][ObjectProp.Dir] += (objects[offset][ObjectProp.K_right] - objects[offset][ObjectProp.K_left]) * 50 * dt
-                if (objects[offset][ObjectProp.Dir] >= 360):
-                    objects[offset][ObjectProp.Dir] -= 360
-                elif (objects[offset][ObjectProp.Dir] < 0):
-                    objects[offset][ObjectProp.Dir] += 360
+            for index in range(0, ObjectType.ObjArrayTotal):
+                if objects[index][1] != ObjectType.Absent:
+                    objects[index][ObjectProp.Velocity] += (objects[index][ObjectProp.K_up] - objects[index][ObjectProp.K_down]) * 80 * dt
+                    objects[index][ObjectProp.Dir] += (objects[index][ObjectProp.K_right] - objects[index][ObjectProp.K_left]) * 50 * dt
+                    if (objects[index][ObjectProp.Dir] >= 360):
+                        objects[index][ObjectProp.Dir] -= 360
+                    elif (objects[index][ObjectProp.Dir] < 0):
+                        objects[index][ObjectProp.Dir] += 360
 
-                rad = objects[offset][ObjectProp.Dir] * math.pi / 180
-                objects[offset][ObjectProp.Xcoord] += objects[offset][ObjectProp.Velocity] * math.sin(rad) * dt
-                objects[offset][ObjectProp.Ycoord] += objects[offset][ObjectProp.Velocity] * math.cos(rad) * dt
-                self.objects.current_objects = objects
-                self.messenger.game_update_objects(self.objects.get_objects())
+                    rad = objects[index][ObjectProp.Dir] * math.pi / 180
+                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * math.sin(rad) * dt
+                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * math.cos(rad) * dt
+            self.objects.current_objects = objects
+            self.messenger.game_update_objects(self.objects.get_objects())
 
 
 

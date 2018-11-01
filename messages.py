@@ -8,7 +8,7 @@ class GuiControls:
 class GuiScreen:
     TerminateScreen, StartNewGame, UpdateRenderedSurface = range(3)
 class Objects:
-    Quit, UpdateField, AddObject, KingSetDestination, PlayerSetPressedKey, KingSwitchSmell, \
+    Quit, UpdateField, AddObject, KingSetDestination, Player1SetPressedKey, Player2SetPressedKey, \
     KingChangeItem, Pause, Run, UpdateGameSettings, TrainUnit, BuyItem, UseItem, UpdateObjects = range(14)
 
 
@@ -61,8 +61,11 @@ class Messenger:
     def controls_start_game(self):
         self.send_message(self.gui_controls_queue, GuiControls.StartGame)
 
-    def player_set_pressed_key(self, pushed, key):
-        self.send_message(self.objects_queue, Objects.PlayerSetPressedKey, {'pushed': pushed, 'key': key})
+    def player1_set_pressed_key(self, pushed, key):
+        self.send_message(self.objects_queue, Objects.Player1SetPressedKey, {'pushed': pushed, 'key': key})
+
+    def player2_set_pressed_key(self, pushed, key):
+        self.send_message(self.objects_queue, Objects.Player2SetPressedKey, {'pushed': pushed, 'key': key})
 
     def objects_set_game_settings(self, configuration):
         self.send_message(self.objects_queue, Objects.UpdateGameSettings, {'configuration': configuration})

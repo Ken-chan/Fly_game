@@ -2,24 +2,33 @@ import numpy as np
 
 class ObjectType:
     Absent = np.int32(0)
-    Team1 = np.int32(1)
-    Team2 = np.int32(2)
-    Bot1 = np.int32(3)
-    Bot2 = np.int32(4)
-    Player1 = np.int32(5)
-    Player2 = np.int32(6)
-    ObjArrayTotal = np.int32(43)
+    Bot1 = np.int32(1)
+    Bot2 = np.int32(2)
+    Player1 = np.int32(3)
+    Player2 = np.int32(4)
+    ObjArrayTotal = np.int32(23)
     offsets = {
-        Team1: (np.int32(0), np.int32(1)),
-        Bot1: (np.int32(1), np.int32(20)),
-        Player1: (np.int32(21), np.int32(22)),
-        Team2: (np.int32(22), np.int32(23)),
-        Bot2: (np.int32(23), np.int32(42)),
-        Player2: (np.int32(42), np.int32(43))}
+        Player1: (np.int32(0), np.int32(0)),
+        Player2: (np.int32(1), np.int32(1)),
+        Bot1: (np.int32(2), np.int32(12)),
+        Bot2: (np.int32(13), np.int32(23))}
 
     @classmethod
     def offset(cls, obj_type):
         return cls.offsets[obj_type]
+
+    @classmethod
+    def type_by_id(cls, obj_id):
+        value = cls.Absent
+        if obj_id == np.int32(0):
+            value = cls.Player1
+        elif obj_id == np.int32(1):
+            value = cls.Player2
+        elif 2 <= obj_id <= 12:
+            value = cls.Bot1
+        elif 13 <= obj_id <= 23:
+            value = cls.Bot2
+        return value
 
 class ObjectSubtype:
     Plane = np.int32(0)

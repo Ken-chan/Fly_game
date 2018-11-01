@@ -13,7 +13,7 @@ class GameState:
 
 
 
-class Game(Process):
+class Game:
     def __init__(self, screen_width, screen_height):
         super(Game, self).__init__()
         self.game_state = GameState.Start
@@ -24,8 +24,9 @@ class Game(Process):
         self.gui_controls = GUIcontrols(self.messenger, screen_width, screen_height)
         self.gui_controls.start()
 
-        self.objects = Objects(messenger=self.messenger)
-        self.objects.start()
+        self.Objects = Objects(messenger=self.messenger)
+        self.Objects.start()
+        self.objects = None
 
         self.functions = {messages.Game.Quit: self.quit,
                           messages.Game.UpdateObjects: self.update_objects}
@@ -33,7 +34,7 @@ class Game(Process):
     def quit(self):
         self.game_state = GameState.Exit
         self.messenger.shutdown()
-        #self.objects.join()
+        self.Objects.join()
         self.gui_controls.join()
         pyglet.app.exit()
 
@@ -59,13 +60,12 @@ class Game(Process):
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
         pyglet.gl.glClearColor(0, 1, 1, 1)
 
-        configuration = {ObjectType.Team1: [],
-                         ObjectType.Bot1: [],
+        configuration = {ObjectType.Bot1: [],
                          ObjectType.Player1: [],
-                         ObjectType.Team2: [],
                          ObjectType.Bot2: [],
                          ObjectType.Player2: []}
         configuration[ObjectType.Player1].append((500, 100))
+        configuration[ObjectType.Player2].append((500, 600))
 
 
         self.game_state = GameState.ActiveGame
@@ -86,7 +86,7 @@ class Game(Process):
 
 
 
-        pyglet.clock.schedule_interval(self.update_graphics, 1.0 / 30)
+        pyglet.clock.schedule_interval(self.update_graphics, 1.0 / 100)
         pyglet.clock.schedule_interval(self.read_messages, 1/30.0)
         pyglet.app.run()
 
