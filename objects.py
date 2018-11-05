@@ -1,45 +1,19 @@
 from multiprocessing import Process
 import pyglet
 import math
-import numpy as np
 import messages
 from pyglet.window import key as pygletkey
 from obj_def import *
-import sys
 
+
+
+alpha = 45
+range_of_atack = 100
 
 class ObjectsState:
     Start, Pause, Run, Exit = range(4)
 
-class Unit:
-    MAX_FORWARD_SPEED = 500
-    MAX_REVERSE_SPEED = 0
-    ACCELERATION = 50
-    TURN_SPEED = 20
 
-    def __init__(self, x, y, direction=0.0):
-        self.position = (x,y)
-        self.direction = direction
-        self.speed = 0
-        self.k_left = self.k_right = self.k_down = self.k_up = 0
-
-    def _update(self, dt):
-        self.speed += (self.k_up - self.k_down) * self.ACCELERATION * dt
-        if self.speed > self.MAX_FORWARD_SPEED:
-            self.speed = self.MAX_FORWARD_SPEED
-        if self.speed < self.MAX_REVERSE_SPEED:
-            self.speed = self.MAX_REVERSE_SPEED
-        self.direction += (self.k_right - self.k_left) * self.TURN_SPEED * dt
-        if(self.direction >= 360):
-            self.direction -= 360
-        elif(self.direction < 0):
-            self.direction += 360
-
-        x, y = (self.position)
-        rad = self.direction * math.pi / 180
-        x += self.speed * math.sin(rad) * dt
-        y += self.speed * math.cos(rad) * dt
-        self.x, self.y = (x, y)
 
 
 class ObjectArray:
@@ -101,8 +75,8 @@ class Objects(Process):
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
         #self.objects_state = ObjectsState.Pause
 
-        pyglet.clock.schedule_interval(self.read_mes, 1 / 30.0)
-        pyglet.clock.schedule_interval(self.update_units, 1 / 30.0)
+        pyglet.clock.schedule_interval(self.read_mes, 1.0 / 30.0)
+        pyglet.clock.schedule_interval(self.update_units, 1.0 / 30.0)
 
     def quit(self):
         self.objects_state = ObjectsState.Exit
@@ -143,6 +117,27 @@ class Objects(Process):
             objects[offset][ObjectProp.K_left] = pushed
         self.objects.current_objects = objects
 
+    def check_kill(self):
+        objects = self.objects.get_objects(link_only=True)
+        for index in range(0, ObjectType.ObjArrayTotal):
+            if objects[index][1] != ObjectType.Absent:
+                x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
+                dir1 = objects[index][ObjectProp.Dir]
+                for jndex in range(0, ObjectType.ObjArrayTotal):
+                    if objects[jndex][1] != ObjectType.Absent and index != jndex:
+                        x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
+                        dir2 = objects[jndex][ObjectProp.Dir]
+                        x_2 = (x2 - x1) * math.cos(90 - dir1 - alpha) - (y2 - y1) * math.sin(90 - dir1 - alpha)
+                        y_2 = (y2 - y1) * math.sin(90 - dir1 - alpha) + (y2 - y1) * math.cos(90 - dir1 - alpha)
+                        if ((math.sqrt(x_2 * x_2 + y_2 * y_2) < range_of_atack) and
+                                abs(dir1 - dir2) < alpha and y_2 > 0 and
+                                math.acos(x_2 / math.sqrt(x_2 * x_2 + y_2 * y_2)) <= 2 * alpha):
+                            print("Killed unit number ",jndex)
+                            for kndex in range(1, ObjectProp.Total):
+                                objects[jndex][kndex] = 0
+
+
+
     def update_units(self, dt):
         if(self.objects_state == ObjectsState.Run):
             objects = self.objects.get_objects(link_only=True)
@@ -158,6 +153,9 @@ class Objects(Process):
                     rad = objects[index][ObjectProp.Dir] * math.pi / 180
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * math.sin(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * math.cos(rad) * dt
+
+            self.check_kill()
+
             self.objects.current_objects = objects
             self.messenger.game_update_objects(self.objects.get_objects())
 

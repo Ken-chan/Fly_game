@@ -1,12 +1,10 @@
 import pyglet
-from multiprocessing import Process
 from view import Renderer
 from messages import Messenger
 import messages
 from gui_controls import GUIcontrols
 from objects import Objects
 from obj_def import *
-import math
 
 class GameState:
     Start, ActiveGame, Menu, Exit = range(4)
@@ -55,10 +53,11 @@ class Game:
     def update_objects(self, objects_copy):
         self.objects = objects_copy
         self.renderer.update_objects(objects_copy)
+        self.renderer.update_graphics()
 
     def run_game(self):
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
-        pyglet.gl.glClearColor(0, 1, 1, 1)
+        pyglet.gl.glClearColor(1, 1, 1, 0)
 
         configuration = {ObjectType.Bot1: [],
                          ObjectType.Player1: [],
@@ -86,8 +85,8 @@ class Game:
 
 
 
-        pyglet.clock.schedule_interval(self.update_graphics, 1.0 / 100)
-        pyglet.clock.schedule_interval(self.read_messages, 1/30.0)
+        pyglet.clock.schedule_interval(self.update_graphics, 1.0 / 30.0)
+        pyglet.clock.schedule_interval(self.read_messages, 1.0/30.0)
         pyglet.app.run()
 
 if __name__ == "__main__":

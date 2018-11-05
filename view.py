@@ -1,5 +1,4 @@
 import pyglet
-from multiprocessing import Process
 from obj_def import *
 
 class RendererState:
@@ -65,7 +64,7 @@ class Sprite(pyglet.sprite.Sprite):
 
 class Bot_sprite1(Sprite):
     def __init__(self, batch):
-        self.img = pyglet.image.load("images/Bot.png")
+        self.img = pyglet.image.load("images/bot1.png")
         super(Bot_sprite1, self).__init__(batch=batch, img=self.img)
 
 class Bot_sprite2(Sprite):
@@ -75,7 +74,7 @@ class Bot_sprite2(Sprite):
 
 class Player_sprite1(Sprite):
     def __init__(self, batch):
-        self.img = pyglet.image.load("images/plane.png")
+        self.img = pyglet.image.load("images/player1.png")
         super(Player_sprite1, self).__init__(batch=batch, img=self.img)
 
 class Player_sprite2(Sprite):
