@@ -5,15 +5,11 @@ import messages
 from pyglet.window import key as pygletkey
 from obj_def import *
 
-
-
-alpha = 45
-range_of_atack = 100
+alpha = 60
+range_of_atack = 1000
 
 class ObjectsState:
     Start, Pause, Run, Exit = range(4)
-
-
 
 
 class ObjectArray:
@@ -21,6 +17,8 @@ class ObjectArray:
         self.messenger = messenger
         self.objects_width = None
         self.objects_height = None
+        self.battle_field_width = 0
+        self.battle_field_height = 0
         self.current_objects = self.generate_empty_objects()
 
     def set_objects_settings(self, configuration=None):
@@ -31,7 +29,7 @@ class ObjectArray:
                     self.add_object(key, x, y)
 
     def generate_empty_objects(self):
-        current_objects = np.zeros((ObjectType.ObjArrayTotal, ObjectProp.Total), dtype=np.int32)
+        current_objects = np.zeros((ObjectType.ObjArrayTotal, ObjectProp.Total))
         current_objects[:, 0] = np.arange(ObjectType.ObjArrayTotal)
         return current_objects
 
@@ -39,6 +37,10 @@ class ObjectArray:
         return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0])
 
     def add_object(self, unit_type, x, y):
+        if(unit_type == ObjectType.FieldSize):
+            self.battle_field_width = x
+            self.battle_field_height = y
+            return True
         start, end = ObjectType.offset(unit_type)
         for ind in range(start, end+1):
             #search for empty space for object
@@ -64,12 +66,15 @@ class Objects(Process):
         self.objects_state = ObjectsState.Start
         self.messenger = messenger
         self.configuration = None
+        self.battle_field_width = 0
+        self.battle_field_height = 0
         self.objects = ObjectArray(self.messenger)
         #self.player_action = PlayerAction(self.objects)
         self.functions = {messages.Objects.Quit: self.quit,
                           messages.Objects.AddObject: self.objects.add_object,
                           messages.Objects.Player1SetPressedKey: self.set_pressed_key1,
                           messages.Objects.Player2SetPressedKey: self.set_pressed_key2,
+                          messages.Objects.Bot2SetPressedKey: self.set_bot_pressed_key2,
                           messages.Objects.Pause: self.pause_simulation,
                           messages.Objects.Run: self.run_simulation,
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
@@ -90,6 +95,8 @@ class Objects(Process):
     def update_game_settings(self, configuration):
         self.configuration = configuration
         self.objects.set_objects_settings(configuration)
+        self.battle_field_height = self.objects.battle_field_height
+        self.battle_field_width = self.objects.battle_field_width
 
     def set_pressed_key1(self, pushed, key):
         objects = self.objects.get_objects(link_only=True)
@@ -102,7 +109,6 @@ class Objects(Process):
             objects[offset][ObjectProp.K_right] = pushed
         elif key == pygletkey.LEFT:
             objects[offset][ObjectProp.K_left] = pushed
-        self.objects.current_objects = objects
 
     def set_pressed_key2(self, pushed, key):
         objects = self.objects.get_objects(link_only=True)
@@ -115,26 +121,46 @@ class Objects(Process):
             objects[offset][ObjectProp.K_right] = pushed
         elif key == pygletkey.A:
             objects[offset][ObjectProp.K_left] = pushed
-        self.objects.current_objects = objects
+
+    def set_bot_pressed_key2(self, pushed, key):
+        objects = self.objects.get_objects(link_only=True)
+        offset = ObjectType.offsets[ObjectType.Bot2][0]
+        if key == 1:
+            objects[offset][ObjectProp.K_up] = pushed
+        elif key == 2:
+            objects[offset][ObjectProp.K_down] = pushed
+        elif key == 3:
+            objects[offset][ObjectProp.K_right] = pushed
+        elif key == 4:
+            objects[offset][ObjectProp.K_left] = pushed
 
     def check_kill(self):
         objects = self.objects.get_objects(link_only=True)
         for index in range(0, ObjectType.ObjArrayTotal):
             if objects[index][1] != ObjectType.Absent:
                 x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
+                if (x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0):
+                    self.delete_object(index, objects)
                 dir1 = objects[index][ObjectProp.Dir]
                 for jndex in range(0, ObjectType.ObjArrayTotal):
                     if objects[jndex][1] != ObjectType.Absent and index != jndex:
                         x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
                         dir2 = objects[jndex][ObjectProp.Dir]
-                        x_2 = (x2 - x1) * math.cos(90 - dir1 - alpha) - (y2 - y1) * math.sin(90 - dir1 - alpha)
-                        y_2 = (y2 - y1) * math.sin(90 - dir1 - alpha) + (y2 - y1) * math.cos(90 - dir1 - alpha)
+                        teta = 90 - dir1 - alpha
+                        teta = teta/180 * math.pi
+                        x_2 = (x2 - x1) * math.cos(teta) + (y2 - y1) * math.sin(teta)
+                        y_2 = -(x2 - x1) * math.sin(teta) + (y2 - y1) * math.cos(teta)
+                        print(x_2, " ", y_2, " ", (y2 - y1) * math.sin(90 - dir1 - alpha), " ", 90 - dir1 - alpha)
                         if ((math.sqrt(x_2 * x_2 + y_2 * y_2) < range_of_atack) and
                                 abs(dir1 - dir2) < alpha and y_2 > 0 and
                                 math.acos(x_2 / math.sqrt(x_2 * x_2 + y_2 * y_2)) <= 2 * alpha):
-                            print("Killed unit number ",jndex)
-                            for kndex in range(1, ObjectProp.Total):
-                                objects[jndex][kndex] = 0
+                            self.delete_object(jndex, objects)
+                            print(x_2," ",  y_2," ", (y2 - y1) * math.sin(90 - dir1 - alpha)," ", 90 - dir1 - alpha)
+
+    def delete_object(self, jndex, objects):
+        print("Killed unit number ", jndex)
+        for kndex in range(1, ObjectProp.Total):
+            objects[jndex][kndex] = 0
 
 
 
@@ -154,11 +180,13 @@ class Objects(Process):
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * math.sin(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * math.cos(rad) * dt
 
+
             self.check_kill()
 
             self.objects.current_objects = objects
-            self.messenger.game_update_objects(self.objects.get_objects())
 
+            self.messenger.game_update_objects(self.objects.get_objects())
+            self.messenger.ai_update_objects(self.objects.get_objects())
 
 
     def read_mes(self, dt):
@@ -168,16 +196,7 @@ class Objects(Process):
                 if data == None:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
-                #self.messenger.game_update_objects(self.objects.get_objects())
 
-
-                #self.messenger.controls_update_objects(self.objects.get_objects())
-                #self.messenger.renderer_update_objects(self.objects.get_objects())
-
-
-"""class PlayerAction:
-    def __init__(self, objects_array):
-        self.objects = objects_array.get_objects(link_only=True)"""
 
 
 

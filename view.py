@@ -10,6 +10,8 @@ class Renderer:
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.objects_copy = None
+        self.battle_field_width = 0
+        self.battle_field_height = 0
 
         self.batch = pyglet.graphics.Batch()
 
@@ -34,10 +36,12 @@ class Renderer:
 
             self.objects_sprites.append(new_obj_sprite)
 
+    def set_battle_fiel_size(self, x, y):
+        self.battle_field_width = x
+        self.battle_field_height = y
 
     def update_objects(self, objects):
         self.objects_copy = objects
-
 
     def update_graphics(self):
         if self.renderer_state == RendererState.Game and self.objects_copy is not None:
@@ -48,8 +52,12 @@ class Renderer:
                 else:
                     self.objects_sprites[index].visible = True
                     current_object = self.objects_copy[index]
-                    self.objects_sprites[index].update(x=current_object[ObjectProp.Xcoord], y=current_object[ObjectProp.Ycoord], rotation=current_object[ObjectProp.Dir])
-                    #print(current_object)
+                    size_proportion_width = self.screen_width / self.battle_field_width
+                    size_proportion_height = self.screen_height / self.battle_field_height
+                    size_proportion_dir = self.screen_width / self.screen_height
+                    self.objects_sprites[index].update(x=(current_object[ObjectProp.Xcoord]*size_proportion_width),
+                                                       y=(current_object[ObjectProp.Ycoord]*size_proportion_height),
+                                                       rotation=current_object[ObjectProp.Dir])
 
 
 class Sprite(pyglet.sprite.Sprite):
@@ -66,11 +74,13 @@ class Bot_sprite1(Sprite):
     def __init__(self, batch):
         self.img = pyglet.image.load("images/bot1.png")
         super(Bot_sprite1, self).__init__(batch=batch, img=self.img)
+        self.update(scale=0.25)
 
 class Bot_sprite2(Sprite):
     def __init__(self, batch):
         self.img = pyglet.image.load("images/bot2.png")
         super(Bot_sprite2, self).__init__(batch=batch, img=self.img)
+        self.update(scale=0.25)
 
 class Player_sprite1(Sprite):
     def __init__(self, batch):

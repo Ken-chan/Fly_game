@@ -2,10 +2,12 @@ import numpy as np
 
 class ObjectType:
     Absent = np.int32(0)
-    Bot1 = np.int32(1)
-    Bot2 = np.int32(2)
-    Player1 = np.int32(3)
-    Player2 = np.int32(4)
+    FieldSize = np.int32(1)
+    Bot1 = np.int32(2)
+    Bot2 = np.int32(3)
+    Player1 = np.int32(4)
+    Player2 = np.int32(5)
+
     ObjArrayTotal = np.int32(23)
     offsets = {
         Player1: (np.int32(0), np.int32(0)),

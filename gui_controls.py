@@ -8,17 +8,15 @@ class GUIcontrolsState:
 
 
 class GUIcontrols(Process):
-    def __init__(self, messenger, screen_width, screen_height):
+    def __init__(self, messenger):
         super(GUIcontrols, self).__init__()
         self.gui_state = GUIcontrolsState.InGame
         self.messenger = messenger
-        self.screen_width = screen_width
-        self.screen_height = screen_height
 
         self.player_direction_x = 0
         self.player_direction_y = 0
         self.cycles = 0
-        self.kb_control = KbControl(1, screen_width, screen_height, self.messenger)
+        self.kb_control = KbControl(1, self.messenger)
         self.gui_state = GUIcontrolsState.InGame
         self.functions = {messages.GuiControls.StopGui: self.stop_gui,
                           messages.GuiControls.StartGame: self.start_game,
@@ -46,17 +44,15 @@ class GUIcontrols(Process):
 
 
 class BaseControl:
-    def __init__(self, player, screen_width, screen_height, messenger):
+    def __init__(self, player, messenger):
         self.messenger = messenger
-        self.screen_width = screen_width
-        self.screen_height = screen_height
         self.x_ratio = None
         self.y_ratio = None
         self.player = player
 
 class KbControl(BaseControl):
-    def __init__(self, player, screen_width, screen_height, messenger):
-        super(KbControl, self).__init__(player, screen_width, screen_height, messenger)
+    def __init__(self, player, messenger):
+        super(KbControl, self).__init__(player, messenger)
 
     def dispatch_kb_event(self, pushed, key):
         if key in (pygletkey.UP, pygletkey.DOWN, pygletkey.RIGHT, pygletkey.LEFT):

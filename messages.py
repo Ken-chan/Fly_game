@@ -8,8 +8,10 @@ class GuiControls:
 class GuiScreen:
     TerminateScreen, StartNewGame, UpdateRenderedSurface = range(3)
 class Objects:
-    Quit, UpdateField, AddObject, KingSetDestination, Player1SetPressedKey, Player2SetPressedKey, \
+    Quit, UpdateField, AddObject, Bot2SetPressedKey, Player1SetPressedKey, Player2SetPressedKey, \
     KingChangeItem, Pause, Run, UpdateGameSettings, TrainUnit, BuyItem, UseItem, UpdateObjects = range(14)
+class AIcontrols:
+    Quit, Pause, Run, UpdateObjects = range(4)
 
 
 class Messenger:
@@ -18,11 +20,13 @@ class Messenger:
         self.game_queue = Queue()
         self.gui_controls_queue = Queue()
         self.objects_queue = Queue()
+        self.ai_controls_queue = Queue()
         self.writable = True
         self.binding = {GuiScreen:  self.gui_screen_queue,
                         Game: self.game_queue,
                         Objects: self.objects_queue,
-                        GuiControls: self.gui_controls_queue}
+                        GuiControls: self.gui_controls_queue,
+                        AIcontrols: self.ai_controls_queue}
 
     def send_message(self, queue, func, args=None):
         if not self.writable:
@@ -67,6 +71,9 @@ class Messenger:
     def player2_set_pressed_key(self, pushed, key):
         self.send_message(self.objects_queue, Objects.Player2SetPressedKey, {'pushed': pushed, 'key': key})
 
+    def bot2_set_pressed_key(self, pushed, key):
+        self.send_message(self.objects_queue, Objects.Bot2SetPressedKey, {'pushed': pushed, 'key': key})
+
     def objects_set_game_settings(self, configuration):
         self.send_message(self.objects_queue, Objects.UpdateGameSettings, {'configuration': configuration})
 
@@ -75,6 +82,12 @@ class Messenger:
 
     def game_update_objects(self, objects_copy):
         self.send_message(self.game_queue, Game.UpdateObjects, {'objects_copy': objects_copy})
+
+    def ai_start_game(self):
+        self.send_message(self.ai_controls_queue, AIcontrols.Run)
+
+    def ai_update_objects(self, objects_copy):
+        self.send_message(self.ai_controls_queue, AIcontrols.UpdateObjects, {'objects_copy': objects_copy})
 
     def shutdown(self):
         print("terminate controls")
@@ -86,7 +99,7 @@ class Messenger:
         #make sure threads ended
         for t in range(0, 2):
             print("waiting for queues: {}".format(t))
-            time.sleep(1)
+            time.sleep(0.1)
 
         for key in self.binding:
             while True:
