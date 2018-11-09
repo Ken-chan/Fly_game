@@ -53,5 +53,6 @@ class ObjectProp:
     K_right = np.int32(8)
     K_left = np.int32(9)
     State = np.int32(10)
-    Total = np.int32(11)
+    R_size = np.int32(11)
+    Total = np.int32(12)
 

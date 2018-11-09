@@ -25,18 +25,22 @@ class ObjectArray:
         if configuration:
             for key in configuration:
                 for item in configuration[key]:
-                    x, y = item
-                    self.add_object(key, x, y)
+                    if len(item) == 3:
+                        x, y, r = item
+                        self.add_object(key, x, y, r)
+                    else:
+                        x, y = item
+                        self.add_object(key, x, y, 0)
 
     def generate_empty_objects(self):
         current_objects = np.zeros((ObjectType.ObjArrayTotal, ObjectProp.Total))
         current_objects[:, 0] = np.arange(ObjectType.ObjArrayTotal)
         return current_objects
 
-    def generate_new_object(self, ind, obj_type, x, y, dir):
-        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0])
+    def generate_new_object(self, ind, obj_type, x, y, dir, size):
+        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, size])
 
-    def add_object(self, unit_type, x, y):
+    def add_object(self, unit_type, x, y, r):
         if(unit_type == ObjectType.FieldSize):
             self.battle_field_width = x
             self.battle_field_height = y
@@ -47,9 +51,10 @@ class ObjectArray:
             if self.current_objects[ind][ObjectProp.ObjType] == ObjectType.Absent:
                 if unit_type == ObjectType.Player1 or unit_type == ObjectType.Bot1:
                     dir = 0
-                else: dir = 180
-
-                self.current_objects[ind] = self.generate_new_object(ind, unit_type, x, y, dir)
+                else:
+                    dir = 180
+                #self.current_objects[ind][ObjectProp.R_size] = 20
+                self.current_objects[ind] = self.generate_new_object(ind, unit_type, x, y, dir, r)
                 return True
         return False
 
@@ -136,12 +141,14 @@ class Objects(Process):
 
     def check_kill(self):
         objects = self.objects.get_objects(link_only=True)
+
         for index in range(0, ObjectType.ObjArrayTotal):
-            if objects[index][1] != ObjectType.Absent:
+            if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                 x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
                 if (x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0):
                     self.delete_object(index, objects)
                 dir1 = objects[index][ObjectProp.Dir]
+
                 for jndex in range(0, ObjectType.ObjArrayTotal):
                     if objects[jndex][1] != ObjectType.Absent and index != jndex:
                         x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
@@ -156,6 +163,13 @@ class Objects(Process):
                             self.delete_object(jndex, objects)
                             #print(x_2," ",  y_2," ", (y2 - y1) * math.sin(90 - dir1 - alpha)," ", 90 - dir1 - alpha)
 
+                        ##CHECK COLLISONS KILLED
+                        distance = math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+                        if distance < objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
+                            self.delete_object(jndex, objects)
+                            self.delete_object(index, objects)
+
+
     def delete_object(self, jndex, objects):
         print("Killed unit number ", jndex)
         for kndex in range(1, ObjectProp.Total):
@@ -168,6 +182,7 @@ class Objects(Process):
                 if objects[index][1] != ObjectType.Absent:
                     objects[index][ObjectProp.Velocity] += (objects[index][ObjectProp.K_up] - objects[index][ObjectProp.K_down]) * 80 * dt
                     objects[index][ObjectProp.Dir] += (objects[index][ObjectProp.K_right] - objects[index][ObjectProp.K_left]) * 50 * dt
+
                     if (objects[index][ObjectProp.Dir] >= 360):
                         objects[index][ObjectProp.Dir] -= 360
                     elif (objects[index][ObjectProp.Dir] < 0):
@@ -177,11 +192,10 @@ class Objects(Process):
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * math.sin(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * math.cos(rad) * dt
 
+                #pyglet.graphics.draw(2, pyglet.gl.GL_LINE_STRIP, ("v2f", (objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord], 0, 0)))
 
             self.check_kill()
-
             self.objects.current_objects = objects
-
             self.messenger.game_update_objects(self.objects.get_objects())
             self.messenger.ai_update_objects(self.objects.get_objects())
 
@@ -193,10 +207,3 @@ class Objects(Process):
                 if data == None:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
-
-
-
-
-
-
-

@@ -100,13 +100,13 @@ class Game:
         # we sheduled it on 1/30 s. right?
 
     def run_game(self):
-
         #Save movement
         print("previous history file was deleted", '\n', "Creating new file...")
         self.clear_file("history.txt")
 
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
-        pyglet.gl.glClearColor(1, 1, 1, 0)
+        pyglet.gl.glClearColor(0.6, 0.6, 0.6, 0)
+        self.game_window.set_location(400, 150)
         battle_field_size = (1000,1000)
         # later we should make configuration loader from config file
         configuration = {ObjectType.FieldSize: [],
@@ -115,9 +115,9 @@ class Game:
                          ObjectType.Bot2: [],
                          ObjectType.Player2: []}
         configuration[ObjectType.FieldSize].append(battle_field_size)
-        configuration[ObjectType.Player1].append((500, 50))
+        configuration[ObjectType.Player1].append((500, 50, 15))
         #configuration[ObjectType.Player2].append((500, 450))
-        configuration[ObjectType.Bot2].append((500, 450))
+        configuration[ObjectType.Bot2].append((500, 450, 15))
 
         self.game_state = GameState.ActiveGame
         self.renderer.set_battle_fiel_size(battle_field_size[0],battle_field_size[1])
@@ -149,5 +149,5 @@ class Game:
 
 
 if __name__ == "__main__":
-    game = Game(1000, 1000)
+    game = Game(1024, 768)
     game.run_game()
