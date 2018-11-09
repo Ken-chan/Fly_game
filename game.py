@@ -8,8 +8,13 @@ from objects import Objects
 from obj_def import *
 
 class GameState:
-    Start, ActiveGame, Menu, Exit = range(4)
+    Start, ActiveGame, Menu, Exit, Pause = range(5)
 
+def save_history_file(file, coordx, coordy, angle):
+    with open(file, 'a') as f:
+        f.write(str(int(coordx)) + '  ')
+        f.write(str(int(coordy)) + ' ')
+        f.write(str(angle) + '\n')
 
 class Game:
     def __init__(self, screen_width, screen_height):
@@ -30,7 +35,9 @@ class Game:
         self.objects = None
 
         self.functions = {messages.Game.Quit: self.quit,
-                          messages.Game.UpdateObjects: self.update_objects}
+                          messages.Game.UpdateObjects: self.update_objects,
+                          messages.Game.Pause: self.game_pause_simulation,
+                          messages.Game.ActiveGame: self.game_unpaused}
 
     def quit(self):
         self.game_state = GameState.Exit
@@ -39,6 +46,12 @@ class Game:
         self.gui_controls.join()
         self.ai_controls.join()
         pyglet.app.exit()
+
+    def game_pause_simulation(self):
+        self.game_state = GameState.Pause
+
+    def game_unpaused(self):
+        self.game_state = GameState.ActiveGame
 
     def read_messages(self, dt):
         while True:
@@ -49,13 +62,18 @@ class Game:
             self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
 
     def update_graphics(self, dt):
-        self.renderer.update_graphics()
-        self.game_window.clear()
-        self.renderer.batch.draw()
+        if self.game_state != GameState.Pause:
+            self.renderer.update_graphics()
+            self.game_window.clear()
+            self.renderer.batch.draw()
 
     def update_objects(self, objects_copy):
-        self.objects = objects_copy
-        self.renderer.update_objects(objects_copy)
+        if self.game_state != GameState.Pause:
+            self.objects = objects_copy
+            self.renderer.update_objects(objects_copy)
+            save_history_file("history.txt", objects_copy[1][ObjectProp.Xcoord], objects_copy[1][ObjectProp.Ycoord],
+                              objects_copy[1][ObjectProp.Dir])
+            self.renderer.update_graphics()
 
     def run_game(self):
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
@@ -69,8 +87,8 @@ class Game:
                          ObjectType.Player2: []}
         configuration[ObjectType.FieldSize].append(battle_field_size)
         configuration[ObjectType.Player1].append((500, 50))
-        configuration[ObjectType.Player2].append((500, 450))
-        #configuration[ObjectType.Bot2].append((5000, 4500))
+        #configuration[ObjectType.Player2].append((500, 450))
+        configuration[ObjectType.Bot2].append((500, 450))
 
         self.game_state = GameState.ActiveGame
         self.renderer.set_battle_fiel_size(battle_field_size[0],battle_field_size[1])
@@ -80,7 +98,8 @@ class Game:
 
         @self.game_window.event
         def on_draw():
-            self.fps_display.draw()
+            if self.game_state != GameState.Pause:
+                self.fps_display.draw()
 
         @self.game_window.event
         def on_key_press(key, modif):

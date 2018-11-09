@@ -49,6 +49,7 @@ class BaseControl:
         self.x_ratio = None
         self.y_ratio = None
         self.player = player
+        self.game_is_paused = False
 
 class KbControl(BaseControl):
     def __init__(self, player, messenger):
@@ -59,6 +60,13 @@ class KbControl(BaseControl):
             self.change_player1_direction(pushed, key)
         elif key in (pygletkey.W, pygletkey.D, pygletkey.A, pygletkey.S):
             self.change_player2_direction(pushed, key)
+        elif key == pygletkey.P and pushed:
+            # print(self.game_is_paused)
+            if not self.game_is_paused:
+                self.messenger.game_pause()
+            else:
+                self.messenger.game_unpause()
+            self.game_is_paused = not self.game_is_paused
 
     def change_player1_direction(self, pushed, key):
         self.messenger.player1_set_pressed_key(pushed, key)

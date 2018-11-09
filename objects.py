@@ -150,19 +150,16 @@ class Objects(Process):
                         teta = teta/180 * math.pi
                         x_2 = (x2 - x1) * math.cos(teta) + (y2 - y1) * math.sin(teta)
                         y_2 = -(x2 - x1) * math.sin(teta) + (y2 - y1) * math.cos(teta)
-                        print(x_2, " ", y_2, " ", (y2 - y1) * math.sin(90 - dir1 - alpha), " ", 90 - dir1 - alpha)
                         if ((math.sqrt(x_2 * x_2 + y_2 * y_2) < range_of_atack) and
                                 abs(dir1 - dir2) < alpha and y_2 > 0 and
                                 math.acos(x_2 / math.sqrt(x_2 * x_2 + y_2 * y_2)) <= 2 * alpha):
                             self.delete_object(jndex, objects)
-                            print(x_2," ",  y_2," ", (y2 - y1) * math.sin(90 - dir1 - alpha)," ", 90 - dir1 - alpha)
+                            #print(x_2," ",  y_2," ", (y2 - y1) * math.sin(90 - dir1 - alpha)," ", 90 - dir1 - alpha)
 
     def delete_object(self, jndex, objects):
         print("Killed unit number ", jndex)
         for kndex in range(1, ObjectProp.Total):
             objects[jndex][kndex] = 0
-
-
 
     def update_units(self, dt):
         if(self.objects_state == ObjectsState.Run):
