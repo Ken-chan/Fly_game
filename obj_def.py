@@ -13,7 +13,8 @@ class ObjectType:
         Player1: (np.int32(0), np.int32(0)),
         Player2: (np.int32(1), np.int32(1)),
         Bot1: (np.int32(2), np.int32(12)),
-        Bot2: (np.int32(13), np.int32(23))}
+        Bot2: (np.int32(13), np.int32(23)),
+    }
 
     @classmethod
     def offset(cls, obj_type):
@@ -53,3 +54,4 @@ class ObjectProp:
     K_left = np.int32(9)
     State = np.int32(10)
     Total = np.int32(11)
+

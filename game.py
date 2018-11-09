@@ -1,4 +1,4 @@
-import pyglet
+import pyglet, json
 from view import Renderer
 from messages import Messenger
 import messages
@@ -10,11 +10,6 @@ from obj_def import *
 class GameState:
     Start, ActiveGame, Menu, Exit, Pause = range(5)
 
-def save_history_file(file, coordx, coordy, angle):
-    with open(file, 'a') as f:
-        f.write(str(int(coordx)) + '  ')
-        f.write(str(int(coordy)) + ' ')
-        f.write(str(angle) + '\n')
 
 class Game:
     def __init__(self, screen_width, screen_height):
@@ -39,6 +34,24 @@ class Game:
                           messages.Game.Pause: self.game_pause_simulation,
                           messages.Game.ActiveGame: self.game_unpaused}
 
+    # /Part of working with log files starts
+
+    def clear_file(self, file):
+        with open(file, "w") as file:  # just to open with argument which clean file
+            pass
+
+    def save_history_file_txt(self, file, coordx, coordy, angle):
+        with open(file, 'a') as f:
+            f.write(str(int(coordx)) + '  ')
+            f.write(str(int(coordy)) + ' ')
+            f.write(str(angle) + '\n')
+
+    def save_history_json(self, history_file, objects_data):
+        with open(history_file, 'a', encoding="utf-8") as file:
+            json.dump(objects_data, file)
+            file.write('\n')
+
+    # /Part of working with log files ends
     def quit(self):
         self.game_state = GameState.Exit
         self.messenger.shutdown()
@@ -71,11 +84,27 @@ class Game:
         if self.game_state != GameState.Pause:
             self.objects = objects_copy
             self.renderer.update_objects(objects_copy)
-            save_history_file("history.txt", objects_copy[1][ObjectProp.Xcoord], objects_copy[1][ObjectProp.Ycoord],
-                              objects_copy[1][ObjectProp.Dir])
             self.renderer.update_graphics()
 
+            # saving movement
+            # self.save_history_file_txt("history.txt", objects_copy[1][ObjectProp.Xcoord], objects_copy[1][ObjectProp.Ycoord], objects_copy[1][ObjectProp.Dir])
+            for index in range(0, ObjectType.ObjArrayTotal):
+                if objects_copy[index][ObjectProp.ObjType] != ObjectType.Absent:
+                    data = {'ObjectID': objects_copy[index][ObjectProp.ObjId],
+                            'X_coord':  objects_copy[index][ObjectProp.Xcoord],
+                            'y_coord':  objects_copy[index][ObjectProp.Ycoord],
+                            'Direction':objects_copy[index][ObjectProp.Dir]
+                            }
+                    self.save_history_json("history.txt", data)
+        # no need to update graphics on every objects refreshment event
+        # we sheduled it on 1/30 s. right?
+
     def run_game(self):
+
+        #Save movement
+        print("previous history file was deleted", '\n', "Creating new file...")
+        self.clear_file("history.txt")
+
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
         pyglet.gl.glClearColor(1, 1, 1, 0)
         battle_field_size = (1000,1000)
@@ -114,8 +143,8 @@ class Game:
             self.quit()
 
         # we need to remember about hard nailed graphics. much later we should fix it somehow
-        pyglet.clock.schedule_interval(self.read_messages, 1.0 / 30.0)
-        pyglet.clock.schedule_interval(self.update_graphics, 1.0 / 30.0)
+        pyglet.clock.schedule_interval(self.read_messages, 1.0 / 60.0)
+        pyglet.clock.schedule_interval(self.update_graphics, 1.0 / 60.0)
         pyglet.app.run()
 
 
