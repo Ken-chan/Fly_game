@@ -4,12 +4,13 @@ import math
 import messages
 from pyglet.window import key as pygletkey
 from obj_def import *
+import json
 
 alpha = 60
 range_of_atack = 1000
 
 class ObjectsState:
-    Start, Pause, Run, Exit = range(4)
+    Start, Pause, Run, Exit, RunFromFile = range(5)
 
 
 class ObjectArray:
@@ -68,12 +69,14 @@ class ObjectArray:
 class Objects(Process):
     def __init__(self, messenger):
         super(Objects, self).__init__()
-        self.objects_state = ObjectsState.Start
+        self.objects_state = ObjectsState.Run
         self.messenger = messenger
         self.configuration = None
         self.battle_field_width = 0
         self.battle_field_height = 0
         self.objects = ObjectArray(self.messenger)
+        self.history_list = self.make_history_list_of_moving("history.txt")
+        self.index_moving = 0
         #self.player_action = PlayerAction(self.objects)
         self.functions = {messages.Objects.Quit: self.quit,
                           messages.Objects.AddObject: self.objects.add_object,
@@ -82,6 +85,7 @@ class Objects(Process):
                           messages.Objects.Bot2SetPressedKey: self.set_bot_pressed_key2,
                           messages.Objects.Pause: self.pause_simulation,
                           messages.Objects.Run: self.run_simulation,
+                          messages.Objects.RunFromFile: self.run_history,
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
         #self.objects_state = ObjectsState.Pause
 
@@ -97,77 +101,90 @@ class Objects(Process):
     def run_simulation(self):
         self.objects_state = ObjectsState.Run
 
+    def run_history(self):
+        self.objects_state = ObjectsState.RunFromFile
+
+    def make_history_list_of_moving(self, history_file):
+        with open(history_file, 'r') as file:
+            history_list = file.readlines()
+        return history_list
+
     def update_game_settings(self, configuration):
-        self.configuration = configuration
-        self.objects.set_objects_settings(configuration)
-        self.battle_field_height = self.objects.battle_field_height
-        self.battle_field_width = self.objects.battle_field_width
+        if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
+            self.configuration = configuration
+            self.objects.set_objects_settings(configuration)
+            self.battle_field_height = self.objects.battle_field_height
+            self.battle_field_width = self.objects.battle_field_width
 
     def set_pressed_key1(self, pushed, key):
-        objects = self.objects.get_objects(link_only=True)
-        offset = ObjectType.offsets[ObjectType.Player1][0]
-        if key == pygletkey.UP:
-            objects[offset][ObjectProp.K_up] = pushed
-        elif key == pygletkey.DOWN:
-            objects[offset][ObjectProp.K_down] = pushed
-        elif key == pygletkey.RIGHT:
-            objects[offset][ObjectProp.K_right] = pushed
-        elif key == pygletkey.LEFT:
-            objects[offset][ObjectProp.K_left] = pushed
+        if self.objects_state == ObjectsState.Run:
+            objects = self.objects.get_objects(link_only=True)
+            offset = ObjectType.offsets[ObjectType.Player1][0]
+            if key == pygletkey.UP:
+                objects[offset][ObjectProp.K_up] = pushed
+            elif key == pygletkey.DOWN:
+                objects[offset][ObjectProp.K_down] = pushed
+            elif key == pygletkey.RIGHT:
+                objects[offset][ObjectProp.K_right] = pushed
+            elif key == pygletkey.LEFT:
+                objects[offset][ObjectProp.K_left] = pushed
 
     def set_pressed_key2(self, pushed, key):
-        objects = self.objects.get_objects(link_only=True)
-        offset = ObjectType.offsets[ObjectType.Player2][0]
-        if key == pygletkey.W:
-            objects[offset][ObjectProp.K_up] = pushed
-        elif key == pygletkey.S:
-            objects[offset][ObjectProp.K_down] = pushed
-        elif key == pygletkey.D:
-            objects[offset][ObjectProp.K_right] = pushed
-        elif key == pygletkey.A:
-            objects[offset][ObjectProp.K_left] = pushed
+        if self.objects_state == ObjectsState.Run:
+            objects = self.objects.get_objects(link_only=True)
+            offset = ObjectType.offsets[ObjectType.Player2][0]
+            if key == pygletkey.W:
+                objects[offset][ObjectProp.K_up] = pushed
+            elif key == pygletkey.S:
+                objects[offset][ObjectProp.K_down] = pushed
+            elif key == pygletkey.D:
+                objects[offset][ObjectProp.K_right] = pushed
+            elif key == pygletkey.A:
+                objects[offset][ObjectProp.K_left] = pushed
 
     def set_bot_pressed_key2(self, pushed, key):
-        objects = self.objects.get_objects(link_only=True)
-        offset = ObjectType.offsets[ObjectType.Bot2][0]
-        if key == 1:
-            objects[offset][ObjectProp.K_up] = pushed
-        elif key == 2:
-            objects[offset][ObjectProp.K_down] = pushed
-        elif key == 3:
-            objects[offset][ObjectProp.K_right] = pushed
-        elif key == 4:
-            objects[offset][ObjectProp.K_left] = pushed
+        if self.objects_state == ObjectsState.Run:
+            objects = self.objects.get_objects(link_only=True)
+            offset = ObjectType.offsets[ObjectType.Bot2][0]
+            if key == 1:
+                objects[offset][ObjectProp.K_up] = pushed
+            elif key == 2:
+                objects[offset][ObjectProp.K_down] = pushed
+            elif key == 3:
+                objects[offset][ObjectProp.K_right] = pushed
+            elif key == 4:
+                objects[offset][ObjectProp.K_left] = pushed
 
     def check_kill(self):
-        objects = self.objects.get_objects(link_only=True)
+        if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
+            objects = self.objects.get_objects(link_only=True)
 
-        for index in range(0, ObjectType.ObjArrayTotal):
-            if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
-                x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
-                if (x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0):
-                    self.delete_object(index, objects)
-                dir1 = objects[index][ObjectProp.Dir]
+            for index in range(0, ObjectType.ObjArrayTotal):
+                if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
+                    x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
+                    if (x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0):
+                        self.delete_object(index, objects)
+                    dir1 = objects[index][ObjectProp.Dir]
 
-                for jndex in range(0, ObjectType.ObjArrayTotal):
-                    if objects[jndex][1] != ObjectType.Absent and index != jndex:
-                        x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
-                        dir2 = objects[jndex][ObjectProp.Dir]
-                        teta = 90 - dir1 - alpha
-                        teta = teta/180 * math.pi
-                        x_2 = (x2 - x1) * math.cos(teta) + (y2 - y1) * math.sin(teta)
-                        y_2 = -(x2 - x1) * math.sin(teta) + (y2 - y1) * math.cos(teta)
-                        if ((math.sqrt(x_2 * x_2 + y_2 * y_2) < range_of_atack) and
-                                abs(dir1 - dir2) < alpha and y_2 > 0 and
-                                math.acos(x_2 / math.sqrt(x_2 * x_2 + y_2 * y_2)) <= 2 * alpha):
-                            self.delete_object(jndex, objects)
-                            #print(x_2," ",  y_2," ", (y2 - y1) * math.sin(90 - dir1 - alpha)," ", 90 - dir1 - alpha)
+                    for jndex in range(0, ObjectType.ObjArrayTotal):
+                        if objects[jndex][1] != ObjectType.Absent and index != jndex:
+                            x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
+                            dir2 = objects[jndex][ObjectProp.Dir]
+                            teta = 90 - dir1 - alpha
+                            teta = teta/180 * math.pi
+                            x_2 = (x2 - x1) * math.cos(teta) + (y2 - y1) * math.sin(teta)
+                            y_2 = -(x2 - x1) * math.sin(teta) + (y2 - y1) * math.cos(teta)
+                            if ((math.sqrt(x_2 * x_2 + y_2 * y_2) < range_of_atack) and
+                                    abs(dir1 - dir2) < alpha and y_2 > 0 and
+                                    math.acos(x_2 / math.sqrt(x_2 * x_2 + y_2 * y_2)) <= 2 * alpha):
+                                self.delete_object(jndex, objects)
+                                #print(x_2," ",  y_2," ", (y2 - y1) * math.sin(90 - dir1 - alpha)," ", 90 - dir1 - alpha)
 
-                        ##CHECK COLLISONS KILLED
-                        distance = math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-                        if distance < objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
-                            self.delete_object(jndex, objects)
-                            self.delete_object(index, objects)
+                            ##CHECK COLLISONS KILLED
+                            distance = math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+                            if distance < objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
+                                self.delete_object(jndex, objects)
+                                self.delete_object(index, objects)
 
 
     def delete_object(self, jndex, objects):
@@ -176,7 +193,7 @@ class Objects(Process):
             objects[jndex][kndex] = 0
 
     def update_units(self, dt):
-        if(self.objects_state == ObjectsState.Run):
+        if self.objects_state == ObjectsState.Run:
             objects = self.objects.get_objects(link_only=True)
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][1] != ObjectType.Absent:
@@ -192,12 +209,33 @@ class Objects(Process):
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * math.sin(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * math.cos(rad) * dt
 
-                #pyglet.graphics.draw(2, pyglet.gl.GL_LINE_STRIP, ("v2f", (objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord], 0, 0)))
+                    #pyglet.graphics.draw(2, pyglet.gl.GL_LINE_STRIP, ("v2f", (objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord], 0, 0)))
 
             self.check_kill()
             self.objects.current_objects = objects
             self.messenger.game_update_objects(self.objects.get_objects())
             self.messenger.ai_update_objects(self.objects.get_objects())
+
+        if self.objects_state == ObjectsState.RunFromFile:
+            objects = self.objects.get_objects(link_only=True)
+            for index in range(0, ObjectType.ObjArrayTotal):
+                if objects[index][1] != ObjectType.Absent:
+                    if self.index_moving != len(self.history_list):
+                        json_string = self.history_list[self.index_moving]
+                        parsed = json.loads(json_string)
+                        if int(parsed['ObjectID']) == objects[index][ObjectProp.ObjId]:
+                            objects[index][ObjectProp.Xcoord] = parsed['X_coord']
+                            objects[index][ObjectProp.Ycoord] = parsed['y_coord']
+                            objects[index][ObjectProp.Dir] = parsed['Direction']
+                        self.index_moving += 1
+                    else:
+                        self.index_moving = 0
+
+            self.check_kill()
+            self.objects.current_objects = objects
+            self.messenger.game_update_objects(self.objects.get_objects())
+            self.messenger.ai_update_objects(self.objects.get_objects())
+
 
 
     def read_mes(self, dt):

@@ -28,6 +28,8 @@ class Game:
         self.Objects = Objects(messenger=self.messenger)
         self.Objects.start()
         self.objects = None
+        self.history_list = []
+        self.is_it_move_from_history = False
 
         self.functions = {messages.Game.Quit: self.quit,
                           messages.Game.UpdateObjects: self.update_objects,
@@ -101,8 +103,9 @@ class Game:
 
     def run_game(self):
         #Save movement
-        print("previous history file was deleted", '\n', "Creating new file...")
+        #print("previous history file was deleted", '\n', "Creating new file...")
         self.clear_file("history.txt")
+        self.is_it_move_from_history = False
 
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
         pyglet.gl.glClearColor(0.6, 0.6, 0.6, 0)
@@ -121,7 +124,10 @@ class Game:
 
         self.game_state = GameState.ActiveGame
         self.renderer.set_battle_fiel_size(battle_field_size[0],battle_field_size[1])
-        self.messenger.objects_run_simulation()
+        if self.is_it_move_from_history:
+            self.messenger.objects_run_from_file_simulation()
+        else:
+            self.messenger.objects_run_simulation()
         self.messenger.objects_set_game_settings(configuration)
         self.messenger.ai_start_game()
 
@@ -149,5 +155,5 @@ class Game:
 
 
 if __name__ == "__main__":
-    game = Game(1024, 768)
+    game = Game(800, 800)
     game.run_game()

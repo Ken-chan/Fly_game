@@ -9,7 +9,7 @@ class GuiScreen:
     TerminateScreen, StartNewGame, UpdateRenderedSurface = range(3)
 class Objects:
     Quit, UpdateField, AddObject, Bot2SetPressedKey, Player1SetPressedKey, Player2SetPressedKey, \
-    KingChangeItem, Pause, Run, UpdateGameSettings, TrainUnit, BuyItem, UseItem, UpdateObjects = range(14)
+    KingChangeItem, Pause, Run, UpdateGameSettings, TrainUnit, BuyItem, UseItem, UpdateObjects, RunFromFile = range(15)
 class AIcontrols:
     Quit, Pause, Run, UpdateObjects = range(4)
 
@@ -88,6 +88,9 @@ class Messenger:
     def objects_run_simulation(self):
         self.send_message(self.objects_queue, Objects.Run)
 
+    def objects_run_from_file_simulation(self):
+        self.send_message(self.objects_queue, Objects.RunFromFile)
+
     def game_update_objects(self, objects_copy):
         self.send_message(self.game_queue, Game.UpdateObjects, {'objects_copy': objects_copy})
 
@@ -96,6 +99,8 @@ class Messenger:
 
     def ai_update_objects(self, objects_copy):
         self.send_message(self.ai_controls_queue, AIcontrols.UpdateObjects, {'objects_copy': objects_copy})
+
+
 
     def shutdown(self):
         print("terminate controls")

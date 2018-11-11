@@ -1,4 +1,4 @@
-import pyglet
+import pyglet, math
 from obj_def import *
 
 class RendererState:
@@ -52,6 +52,7 @@ class Renderer:
                 else:
                     self.objects_sprites[index].visible = True
                     current_object = self.objects_copy[index]
+                    self.draw_zone_of_defense(self.objects_copy[index]) # THATS MAKING THESE UGLY PICTURES sorry :c
                     size_proportion_width = self.screen_width / self.battle_field_width
                     size_proportion_height = self.screen_height / self.battle_field_height
                     size_proportion_dir = self.screen_width / self.screen_height
@@ -59,6 +60,24 @@ class Renderer:
                                                        y=(current_object[ObjectProp.Ycoord]*size_proportion_height),
                                                        rotation=current_object[ObjectProp.Dir])
 
+    # need to refactor
+    def make_part_of_circle(self, numpoints, rel_x, rel_y, phi, unit_angle):
+        global circle
+        vertices = []
+        for i in range(numpoints):
+            angle = math.radians(float(i) / numpoints * 2 * phi + 90 - phi)
+            x = 150 * math.cos(angle - unit_angle) + rel_x
+            y = 150 * math.sin(angle - unit_angle) + rel_y
+            vertices += [x, y]
+        vertices += [rel_x, rel_y]
+        circle = pyglet.graphics.vertex_list(numpoints + 1, ('v2f', vertices))
+
+    def draw_zone_of_defense(self, object):
+        self.make_part_of_circle(50, object[ObjectProp.Xcoord], object[ObjectProp.Ycoord],
+                                 30, math.radians(object[ObjectProp.Dir]))
+        circle.draw(pyglet.gl.GL_LINE_LOOP)
+
+    # need to refactor
 
 class Sprite(pyglet.sprite.Sprite):
 
@@ -66,31 +85,39 @@ class Sprite(pyglet.sprite.Sprite):
         self.img = img
         self.img.anchor_x = self.img.width // 2
         self.img.anchor_y = self.img.height // 2
-
         super(Sprite, self).__init__(img=self.img, x=self.img.anchor_x, y=self.img.anchor_y, batch=batch)
-        self.update(scale=0.5)  ###update
 
 class Bot_sprite1(Sprite):
     def __init__(self, batch):
         self.img = pyglet.image.load("images/bot1.png")
+        self.img.anchor_x = self.img.width // 2
+        self.img.anchor_y = self.img.height // 2
         super(Bot_sprite1, self).__init__(batch=batch, img=self.img)
-        self.update(scale=0.25)
+        self.update(scale_x=0.1, scale_y = 0.15)
 
 class Bot_sprite2(Sprite):
     def __init__(self, batch):
         self.img = pyglet.image.load("images/bot2.png")
+        self.img.anchor_x = self.img.width // 2
+        self.img.anchor_y = self.img.height // 2
         super(Bot_sprite2, self).__init__(batch=batch, img=self.img)
-        self.update(scale=0.25)
+        self.update(scale_x=0.1, scale_y = 0.15)
 
 class Player_sprite1(Sprite):
     def __init__(self, batch):
         self.img = pyglet.image.load("images/player1.png")
+        self.img.anchor_x = self.img.width // 2
+        self.img.anchor_y = self.img.height // 2
         super(Player_sprite1, self).__init__(batch=batch, img=self.img)
+        self.update(scale_x=0.1, scale_y = 0.15)
 
 class Player_sprite2(Sprite):
     def __init__(self, batch):
         self.img = pyglet.image.load("images/player2.png")
+        self.img.anchor_x = self.img.width // 2
+        self.img.anchor_y = self.img.height // 2
         super(Player_sprite2, self).__init__(batch=batch, img=self.img)
+        self.update(scale_x=0.1, scale_y = 0.15)
 
 
 
