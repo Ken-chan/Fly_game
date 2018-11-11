@@ -52,10 +52,12 @@ class Renderer:
                 else:
                     self.objects_sprites[index].visible = True
                     current_object = self.objects_copy[index]
-                    self.draw_zone_of_defense(self.objects_copy[index]) # THATS MAKING THESE UGLY PICTURES sorry :c
                     size_proportion_width = self.screen_width / self.battle_field_width
                     size_proportion_height = self.screen_height / self.battle_field_height
                     size_proportion_dir = self.screen_width / self.screen_height
+                    self.draw_zone_of_defense(current_object[ObjectProp.Xcoord]*size_proportion_width,
+                                              current_object[ObjectProp.Ycoord]*size_proportion_height,
+                                              current_object[ObjectProp.Dir]) # THATS MAKING THESE UGLY PICTURES sorry :c
                     self.objects_sprites[index].update(x=(current_object[ObjectProp.Xcoord]*size_proportion_width),
                                                        y=(current_object[ObjectProp.Ycoord]*size_proportion_height),
                                                        rotation=current_object[ObjectProp.Dir])
@@ -72,9 +74,8 @@ class Renderer:
         vertices += [rel_x, rel_y]
         circle = pyglet.graphics.vertex_list(numpoints + 1, ('v2f', vertices))
 
-    def draw_zone_of_defense(self, object):
-        self.make_part_of_circle(50, object[ObjectProp.Xcoord], object[ObjectProp.Ycoord],
-                                 30, math.radians(object[ObjectProp.Dir]))
+    def draw_zone_of_defense(self, x, y, dir):
+        self.make_part_of_circle(50, x, y, 30, math.radians(dir))
         circle.draw(pyglet.gl.GL_LINE_LOOP)
 
     # need to refactor
