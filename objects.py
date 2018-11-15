@@ -39,7 +39,7 @@ class ObjectArray:
         return current_objects
 
     def generate_new_object(self, ind, obj_type, x, y, dir, size):
-        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, size])
+        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, 0, size])
 
     def add_object(self, unit_type, x, y, r):
         if(unit_type == ObjectType.FieldSize):
@@ -197,7 +197,8 @@ class Objects(Process):
             objects = self.objects.get_objects(link_only=True)
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][1] != ObjectType.Absent:
-                    objects[index][ObjectProp.Velocity] += (objects[index][ObjectProp.K_up] - objects[index][ObjectProp.K_down]) * 80 * dt
+                    objects[index][ObjectProp.Velocity_prev] = objects[index][ObjectProp.Velocity]
+                    objects[index][ObjectProp.Velocity] = (objects[index][ObjectProp.K_up] - objects[index][ObjectProp.K_down]) * 80  # make it constant
                     objects[index][ObjectProp.Dir] += (objects[index][ObjectProp.K_right] - objects[index][ObjectProp.K_left]) * 50 * dt
 
                     if (objects[index][ObjectProp.Dir] >= 360):
