@@ -42,11 +42,10 @@ class Game:
         with open(file, "w") as file:  # just to open with argument which clean file
             pass
 
-    def save_history_file_txt(self, file, coordx, coordy, angle):
+    def save_history_file_txt(self, file,str):
         with open(file, 'a') as f:
-            f.write(str(int(coordx)) + '  ')
-            f.write(str(int(coordy)) + ' ')
-            f.write(str(angle) + '\n')
+            f.write(str + ' ')
+
 
     def save_history_json(self, history_file, objects_data):
         with open(history_file, 'a', encoding="utf-8") as file:
@@ -90,14 +89,13 @@ class Game:
 
             # saving movement
             # self.save_history_file_txt("history.txt", objects_copy[1][ObjectProp.Xcoord], objects_copy[1][ObjectProp.Ycoord], objects_copy[1][ObjectProp.Dir])
+            string_object = ''
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects_copy[index][ObjectProp.ObjType] != ObjectType.Absent:
-                    data = {'ObjectID': objects_copy[index][ObjectProp.ObjId],
-                            'X_coord':  objects_copy[index][ObjectProp.Xcoord],
-                            'y_coord':  objects_copy[index][ObjectProp.Ycoord],
-                            'Direction':objects_copy[index][ObjectProp.Dir]
-                            }
-                    self.save_history_json("history.txt", data)
+                    for i in range(0 , len(objects_copy[index])):
+                        string_object += str(objects_copy[index][i]) + ' ' #make string of properies of every object(not absent)
+            string_object += '\n'
+            self.save_history_file_txt("history.txt", string_object)
         # no need to update graphics on every objects refreshment event
         # we sheduled it on 1/30 s. right?
 
@@ -109,7 +107,7 @@ class Game:
 
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
         pyglet.gl.glClearColor(0.6, 0.6, 0.6, 0)
-        self.game_window.set_location(400, 150)
+        self.game_window.set_location(200, 50)
         battle_field_size = (1000,1000)
         # later we should make configuration loader from config file
         configuration = {ObjectType.FieldSize: [],
@@ -155,5 +153,5 @@ class Game:
 
 
 if __name__ == "__main__":
-    game = Game(800, 800)
+    game = Game(800, 600)
     game.run_game()

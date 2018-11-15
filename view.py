@@ -55,9 +55,9 @@ class Renderer:
                     size_proportion_width = self.screen_width / self.battle_field_width
                     size_proportion_height = self.screen_height / self.battle_field_height
                     size_proportion_dir = self.screen_width / self.screen_height
-                    self.draw_zone_of_defense(current_object[ObjectProp.Xcoord]*size_proportion_width,
-                                              current_object[ObjectProp.Ycoord]*size_proportion_height,
-                                              current_object[ObjectProp.Dir]) # THATS MAKING THESE UGLY PICTURES sorry :c
+                    #self.draw_zone_of_defense(current_object[ObjectProp.Xcoord]*size_proportion_width,
+                    #                          current_object[ObjectProp.Ycoord]*size_proportion_height,
+                    #                          current_object[ObjectProp.Dir]) # THATS MAKING THESE UGLY PICTURES sorry :c
                     self.objects_sprites[index].update(x=(current_object[ObjectProp.Xcoord]*size_proportion_width),
                                                        y=(current_object[ObjectProp.Ycoord]*size_proportion_height),
                                                        rotation=current_object[ObjectProp.Dir])
