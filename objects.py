@@ -2,6 +2,7 @@ from multiprocessing import Process
 import pyglet
 import math
 import messages
+from messages import send_message
 from pyglet.window import key as pygletkey
 from obj_def import *
 import json
@@ -67,10 +68,11 @@ class ObjectArray:
 
 
 class Objects(Process):
-    def __init__(self, messenger):
+    def __init__(self, messenger, queue):
         super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
         self.messenger = messenger
+        self.command_queue = queue
         self.configuration = None
         self.battle_field_width = 0
         self.battle_field_height = 0
@@ -116,7 +118,10 @@ class Objects(Process):
             self.battle_field_height = self.objects.battle_field_height
             self.battle_field_width = self.objects.battle_field_width
 
-    def set_pressed_key1(self, pushed, key):
+    def set_pressed_key1(self, pushed, key, asynced=False):
+        if asynced:
+            send_message(self.command_queue, messages.Objects.Player1SetPressedKey, {'pushed': pushed, 'key': key})
+            return
         if self.objects_state == ObjectsState.Run:
             objects = self.objects.get_objects(link_only=True)
             offset = ObjectType.offsets[ObjectType.Player1][0]
