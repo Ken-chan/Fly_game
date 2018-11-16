@@ -2,7 +2,7 @@ import pyglet, json
 from multiprocessing import Queue
 from view import Renderer
 from messages import Messenger
-import messages
+import time
 from gui_controls import GUIcontrols
 from ai_controls import AIcontrols
 from objects import Objects
@@ -19,28 +19,35 @@ class Game:
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.fps_display = pyglet.clock.ClockDisplay()
+        self.command_queue = Queue()
+        objqueue = Queue()
+        aiqueue = Queue()
+        guiqueue = Queue()
+        self.queue_open = True
 
-        self.objects_queue = Queue()
-        self.messenger = Messenger(objects_queue=self.objects_queue)
+        self.messenger = Messenger()
+        self.Objects = Objects(self.messenger, objqueue)
+        self.ai_controls = AIcontrols(self.messenger, aiqueue)
+        self.gui_controls = GUIcontrols(self.messenger, guiqueue)
+
+        self.Objects.link_objects(self.ai_controls, self)
+        self.ai_controls.link_objects(self.Objects)
+        self.gui_controls.link_objects(self.Objects, self)
+
         self.renderer = Renderer(self.screen_width, self.screen_height)
 
-        self.ai_controls = AIcontrols(self.messenger)
-        self.ai_controls.start()
-
-        self.Objects = Objects(messenger=self.messenger, queue=self.objects_queue)
         self.Objects.start()
-
-        self.gui_controls = GUIcontrols(self.messenger, self.Objects)
+        self.ai_controls.start()
         self.gui_controls.start()
 
         self.objects = None
         self.history_list = []
         self.is_it_move_from_history = False
 
-        self.functions = {messages.Game.Quit: self.quit,
-                          messages.Game.UpdateObjects: self.update_objects,
-                          messages.Game.Pause: self.game_pause_simulation,
-                          messages.Game.ActiveGame: self.game_unpaused}
+        self.functions = {'quit': self.quit,
+                          'update_objects': self.update_objects,
+                          'pause': self.game_pause_simulation,
+                          'unpause': self.game_unpaused}
 
     # /Part of working with log files starts
 
@@ -48,10 +55,9 @@ class Game:
         with open(file, "w") as file:  # just to open with argument which clean file
             pass
 
-    def save_history_file_txt(self, file,str):
+    def save_history_file_txt(self, file, str):
         with open(file, 'a') as f:
             f.write(str + ' ')
-
 
     def save_history_json(self, history_file, objects_data):
         with open(history_file, 'a', encoding="utf-8") as file:
@@ -59,26 +65,48 @@ class Game:
             file.write('\n')
 
     # /Part of working with log files ends
-    def quit(self):
+    def quit(self, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'quit')
+            return
         self.game_state = GameState.Exit
-        self.messenger.shutdown()
+        self.Objects.quit(asynced=True)
+        self.gui_controls.stop_gui(asynced=True)
+        self.ai_controls.stop_ai(asynced=True)
+        self.queue_open = False
+        while True:
+            data = self.messenger.get_message(self.command_queue)
+            if not data:
+                break
+        for t in range(0, 2):
+            print("waiting for queues: {}".format(t))
+            time.sleep(0.1)
+
         self.Objects.join()
         self.gui_controls.join()
         self.ai_controls.join()
         pyglet.app.exit()
 
-    def game_pause_simulation(self):
+    def game_pause_simulation(self, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'pause')
+            return
         self.game_state = GameState.Pause
 
-    def game_unpaused(self):
+    def game_unpaused(self, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'unpause')
+            return
         self.game_state = GameState.ActiveGame
 
     def read_messages(self, dt):
         while True:
-            data = self.messenger.get_message(messages.Game)
+            data = self.messenger.get_message(self.command_queue)
             if not data:
                 return
-
             self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
 
     def update_graphics(self, dt):
@@ -87,7 +115,11 @@ class Game:
             self.game_window.clear()
             self.renderer.batch.draw()
 
-    def update_objects(self, objects_copy):
+    def update_objects(self, objects_copy, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'update_objects', {'objects_copy': objects_copy})
+            return
         if self.game_state != GameState.Pause:
             self.objects = objects_copy
             self.renderer.update_objects(objects_copy)
@@ -129,11 +161,11 @@ class Game:
         self.game_state = GameState.ActiveGame
         self.renderer.set_battle_fiel_size(battle_field_size[0],battle_field_size[1])
         if self.is_it_move_from_history:
-            self.messenger.objects_run_from_file_simulation()
+            self.Objects.run_history(asynced=True)
         else:
-            self.messenger.objects_run_simulation()
-        self.messenger.objects_set_game_settings(configuration)
-        self.messenger.ai_start_game()
+            self.Objects.run_simulation(asynced=True)
+        self.Objects.update_game_settings(configuration, asynced=True)
+        self.ai_controls.start_ai_controls(asynced=True)
 
         @self.game_window.event
         def on_draw():
@@ -142,11 +174,11 @@ class Game:
 
         @self.game_window.event
         def on_key_press(key, modif):
-            self.messenger.controls_handle_key(True, key)
+            self.gui_controls.handle_kb_event(True, key, asynced=True)
 
         @self.game_window.event
         def on_key_release(key, modif):
-            self.messenger.controls_handle_key(False, key)
+            self.gui_controls.handle_kb_event(False, key, asynced=True)
 
         @self.game_window.event
         def on_close():

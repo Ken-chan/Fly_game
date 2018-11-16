@@ -1,8 +1,6 @@
 from multiprocessing import Process
 import pyglet
 import math
-import messages
-from messages import send_message
 from pyglet.window import key as pygletkey
 from obj_def import *
 import json
@@ -10,13 +8,13 @@ import json
 alpha = 60
 range_of_atack = 1000
 
+
 class ObjectsState:
     Start, Pause, Run, Exit, RunFromFile = range(5)
 
 
 class ObjectArray:
-    def __init__(self, messenger):
-        self.messenger = messenger
+    def __init__(self):
         self.objects_width = None
         self.objects_height = None
         self.battle_field_width = 0
@@ -43,7 +41,8 @@ class ObjectArray:
         return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, size, 0])
 
     def add_object(self, unit_type, x, y, r):
-        if(unit_type == ObjectType.FieldSize):
+        print("add object: {} {} {} {}".format(unit_type,x,y,r))
+        if unit_type == ObjectType.FieldSize:
             self.battle_field_width = x
             self.battle_field_height = y
             return True
@@ -72,39 +71,67 @@ class Objects(Process):
         super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
         self.messenger = messenger
+        self.game = None
+        self.ai = None
         self.command_queue = queue
+        self.queue_open = True
         self.configuration = None
         self.battle_field_width = 0
         self.battle_field_height = 0
-        self.objects = ObjectArray(self.messenger)
+        self.objects = ObjectArray()
         self.history_list = self.make_history_list_of_moving("history.txt")
         self.time = 0
         self.currentVelocityforNext = .0
         #self.player_action = PlayerAction(self.objects)
-        self.functions = {messages.Objects.Quit: self.quit,
-                          messages.Objects.AddObject: self.objects.add_object,
-                          messages.Objects.Player1SetPressedKey: self.set_pressed_key1,
-                          messages.Objects.Player2SetPressedKey: self.set_pressed_key2,
-                          messages.Objects.Bot2SetPressedKey: self.set_bot_pressed_key2,
-                          messages.Objects.Pause: self.pause_simulation,
-                          messages.Objects.Run: self.run_simulation,
-                          messages.Objects.RunFromFile: self.run_history,
-                          messages.Objects.UpdateGameSettings: self.update_game_settings}
+        self.functions = {'quit': self.quit,
+                          'add_object': self.objects.add_object,
+                          'Player1SetPressedKey': self.set_pressed_key1,
+                          'Player2SetPressedKey': self.set_pressed_key2,
+                          'Bot2SetPressedKey': self.set_bot_pressed_key2,
+                          'Pause': self.pause_simulation,
+                          'Run': self.run_simulation,
+                          'RunFromFile': self.run_history,
+                          'UpdateGameSettings': self.update_game_settings}
         #self.objects_state = ObjectsState.Pause
 
         pyglet.clock.schedule_interval(self.read_mes, 1.0 / 30.0)
         pyglet.clock.schedule_interval(self.update_units, 1.0 / 30.0)
 
-    def quit(self):
-        self.objects_state = ObjectsState.Exit
+    def link_objects(self, ai, game):
+        self.ai = ai
+        self.game = game
 
-    def pause_simulation(self):
+    def quit(self, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'quit')
+            return
+        self.queue_open = False
+        self.objects_state = ObjectsState.Exit
+        while True:
+            data = self.messenger.get_message(self.command_queue)
+            if not data:
+                break
+
+    def pause_simulation(self, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'Pause')
+            return
         self.objects_state = ObjectsState.Pause
 
-    def run_simulation(self):
+    def run_simulation(self, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'Run')
+            return
         self.objects_state = ObjectsState.Run
 
-    def run_history(self):
+    def run_history(self, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'RunFromFile')
+            return
         self.objects_state = ObjectsState.RunFromFile
 
     def make_history_list_of_moving(self, history_file):
@@ -112,7 +139,11 @@ class Objects(Process):
             history_list = file.readlines()
         return history_list
 
-    def update_game_settings(self, configuration):
+    def update_game_settings(self, configuration, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'UpdateGameSettings', {'configuration': configuration})
+            return
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             self.configuration = configuration
             self.objects.set_objects_settings(configuration)
@@ -121,7 +152,8 @@ class Objects(Process):
 
     def set_pressed_key1(self, pushed, key, asynced=False):
         if asynced:
-            send_message(self.command_queue, messages.Objects.Player1SetPressedKey, {'pushed': pushed, 'key': key})
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'Player1SetPressedKey', {'pushed': pushed, 'key': key})
             return
         if self.objects_state == ObjectsState.Run:
             objects = self.objects.get_objects(link_only=True)
@@ -135,7 +167,11 @@ class Objects(Process):
             elif key == pygletkey.LEFT:
                 objects[offset][ObjectProp.K_left] = pushed
 
-    def set_pressed_key2(self, pushed, key):
+    def set_pressed_key2(self, pushed, key, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'Player2SetPressedKey', {'pushed': pushed, 'key': key})
+            return
         if self.objects_state == ObjectsState.Run:
             objects = self.objects.get_objects(link_only=True)
             offset = ObjectType.offsets[ObjectType.Player2][0]
@@ -148,7 +184,11 @@ class Objects(Process):
             elif key == pygletkey.A:
                 objects[offset][ObjectProp.K_left] = pushed
 
-    def set_bot_pressed_key2(self, pushed, key):
+    def set_bot_pressed_key2(self, pushed, key, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'Bot2SetPressedKey', {'pushed': pushed, 'key': key})
+            return
         if self.objects_state == ObjectsState.Run:
             objects = self.objects.get_objects(link_only=True)
             offset = ObjectType.offsets[ObjectType.Bot2][0]
@@ -197,6 +237,13 @@ class Objects(Process):
         print("Killed unit number ", jndex)
         for kndex in range(1, ObjectProp.Total):
             objects[jndex][kndex] = 0
+
+    def add_object(self, unit_type, x, y, r, asynced=False):
+        if asynced:
+            if self.queue_open:
+                self.messenger.send_message(self.command_queue, 'add_object', {'unit_type': unit_type, 'x': x, 'y': y, 'r': r})
+            return
+        self.objects.add_object(unit_type, x, y, r)
 
     def update_units(self, dt):
         if self.objects_state == ObjectsState.Run:
@@ -252,8 +299,8 @@ class Objects(Process):
 
             self.check_kill()
             self.objects.current_objects = objects
-            self.messenger.game_update_objects(self.objects.get_objects())
-            self.messenger.ai_update_objects(self.objects.get_objects())
+            self.ai.update_objects(self.objects.get_objects(), asynced=True)
+            self.game.update_objects(self.objects.get_objects(), asynced=True)
             return
 
         if self.objects_state == ObjectsState.RunFromFile:
@@ -273,16 +320,14 @@ class Objects(Process):
 
             self.check_kill()
             self.objects.current_objects = objects
-            self.messenger.game_update_objects(self.objects.get_objects())
-            self.messenger.ai_update_objects(self.objects.get_objects())
-
-
+            self.game.update_objects(self.objects.get_objects(), asynced=True)
+            self.ai.update_objects(self.objects.get_objects(), asynced=True)
 
     def read_mes(self, dt):
         if self.objects_state != ObjectsState.Exit:
             while True:
-                data = self.messenger.get_message(messages.Objects)
-                if data == None:
+                data = self.messenger.get_message(self.command_queue)
+                if data is None:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
 
