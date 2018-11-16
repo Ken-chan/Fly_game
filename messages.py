@@ -14,12 +14,22 @@ class AIcontrols:
     Quit, Pause, Run, UpdateObjects = range(4)
 
 
+def send_message(queue, func, args=None):
+    mess = {'func': func}
+    if args:
+        mess['args'] = args
+    try:
+        queue.put(mess)
+    except Exception as e:
+        print("send exception: {}".format(e))
+        pass
+
 class Messenger:
-    def __init__(self):
+    def __init__(self, objects_queue):
         self.gui_screen_queue = Queue()
         self.game_queue = Queue()
         self.gui_controls_queue = Queue()
-        self.objects_queue = Queue()
+        self.objects_queue = objects_queue
         self.ai_controls_queue = Queue()
         self.writable = True
         self.binding = {GuiScreen:  self.gui_screen_queue,

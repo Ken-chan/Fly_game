@@ -8,15 +8,16 @@ class GUIcontrolsState:
 
 
 class GUIcontrols(Process):
-    def __init__(self, messenger):
+    def __init__(self, messenger, objects):
         super(GUIcontrols, self).__init__()
         self.gui_state = GUIcontrolsState.InGame
         self.messenger = messenger
+        self.objects = objects
 
         self.player_direction_x = 0
         self.player_direction_y = 0
         self.cycles = 0
-        self.kb_control = KbControl(1, self.messenger)
+        self.kb_control = KbControl(1, self.messenger, self.objects)
         self.gui_state = GUIcontrolsState.InGame
         self.functions = {messages.GuiControls.StopGui: self.stop_gui,
                           messages.GuiControls.StartGame: self.start_game,
@@ -44,16 +45,17 @@ class GUIcontrols(Process):
 
 
 class BaseControl:
-    def __init__(self, player, messenger):
+    def __init__(self, player, messenger, objects):
         self.messenger = messenger
+        self.objects = objects
         self.x_ratio = None
         self.y_ratio = None
         self.player = player
         self.game_is_paused = False
 
 class KbControl(BaseControl):
-    def __init__(self, player, messenger):
-        super(KbControl, self).__init__(player, messenger)
+    def __init__(self, player, messenger, objects):
+        super(KbControl, self).__init__(player, messenger, objects)
 
     def dispatch_kb_event(self, pushed, key):
         if key in (pygletkey.UP, pygletkey.DOWN, pygletkey.RIGHT, pygletkey.LEFT):
@@ -69,7 +71,8 @@ class KbControl(BaseControl):
             self.game_is_paused = not self.game_is_paused
 
     def change_player1_direction(self, pushed, key):
-        self.messenger.player1_set_pressed_key(pushed, key)
+        #self.messenger.player1_set_pressed_key(pushed, key)
+        self.objects.set_pressed_key1(pushed, key, asynced=True)
 
     def change_player2_direction(self, pushed, key):
         self.messenger.player2_set_pressed_key(pushed, key)

@@ -1,4 +1,5 @@
 import pyglet, json
+from multiprocessing import Queue
 from view import Renderer
 from messages import Messenger
 import messages
@@ -18,15 +19,20 @@ class Game:
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.fps_display = pyglet.clock.ClockDisplay()
-        self.messenger = Messenger()
+
+        self.objects_queue = Queue()
+        self.messenger = Messenger(objects_queue=self.objects_queue)
         self.renderer = Renderer(self.screen_width, self.screen_height)
-        self.gui_controls = GUIcontrols(self.messenger)
-        self.gui_controls.start()
+
         self.ai_controls = AIcontrols(self.messenger)
         self.ai_controls.start()
 
-        self.Objects = Objects(messenger=self.messenger)
+        self.Objects = Objects(messenger=self.messenger, queue=self.objects_queue)
         self.Objects.start()
+
+        self.gui_controls = GUIcontrols(self.messenger, self.Objects)
+        self.gui_controls.start()
+
         self.objects = None
         self.history_list = []
         self.is_it_move_from_history = False
