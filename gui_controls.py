@@ -40,8 +40,7 @@ class GUIcontrols(Process):
 
     def start_game(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'start')
+            self.messenger.send_message(self.command_queue, 'start')
             return
         self.gui_state = GUIcontrolsState.InGame
 
@@ -58,7 +57,6 @@ class GUIcontrols(Process):
                 break
 
     def handle_kb_event(self, pushed, key, asynced=False):
-        print("handle kb: {}, {}, {}".format(pushed,key,asynced))
         if asynced:
             self.messenger.send_message(self.command_queue, 'handle_kb_event', {'pushed': pushed, 'key': key})
             return
@@ -101,10 +99,8 @@ class KbControl(BaseControl):
             self.game_is_paused = not self.game_is_paused
 
     def change_player_control(self, team, pushed, key):
-        print(team, pushed, key)
         vel, turn = self.player_controls[team]
         new_vel, new_turn = None, None
-        print(vel, turn, new_vel, new_turn)
         if key in (pygletkey.UP, pygletkey.W):
             new_vel = vel+1 if pushed else vel-1
         if key in (pygletkey.DOWN, pygletkey.S):
@@ -119,4 +115,3 @@ class KbControl(BaseControl):
         if new_vel is not None and new_vel != vel:
             self.objects.set_control_signal(ObjectType.offset(team)[0], ObjectProp.VelControl, new_vel, asynced=True)
             self.player_controls[team][0] = new_vel
-        print("p_c {}".format(self.player_controls))
