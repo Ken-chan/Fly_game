@@ -1,4 +1,4 @@
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 import pyglet
 import math
 from pyglet.window import key as pygletkey
@@ -38,7 +38,7 @@ class ObjectArray:
         return current_objects
 
     def generate_new_object(self, ind, obj_type, x, y, dir, size):
-        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, size, 0])
+        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, 0, size])
 
     def add_object(self, unit_type, x, y, r):
         print("add object: {} {} {} {}".format(unit_type,x,y,r))
@@ -67,14 +67,13 @@ class ObjectArray:
 
 
 class Objects(Process):
-    def __init__(self, messenger, queue):
+    def __init__(self, messenger):
         super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
         self.messenger = messenger
         self.game = None
         self.ai = None
-        self.command_queue = queue
-        self.queue_open = True
+        self.command_queue = Queue()
         self.configuration = None
         self.battle_field_width = 0
         self.battle_field_height = 0
@@ -85,13 +84,11 @@ class Objects(Process):
         #self.player_action = PlayerAction(self.objects)
         self.functions = {'quit': self.quit,
                           'add_object': self.objects.add_object,
-                          'Player1SetPressedKey': self.set_pressed_key1,
-                          'Player2SetPressedKey': self.set_pressed_key2,
-                          'Bot2SetPressedKey': self.set_bot_pressed_key2,
-                          'Pause': self.pause_simulation,
-                          'Run': self.run_simulation,
-                          'RunFromFile': self.run_history,
-                          'UpdateGameSettings': self.update_game_settings}
+                          'pause': self.pause_simulation,
+                          'run': self.run_simulation,
+                          'run_from_file': self.run_history,
+                          'update_game_settings': self.update_game_settings,
+                          'set_control_signal': self.set_control_signal}
         #self.objects_state = ObjectsState.Pause
 
         pyglet.clock.schedule_interval(self.read_mes, 1.0 / 30.0)
@@ -103,10 +100,9 @@ class Objects(Process):
 
     def quit(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'quit')
+            self.messenger.send_message(self.command_queue, 'quit')
             return
-        self.queue_open = False
+        self.command_queue.close()
         self.objects_state = ObjectsState.Exit
         while True:
             data = self.messenger.get_message(self.command_queue)
@@ -115,22 +111,19 @@ class Objects(Process):
 
     def pause_simulation(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'Pause')
+            self.messenger.send_message(self.command_queue, 'pause')
             return
         self.objects_state = ObjectsState.Pause
 
     def run_simulation(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'Run')
+            self.messenger.send_message(self.command_queue, 'run')
             return
         self.objects_state = ObjectsState.Run
 
     def run_history(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'RunFromFile')
+            self.messenger.send_message(self.command_queue, 'run_from_file')
             return
         self.objects_state = ObjectsState.RunFromFile
 
@@ -141,8 +134,7 @@ class Objects(Process):
 
     def update_game_settings(self, configuration, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'UpdateGameSettings', {'configuration': configuration})
+            self.messenger.send_message(self.command_queue, 'update_game_settings', {'configuration': configuration})
             return
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             self.configuration = configuration
@@ -150,56 +142,14 @@ class Objects(Process):
             self.battle_field_height = self.objects.battle_field_height
             self.battle_field_width = self.objects.battle_field_width
 
-    def set_pressed_key1(self, pushed, key, asynced=False):
+    def set_control_signal(self, obj_index, control_key, value, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'Player1SetPressedKey', {'pushed': pushed, 'key': key})
+            self.messenger.send_message(self.command_queue, 'set_control_signal', {'obj_index': obj_index, 'control_key': control_key, 'value': value})
             return
-        if self.objects_state == ObjectsState.Run:
+        if self.objects_state == ObjectsState.Run and -1 <= value <= 1 and control_key in (ObjectProp.TurnControl, ObjectProp.VelControl):
             objects = self.objects.get_objects(link_only=True)
-            offset = ObjectType.offsets[ObjectType.Player1][0]
-            if key == pygletkey.UP:
-                objects[offset][ObjectProp.K_up] = pushed
-            elif key == pygletkey.DOWN:
-                objects[offset][ObjectProp.K_down] = pushed
-            elif key == pygletkey.RIGHT:
-                objects[offset][ObjectProp.K_right] = pushed
-            elif key == pygletkey.LEFT:
-                objects[offset][ObjectProp.K_left] = pushed
+            objects[obj_index][control_key] = value
 
-    def set_pressed_key2(self, pushed, key, asynced=False):
-        if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'Player2SetPressedKey', {'pushed': pushed, 'key': key})
-            return
-        if self.objects_state == ObjectsState.Run:
-            objects = self.objects.get_objects(link_only=True)
-            offset = ObjectType.offsets[ObjectType.Player2][0]
-            if key == pygletkey.W:
-                objects[offset][ObjectProp.K_up] = pushed
-            elif key == pygletkey.S:
-                objects[offset][ObjectProp.K_down] = pushed
-            elif key == pygletkey.D:
-                objects[offset][ObjectProp.K_right] = pushed
-            elif key == pygletkey.A:
-                objects[offset][ObjectProp.K_left] = pushed
-
-    def set_bot_pressed_key2(self, pushed, key, asynced=False):
-        if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'Bot2SetPressedKey', {'pushed': pushed, 'key': key})
-            return
-        if self.objects_state == ObjectsState.Run:
-            objects = self.objects.get_objects(link_only=True)
-            offset = ObjectType.offsets[ObjectType.Bot2][0]
-            if key == 1:
-                objects[offset][ObjectProp.K_up] = pushed
-            elif key == 2:
-                objects[offset][ObjectProp.K_down] = pushed
-            elif key == 3:
-                objects[offset][ObjectProp.K_right] = pushed
-            elif key == 4:
-                objects[offset][ObjectProp.K_left] = pushed
 
     def check_kill(self):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
@@ -240,8 +190,7 @@ class Objects(Process):
 
     def add_object(self, unit_type, x, y, r, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'add_object', {'unit_type': unit_type, 'x': x, 'y': y, 'r': r})
+            self.messenger.send_message(self.command_queue, 'add_object', {'unit_type': unit_type, 'x': x, 'y': y, 'r': r})
             return
         self.objects.add_object(unit_type, x, y, r)
 
@@ -251,25 +200,35 @@ class Objects(Process):
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][1] != ObjectType.Absent:
                     objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
+                    objects[index][ObjectProp.PrevAngleVel] = objects[index][ObjectProp.AngleVel]
 
                     k1 = 130
-                    k2 = 0.1
+                    k2 = 0.01
+                    k3 = 0.05
                     k4 = 110 #Yep
+                    k5 = 0.01
 
-                    a = k1 * ((objects[index][ObjectProp.K_up] - objects[index][ObjectProp.K_down])) - \
-                        (k2 * math.fabs(math.radians(objects[index][ObjectProp.Dir])))*objects[index][ObjectProp.Velocity]
+                    #a = k1 * ((objects[index][ObjectProp.K_up] - objects[index][ObjectProp.K_down])) - \
+                    #    (k2 * math.fabs(math.radians(objects[index][ObjectProp.Dir])))*objects[index][ObjectProp.Velocity]
+                    a = k1 * objects[index][ObjectProp.VelControl] - k2 * np.abs(objects[index][ObjectProp.AngleVel]) * objects[index][ObjectProp.Velocity] - \
+                        k3 * objects[index][ObjectProp.Velocity]
+
+                    b = k4 * objects[index][ObjectProp.TurnControl] - k5 * objects[index][ObjectProp.AngleVel]
                     #velocity of angle
                     objects[index][ObjectProp.Velocity] = a * dt + objects[index][ObjectProp.PrevVelocity]
+                    #objects[index][ObjectProp.AngleVel] = b * dt + objects[index][ObjectProp.PrevAngleVel]
+                    objects[index][ObjectProp.AngleVel] = k4 * objects[index][ObjectProp.TurnControl]
 
-                    objects[index][ObjectProp.Dir] += (objects[index][ObjectProp.K_right] - objects[index][
-                        ObjectProp.K_left]) * 50 * dt
+                    objects[index][ObjectProp.Dir] += objects[index][ObjectProp.AngleVel] * dt
 
-                    if (objects[index][ObjectProp.Dir] >= 360):
-                        objects[index][ObjectProp.Dir] -= 360
-                    elif (objects[index][ObjectProp.Dir] < 0):
-                        objects[index][ObjectProp.Dir] += 360
 
+                    #if (objects[index][ObjectProp.Dir] >= 360):
+                    #    objects[index][ObjectProp.Dir] -= 360
+                    #elif (objects[index][ObjectProp.Dir] < 0):
+                    #    objects[index][ObjectProp.Dir] += 360
+                    objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
                     rad = objects[index][ObjectProp.Dir] * math.pi / 180
+
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * math.sin(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * math.cos(rad) * dt
 

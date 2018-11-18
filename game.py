@@ -20,15 +20,11 @@ class Game:
         self.screen_height = screen_height
         self.fps_display = pyglet.clock.ClockDisplay()
         self.command_queue = Queue()
-        objqueue = Queue()
-        aiqueue = Queue()
-        guiqueue = Queue()
-        self.queue_open = True
 
         self.messenger = Messenger()
-        self.Objects = Objects(self.messenger, objqueue)
-        self.ai_controls = AIcontrols(self.messenger, aiqueue)
-        self.gui_controls = GUIcontrols(self.messenger, guiqueue)
+        self.Objects = Objects(self.messenger)
+        self.ai_controls = AIcontrols(self.messenger)
+        self.gui_controls = GUIcontrols(self.messenger)
 
         self.Objects.link_objects(self.ai_controls, self)
         self.ai_controls.link_objects(self.Objects)
@@ -67,14 +63,13 @@ class Game:
     # /Part of working with log files ends
     def quit(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'quit')
+            self.messenger.send_message(self.command_queue, 'quit')
             return
         self.game_state = GameState.Exit
         self.Objects.quit(asynced=True)
         self.gui_controls.stop_gui(asynced=True)
         self.ai_controls.stop_ai(asynced=True)
-        self.queue_open = False
+        self.command_queue.close()
         while True:
             data = self.messenger.get_message(self.command_queue)
             if not data:
@@ -90,15 +85,13 @@ class Game:
 
     def game_pause_simulation(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'pause')
+            self.messenger.send_message(self.command_queue, 'pause')
             return
         self.game_state = GameState.Pause
 
     def game_unpaused(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'unpause')
+            self.messenger.send_message(self.command_queue, 'unpause')
             return
         self.game_state = GameState.ActiveGame
 
@@ -117,8 +110,7 @@ class Game:
 
     def update_objects(self, objects_copy, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'update_objects', {'objects_copy': objects_copy})
+            self.messenger.send_message(self.command_queue, 'update_objects', {'objects_copy': objects_copy})
             return
         if self.game_state != GameState.Pause:
             self.objects = objects_copy

@@ -1,4 +1,4 @@
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 import pyglet
 from obj_def import *
 from random import *
@@ -8,13 +8,12 @@ class AIcontrolsState:
 
 
 class AIcontrols(Process):
-    def __init__(self, messenger, queue):
+    def __init__(self, messenger):
         super(AIcontrols, self).__init__()
         self.ai_state = AIcontrolsState.Start
         self.messenger = messenger
         self.objects_obj = None
-        self.command_queue = queue
-        self.queue_open = True
+        self.command_queue = Queue()
         self.objects_copy = None
         self.functions = {'quit': self.stop_ai,
                           'update_objects': self.update_objects,
@@ -36,17 +35,15 @@ class AIcontrols(Process):
 
     def start_ai_controls(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'start')
+            self.messenger.send_message(self.command_queue, 'start')
             return
         self.ai_state = AIcontrolsState.Run
 
     def stop_ai(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'quit')
+            self.messenger.send_message(self.command_queue, 'quit')
             return
-        self.queue_open = False
+        self.command_queue.close()
         print("terminating ai controls")
         self.ai_state = AIcontrolsState.Exit
         while True:
@@ -56,8 +53,7 @@ class AIcontrols(Process):
 
     def update_objects(self, objects_copy, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'update_objects', {'objects_copy': objects_copy})
+            self.messenger.send_message(self.command_queue, 'update_objects', {'objects_copy': objects_copy})
             return
         self.objects_copy = objects_copy
 
@@ -70,4 +66,6 @@ class AIcontrols(Process):
                         pressed = random() * 2 - 0.5
                     key = randint(1, 4)
                     #self.messenger.bot2_set_pressed_key(pressed, key)
-                    self.objects_obj.set_bot_pressed_key2(pressed, key, asynced=True)
+                    self.objects_obj.set_control_signal(index, ObjectProp.VelControl, np.random.random(), asynced=True)
+                    self.objects_obj.set_control_signal(index, ObjectProp.TurnControl, 0.2, asynced=True)
+                    #self.objects_obj.set_bot_pressed_key2(pressed, key, asynced=True)

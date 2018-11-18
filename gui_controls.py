@@ -1,5 +1,6 @@
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from pyglet.window import key as pygletkey
+from obj_def import ObjectType, ObjectProp
 
 
 class GUIcontrolsState:
@@ -7,13 +8,12 @@ class GUIcontrolsState:
 
 
 class GUIcontrols(Process):
-    def __init__(self, messenger, queue):
+    def __init__(self, messenger):
         super(GUIcontrols, self).__init__()
         self.gui_state = GUIcontrolsState.InGame
         self.messenger = messenger
         self.game = None
-        self.command_queue = queue
-        self.queue_open = True
+        self.command_queue = Queue()
         self.objects = None
 
         self.player_direction_x = 0
@@ -47,12 +47,11 @@ class GUIcontrols(Process):
 
     def stop_gui(self, asynced=False):
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'quit')
+            self.messenger.send_message(self.command_queue, 'quit')
             return
         print("terminating controls")
         self.gui_state = GUIcontrolsState.Exit
-        self.queue_open = False
+        self.command_queue.close()
         while True:
             data = self.messenger.get_message(self.command_queue)
             if not data:
@@ -61,8 +60,8 @@ class GUIcontrols(Process):
     def handle_kb_event(self, pushed, key, asynced=False):
         print("handle kb: {}, {}, {}".format(pushed,key,asynced))
         if asynced:
-            if self.queue_open:
-                self.messenger.send_message(self.command_queue, 'handle_kb_event', {'pushed': pushed, 'key': key})
+            self.messenger.send_message(self.command_queue, 'handle_kb_event', {'pushed': pushed, 'key': key})
+            return
         if self.gui_state == GUIcontrolsState.InGame:
             self.kb_control.dispatch_kb_event(pushed, key)
 
@@ -81,6 +80,9 @@ class BaseControl:
 class KbControl(BaseControl):
     def __init__(self, player, messenger):
         super(KbControl, self).__init__(player, messenger)
+        self.player_controls = {ObjectType.Player1: [0, 0],
+                                ObjectType.Player2: [0, 0]}
+        self.key_bind = {}
 
     def link_objects(self, objects, game):
         self.game = game
@@ -88,9 +90,9 @@ class KbControl(BaseControl):
 
     def dispatch_kb_event(self, pushed, key):
         if key in (pygletkey.UP, pygletkey.DOWN, pygletkey.RIGHT, pygletkey.LEFT):
-            self.change_player1_direction(pushed, key)
+            self.change_player_control(ObjectType.Player1, pushed, key)
         elif key in (pygletkey.W, pygletkey.D, pygletkey.A, pygletkey.S):
-            self.change_player2_direction(pushed, key)
+            self.change_player_control(ObjectType.Player2, pushed, key)
         elif key == pygletkey.P and pushed:
             if not self.game_is_paused:
                 self.game.game_pause_simulation(asynced=True)
@@ -98,9 +100,23 @@ class KbControl(BaseControl):
                 self.game.game_unpaused(asynced=True)
             self.game_is_paused = not self.game_is_paused
 
-    def change_player1_direction(self, pushed, key):
-        self.objects.set_pressed_key1(pushed, key, asynced=True)
-
-    def change_player2_direction(self, pushed, key):
-        self.objects.set_pressed_key2(pushed, key, asynced=True)
-
+    def change_player_control(self, team, pushed, key):
+        print(team, pushed, key)
+        vel, turn = self.player_controls[team]
+        new_vel, new_turn = None, None
+        print(vel, turn, new_vel, new_turn)
+        if key in (pygletkey.UP, pygletkey.W):
+            new_vel = vel+1 if pushed else vel-1
+        if key in (pygletkey.DOWN, pygletkey.S):
+            new_vel = vel-1 if pushed else vel+1
+        if key in (pygletkey.D, pygletkey.RIGHT):
+            new_turn = turn+1 if pushed else turn-1
+        if key in (pygletkey.A, pygletkey.LEFT):
+            new_turn = turn-1 if pushed else turn+1
+        if new_turn is not None and new_turn != turn:
+            self.objects.set_control_signal(ObjectType.offset(team)[0], ObjectProp.TurnControl, new_turn, asynced=True)
+            self.player_controls[team][1] = new_turn
+        if new_vel is not None and new_vel != vel:
+            self.objects.set_control_signal(ObjectType.offset(team)[0], ObjectProp.VelControl, new_vel, asynced=True)
+            self.player_controls[team][0] = new_vel
+        print("p_c {}".format(self.player_controls))
