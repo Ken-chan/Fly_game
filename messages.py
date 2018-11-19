@@ -1,11 +1,6 @@
-from multiprocessing import Queue
 class Messenger:
-    def __init__(self):
-        self.mapping = {'ai_controls': Queue()}
-        pass
 
-    def send_message(self, mapping_str, func, args=None):
-        queue = self.mapping[mapping_str]
+    def send_message(self, queue, func, args=None):
         mess = {'func': func}
         if args:
             mess['args'] = args
@@ -15,8 +10,7 @@ class Messenger:
             print("send exception: {}".format(e))
             pass
 
-    def get_message(self, mapping_str):
-        queue = self.mapping[mapping_str]
+    def get_message(self, queue):
         try:
             data = queue.get(False)
             #print(data)
