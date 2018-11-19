@@ -26,9 +26,9 @@ class Game:
         self.ai_controls = AIcontrols(self.messenger)
         self.gui_controls = GUIcontrols(self.messenger)
 
-        self.Objects.link_objects(self.ai_controls, self)
-        self.ai_controls.link_objects(self.Objects)
-        self.gui_controls.link_objects(self.Objects, self)
+        #self.Objects.link_objects(self.ai_controls, self)
+        #self.ai_controls.link_objects(self.Objects)
+        #self.gui_controls.link_objects(self.Objects, self)
 
         self.renderer = Renderer(self.screen_width, self.screen_height)
 

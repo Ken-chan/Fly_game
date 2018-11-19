@@ -28,7 +28,7 @@ class AIcontrols(Process):
     def read_mes(self, dt):
         if self.ai_state != AIcontrolsState.Exit:
             while True:
-                data = self.messenger.get_message(self.command_queue)
+                data = self.messenger.get_message('ai_controls')
                 if not data:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
@@ -53,7 +53,8 @@ class AIcontrols(Process):
 
     def update_objects(self, objects_copy, asynced=False):
         if asynced:
-            self.messenger.send_message(self.command_queue, 'update_objects', {'objects_copy': objects_copy})
+            self.messenger.send_message('ai_controls', 'update_objects', {'objects_copy': objects_copy})
+            #self.messenger.send_message(self.command_queue, 'update_objects', {'objects_copy': objects_copy})
             return
         self.objects_copy = objects_copy
 
