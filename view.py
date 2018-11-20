@@ -1,4 +1,4 @@
-import pyglet, math
+import pyglet
 from obj_def import *
 
 class RendererState:
@@ -67,15 +67,15 @@ class Renderer:
         global circle
         vertices = []
         for i in range(numpoints):
-            angle = math.radians(float(i) / numpoints * 2 * phi + 90 - phi)
-            x = 150 * math.cos(angle - unit_angle) + rel_x
-            y = 150 * math.sin(angle - unit_angle) + rel_y
+            angle = np.radians(float(i) / numpoints * 2 * phi + 90 - phi)
+            x = 150 * np.cos(angle - unit_angle) + rel_x
+            y = 150 * np.sin(angle - unit_angle) + rel_y
             vertices += [x, y]
         vertices += [rel_x, rel_y]
         circle = pyglet.graphics.vertex_list(numpoints + 1, ('v2f', vertices))
 
     def draw_zone_of_defense(self, x, y, dir):
-        self.make_part_of_circle(50, x, y, 30, math.radians(dir))
+        self.make_part_of_circle(50, x, y, 30, np.radians(dir))
         circle.draw(pyglet.gl.GL_LINE_LOOP)
 
     # need to refactor

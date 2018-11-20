@@ -1,6 +1,5 @@
 from multiprocessing import Process, Queue
 import pyglet
-import math
 from pyglet.window import key as pygletkey
 from obj_def import *
 import json
@@ -167,17 +166,17 @@ class Objects(Process):
                             x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
                             dir2 = objects[jndex][ObjectProp.Dir]
                             teta = 90 - dir1 - alpha
-                            teta = teta/180 * math.pi
-                            x_2 = (x2 - x1) * math.cos(teta) + (y2 - y1) * math.sin(teta)
-                            y_2 = -(x2 - x1) * math.sin(teta) + (y2 - y1) * math.cos(teta)
-                            if ((math.sqrt(x_2 * x_2 + y_2 * y_2) < range_of_atack) and
+                            teta = teta/180 * np.pi
+                            x_2 = (x2 - x1) * np.cos(teta) + (y2 - y1) * np.sin(teta)
+                            y_2 = -(x2 - x1) * np.sin(teta) + (y2 - y1) * np.cos(teta)
+                            if ((np.sqrt(x_2 * x_2 + y_2 * y_2) < range_of_atack) and
                                     abs(dir1 - dir2) < alpha and y_2 > 0 and
-                                    math.acos(x_2 / math.sqrt(x_2 * x_2 + y_2 * y_2)) <= 2 * alpha):
+                                    np.arccos(x_2 / np.sqrt(x_2 * x_2 + y_2 * y_2)) <= 2 * alpha):
                                 self.delete_object(jndex, objects)
-                                #print(x_2," ",  y_2," ", (y2 - y1) * math.sin(90 - dir1 - alpha)," ", 90 - dir1 - alpha)
+                                #print(x_2," ",  y_2," ", (y2 - y1) * np.sin(90 - dir1 - alpha)," ", 90 - dir1 - alpha)
 
                             ##CHECK COLLISONS KILLED
-                            distance = math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+                            distance = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
                             if distance < objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
                                 self.delete_object(jndex, objects)
                                 self.delete_object(index, objects)
@@ -209,7 +208,7 @@ class Objects(Process):
                     k5 = 0.01
 
                     #a = k1 * ((objects[index][ObjectProp.K_up] - objects[index][ObjectProp.K_down])) - \
-                    #    (k2 * math.fabs(math.radians(objects[index][ObjectProp.Dir])))*objects[index][ObjectProp.Velocity]
+                    #    (k2 * np.fabs(np.radians(objects[index][ObjectProp.Dir])))*objects[index][ObjectProp.Velocity]
                     a = k1 * objects[index][ObjectProp.VelControl] - k2 * np.abs(objects[index][ObjectProp.AngleVel]) * objects[index][ObjectProp.Velocity] - \
                         k3 * objects[index][ObjectProp.Velocity]
 
@@ -227,17 +226,17 @@ class Objects(Process):
                     #elif (objects[index][ObjectProp.Dir] < 0):
                     #    objects[index][ObjectProp.Dir] += 360
                     objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
-                    rad = objects[index][ObjectProp.Dir] * math.pi / 180
+                    rad = objects[index][ObjectProp.Dir] * np.pi / 180
 
-                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * math.sin(rad) * dt
-                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * math.cos(rad) * dt
+                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
+                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
 
                     """
                     if objects[index][ObjectProp.Velocity] != 0:
                         objects[index][ObjectProp.PrevVelocity] = self.currentVelocityforNext
 
                     objects[index][ObjectProp.Velocity] += (objects[index][ObjectProp.K_up] - objects[index][ObjectProp.K_down]) * 80 * dt
-                    self.currentVelocityforNext = math.fabs(objects[index][ObjectProp.Velocity])
+                    self.currentVelocityforNext = np.fabs(objects[index][ObjectProp.Velocity])
                     objects[index][ObjectProp.Dir] += (objects[index][ObjectProp.K_right] - objects[index][ObjectProp.K_left]) * 50 * dt
 
                     if index == 0:
@@ -249,9 +248,9 @@ class Objects(Process):
                     elif (objects[index][ObjectProp.Dir] < 0):
                         objects[index][ObjectProp.Dir] += 360
 
-                    rad = objects[index][ObjectProp.Dir] * math.pi / 180
-                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * math.sin(rad) * dt
-                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * math.cos(rad) * dt
+                    rad = objects[index][ObjectProp.Dir] * np.pi / 180
+                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
+                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
                     """
 
 
