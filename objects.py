@@ -153,12 +153,13 @@ class Objects(Process):
             objects = self.objects.get_objects(link_only=True)
             objects[obj_index][sig_type] = sig_val
 
-    def is_inside_cone(self, a, b, dir_wide):
+    def is_inside_cone(self, a, b, diff_vector, dir_wide):
         a = a / np.linalg.norm(a)
         b = b / np.linalg.norm(b)
         scalar = np.sum(np.multiply(a, b))
         min_scalar = np.cos(np.pi/180 * dir_wide)
-        return True if scalar >= min_scalar else False
+        a_is_back = True if np.sum(np.multiply(a, diff_vector)) > 0 else False
+        return True if scalar >= min_scalar and a_is_back else False
 
     def check_kill(self):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
@@ -169,6 +170,7 @@ class Objects(Process):
                     x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
                     if x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0:
                         self.delete_object(index, objects)
+                        continue
                     dir1 = objects[index][ObjectProp.Dir]
                     vec1 = np.array([np.cos(dir1 * np.pi/180), np.sin(dir1 * np.pi/180)])
 
@@ -183,7 +185,7 @@ class Objects(Process):
                                 self.delete_object(index, objects)
                                 self.delete_object(jndex, objects)
                                 break
-                            if distance < range_of_atack and self.is_inside_cone(vec1, vec2, attack_cone_wide):
+                            if distance < range_of_atack and self.is_inside_cone(vec1, vec2, diff_vector, attack_cone_wide):
                                 self.delete_object(jndex, objects)
 
     def delete_object(self, jndex, objects):

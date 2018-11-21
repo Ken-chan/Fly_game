@@ -46,5 +46,5 @@ class AIcontrols(Process):
                     if self.objects_copy[index][ObjectProp.Velocity] < 20:
                         pressed = random() * 2 - 0.5
                     key = randint(1, 4)
-                    self.messenger.objects_set_control_signal(index, ObjectProp.VelControl, np.random.random())
-                    self.messenger.objects_set_control_signal(index, ObjectProp.TurnControl, 0.2)
+                    #self.messenger.objects_set_control_signal(index, ObjectProp.VelControl, np.random.random())
+                    #self.messenger.objects_set_control_signal(index, ObjectProp.TurnControl, 0.2)
