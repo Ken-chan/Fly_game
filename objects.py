@@ -159,10 +159,7 @@ class Objects(Process):
         for kndex in range(1, ObjectProp.Total):
             objects[jndex][kndex] = 0
 
-    def add_object(self, unit_type, x, y, r, asynced=False):
-        if asynced:
-            self.messenger.send_message(self.command_queue, 'add_object', {'unit_type': unit_type, 'x': x, 'y': y, 'r': r})
-            return
+    def add_object(self, unit_type, x, y, r):
         self.objects.add_object(unit_type, x, y, r)
 
     def update_units(self, dt):
