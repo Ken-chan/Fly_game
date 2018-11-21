@@ -1,6 +1,6 @@
 from multiprocessing import Process, Queue
 import pyglet
-from pyglet.window import key as pygletkey
+import messages
 from obj_def import *
 import json
 
@@ -71,60 +71,37 @@ class Objects(Process):
         super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
         self.messenger = messenger
-        self.game = None
-        self.ai = None
-        self.command_queue = Queue()
         self.configuration = None
         self.battle_field_width = 0
         self.battle_field_height = 0
         self.objects = ObjectArray()
+        self.index_moving = 0
         self.history_list = self.make_history_list_of_moving("history.txt")
         self.time = 0
         self.currentVelocityforNext = .0
         #self.player_action = PlayerAction(self.objects)
-        self.functions = {'quit': self.quit,
-                          'add_object': self.objects.add_object,
-                          'pause': self.pause_simulation,
-                          'run': self.run_simulation,
-                          'run_from_file': self.run_history,
-                          'update_game_settings': self.update_game_settings,
-                          'set_control_signal': self.set_control_signal}
+        self.functions = {messages.Objects.Quit: self.quit,
+                          messages.Objects.AddObject: self.objects.add_object,
+                          messages.Objects.SetControlSignal: self.set_control_signal,
+                          messages.Objects.Pause: self.pause_simulation,
+                          messages.Objects.Run: self.run_simulation,
+                          messages.Objects.RunFromFile: self.run_history,
+                          messages.Objects.UpdateGameSettings: self.update_game_settings}
         #self.objects_state = ObjectsState.Pause
 
         pyglet.clock.schedule_interval(self.read_mes, 1.0 / 30.0)
         pyglet.clock.schedule_interval(self.update_units, 1.0 / 30.0)
 
-    def link_objects(self, ai, game):
-        self.ai = ai
-        self.game = game
-
-    def quit(self, asynced=False):
-        if asynced:
-            self.messenger.send_message(self.command_queue, 'quit')
-            return
-        self.command_queue.close()
+    def quit(self):
         self.objects_state = ObjectsState.Exit
-        while True:
-            data = self.messenger.get_message(self.command_queue)
-            if not data:
-                break
 
-    def pause_simulation(self, asynced=False):
-        if asynced:
-            self.messenger.send_message(self.command_queue, 'pause')
-            return
+    def pause_simulation(self):
         self.objects_state = ObjectsState.Pause
 
-    def run_simulation(self, asynced=False):
-        if asynced:
-            self.messenger.send_message(self.command_queue, 'run')
-            return
+    def run_simulation(self):
         self.objects_state = ObjectsState.Run
 
-    def run_history(self, asynced=False):
-        if asynced:
-            self.messenger.send_message(self.command_queue, 'run_from_file')
-            return
+    def run_history(self):
         self.objects_state = ObjectsState.RunFromFile
 
     def make_history_list_of_moving(self, history_file):
@@ -132,23 +109,17 @@ class Objects(Process):
             history_list = file.readlines()
         return history_list
 
-    def update_game_settings(self, configuration, asynced=False):
-        if asynced:
-            self.messenger.send_message(self.command_queue, 'update_game_settings', {'configuration': configuration})
-            return
+    def update_game_settings(self, configuration):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             self.configuration = configuration
             self.objects.set_objects_settings(configuration)
             self.battle_field_height = self.objects.battle_field_height
             self.battle_field_width = self.objects.battle_field_width
 
-    def set_control_signal(self, obj_index, control_key, value, asynced=False):
-        if asynced:
-            self.messenger.send_message(self.command_queue, 'set_control_signal', {'obj_index': obj_index, 'control_key': control_key, 'value': value})
-            return
-        if self.objects_state == ObjectsState.Run and -1 <= value <= 1 and control_key in (ObjectProp.TurnControl, ObjectProp.VelControl):
+    def set_control_signal(self, obj_index, sig_type, sig_val):
+        if self.objects_state == ObjectsState.Run and -1 <= sig_val <= 1 and sig_type in (ObjectProp.TurnControl, ObjectProp.VelControl):
             objects = self.objects.get_objects(link_only=True)
-            objects[obj_index][control_key] = value
+            objects[obj_index][sig_type] = sig_val
 
     def is_inside_cone(self, a, b, dir_wide):
         a = a / np.linalg.norm(a)
@@ -164,7 +135,7 @@ class Objects(Process):
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                     x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
-                    if (x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0):
+                    if x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0:
                         self.delete_object(index, objects)
                     dir1 = objects[index][ObjectProp.Dir]
                     vec1 = np.array([np.cos(dir1 * np.pi/180), np.sin(dir1 * np.pi/180)])
@@ -195,8 +166,8 @@ class Objects(Process):
         self.objects.add_object(unit_type, x, y, r)
 
     def update_units(self, dt):
+        objects = self.objects.get_objects(link_only=True)
         if self.objects_state == ObjectsState.Run:
-            objects = self.objects.get_objects(link_only=True)
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][1] != ObjectType.Absent:
                     objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
@@ -225,14 +196,7 @@ class Objects(Process):
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
 
-            self.check_kill()
-            self.objects.current_objects = objects
-            self.ai.update_objects(self.objects.get_objects(), asynced=True)
-            self.game.update_objects(self.objects.get_objects(), asynced=True)
-            return
-
         if self.objects_state == ObjectsState.RunFromFile:
-            objects = self.objects.get_objects(link_only=True)
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][1] != ObjectType.Absent:
                     if self.index_moving != len(self.history_list):
@@ -245,16 +209,15 @@ class Objects(Process):
                         self.index_moving += 1
                     else:
                         self.index_moving = 0
-
-            self.check_kill()
-            self.objects.current_objects = objects
-            self.game.update_objects(self.objects.get_objects(), asynced=True)
-            self.ai.update_objects(self.objects.get_objects(), asynced=True)
+        self.check_kill()
+        self.objects.current_objects = objects
+        self.messenger.game_update_objects(self.objects.get_objects())
+        self.messenger.ai_update_objects(self.objects.get_objects())
 
     def read_mes(self, dt):
         if self.objects_state != ObjectsState.Exit:
             while True:
-                data = self.messenger.get_message(self.command_queue)
+                data = self.messenger.get_message(messages.Objects)
                 if data is None:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()

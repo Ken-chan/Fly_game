@@ -1,4 +1,5 @@
-from multiprocessing import Process, Queue
+import messages
+from multiprocessing import Process
 from pyglet.window import key as pygletkey
 from obj_def import ObjectType, ObjectProp
 
@@ -12,54 +13,32 @@ class GUIcontrols(Process):
         super(GUIcontrols, self).__init__()
         self.gui_state = GUIcontrolsState.InGame
         self.messenger = messenger
-        self.game = None
-        self.command_queue = Queue()
-        self.objects = None
 
         self.player_direction_x = 0
         self.player_direction_y = 0
         self.cycles = 0
         self.kb_control = KbControl(1, self.messenger)
         self.gui_state = GUIcontrolsState.InGame
-        self.functions = {'quit': self.stop_gui,
-                          'start': self.start_game,
-                          'handle_kb_event': self.handle_kb_event}
-
-    def link_objects(self, objects, game):
-        self.game = game
-        self.objects = objects
-        self.kb_control.link_objects(objects, game)
+        self.functions = {messages.GuiControls.StopGui: self.stop_gui,
+                          messages.GuiControls.StartGame: self.start_game,
+                          messages.GuiControls.HandleKey: self.handle_kb_event}
 
     def run(self):
         while self.gui_state != GUIcontrolsState.Exit:
             while True:
-                data = self.messenger.get_message(self.command_queue)
+                data = self.messenger.get_message(messages.GuiControls)
                 if not data:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
 
-    def start_game(self, asynced=False):
-        if asynced:
-            self.messenger.send_message(self.command_queue, 'start')
-            return
+    def start_game(self):
         self.gui_state = GUIcontrolsState.InGame
 
-    def stop_gui(self, asynced=False):
-        if asynced:
-            self.messenger.send_message(self.command_queue, 'quit')
-            return
+    def stop_gui(self):
         print("terminating controls")
         self.gui_state = GUIcontrolsState.Exit
-        self.command_queue.close()
-        while True:
-            data = self.messenger.get_message(self.command_queue)
-            if not data:
-                break
 
-    def handle_kb_event(self, pushed, key, asynced=False):
-        if asynced:
-            self.messenger.send_message(self.command_queue, 'handle_kb_event', {'pushed': pushed, 'key': key})
-            return
+    def handle_kb_event(self, pushed, key):
         if self.gui_state == GUIcontrolsState.InGame:
             self.kb_control.dispatch_kb_event(pushed, key)
 
@@ -80,7 +59,6 @@ class KbControl(BaseControl):
         super(KbControl, self).__init__(player, messenger)
         self.player_controls = {ObjectType.Player1: [0, 0],
                                 ObjectType.Player2: [0, 0]}
-        self.key_bind = {}
 
     def link_objects(self, objects, game):
         self.game = game
@@ -93,9 +71,9 @@ class KbControl(BaseControl):
             self.change_player_control(ObjectType.Player2, pushed, key)
         elif key == pygletkey.P and pushed:
             if not self.game_is_paused:
-                self.game.game_pause_simulation(asynced=True)
+                self.messenger.game_pause()
             else:
-                self.game.game_unpaused(asynced=True)
+                self.messenger.game_unpause()
             self.game_is_paused = not self.game_is_paused
 
     def change_player_control(self, team, pushed, key):
@@ -110,8 +88,8 @@ class KbControl(BaseControl):
         if key in (pygletkey.A, pygletkey.LEFT):
             new_turn = turn-1 if pushed else turn+1
         if new_turn is not None and new_turn != turn:
-            self.objects.set_control_signal(ObjectType.offset(team)[0], ObjectProp.TurnControl, new_turn, asynced=True)
+            self.messenger.objects_set_control_signal(ObjectType.offset(team)[0], ObjectProp.TurnControl, new_turn)
             self.player_controls[team][1] = new_turn
         if new_vel is not None and new_vel != vel:
-            self.objects.set_control_signal(ObjectType.offset(team)[0], ObjectProp.VelControl, new_vel, asynced=True)
+            self.messenger.objects_set_control_signal(ObjectType.offset(team)[0], ObjectProp.VelControl, new_vel)
             self.player_controls[team][0] = new_vel
