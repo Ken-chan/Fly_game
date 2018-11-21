@@ -5,7 +5,8 @@ from obj_def import *
 import json
 
 alpha = 60
-range_of_atack = 1000
+range_of_atack = 200
+attack_cone_wide = 20
 
 
 class ObjectsState:
@@ -149,6 +150,12 @@ class Objects(Process):
             objects = self.objects.get_objects(link_only=True)
             objects[obj_index][control_key] = value
 
+    def is_inside_cone(self, a, b, dir_wide):
+        a = a / np.linalg.norm(a)
+        b = b / np.linalg.norm(b)
+        scalar = np.sum(np.multiply(a, b))
+        min_scalar = np.cos(np.pi/180 * dir_wide)
+        return True if scalar >= min_scalar else False
 
     def check_kill(self):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
@@ -160,27 +167,21 @@ class Objects(Process):
                     if (x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0):
                         self.delete_object(index, objects)
                     dir1 = objects[index][ObjectProp.Dir]
+                    vec1 = np.array([np.cos(dir1 * np.pi/180), np.sin(dir1 * np.pi/180)])
 
                     for jndex in range(0, ObjectType.ObjArrayTotal):
                         if objects[jndex][1] != ObjectType.Absent and index != jndex:
                             x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
                             dir2 = objects[jndex][ObjectProp.Dir]
-                            teta = 90 - dir1 - alpha
-                            teta = teta/180 * np.pi
-                            x_2 = (x2 - x1) * np.cos(teta) + (y2 - y1) * np.sin(teta)
-                            y_2 = -(x2 - x1) * np.sin(teta) + (y2 - y1) * np.cos(teta)
-                            if ((np.sqrt(x_2 * x_2 + y_2 * y_2) < range_of_atack) and
-                                    abs(dir1 - dir2) < alpha and y_2 > 0 and
-                                    np.arccos(x_2 / np.sqrt(x_2 * x_2 + y_2 * y_2)) <= 2 * alpha):
-                                self.delete_object(jndex, objects)
-                                #print(x_2," ",  y_2," ", (y2 - y1) * np.sin(90 - dir1 - alpha)," ", 90 - dir1 - alpha)
-
-                            ##CHECK COLLISONS KILLED
-                            distance = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-                            if distance < objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
-                                self.delete_object(jndex, objects)
+                            vec2 = np.array([np.cos(dir2 * np.pi / 180), np.sin(dir2 * np.pi / 180)])
+                            diff_vector = np.array([x2 - x1, y2 - y1])
+                            distance = np.linalg.norm(diff_vector)
+                            if distance <= objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
                                 self.delete_object(index, objects)
-
+                                self.delete_object(jndex, objects)
+                                break
+                            if distance < range_of_atack and self.is_inside_cone(vec1, vec2, attack_cone_wide):
+                                self.delete_object(jndex, objects)
 
     def delete_object(self, jndex, objects):
         print("Killed unit number ", jndex)
@@ -207,8 +208,6 @@ class Objects(Process):
                     k4 = 110 #Yep
                     k5 = 0.01
 
-                    #a = k1 * ((objects[index][ObjectProp.K_up] - objects[index][ObjectProp.K_down])) - \
-                    #    (k2 * np.fabs(np.radians(objects[index][ObjectProp.Dir])))*objects[index][ObjectProp.Velocity]
                     a = k1 * objects[index][ObjectProp.VelControl] - k2 * np.abs(objects[index][ObjectProp.AngleVel]) * objects[index][ObjectProp.Velocity] - \
                         k3 * objects[index][ObjectProp.Velocity]
 
@@ -220,40 +219,11 @@ class Objects(Process):
 
                     objects[index][ObjectProp.Dir] += objects[index][ObjectProp.AngleVel] * dt
 
-
-                    #if (objects[index][ObjectProp.Dir] >= 360):
-                    #    objects[index][ObjectProp.Dir] -= 360
-                    #elif (objects[index][ObjectProp.Dir] < 0):
-                    #    objects[index][ObjectProp.Dir] += 360
                     objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
                     rad = objects[index][ObjectProp.Dir] * np.pi / 180
 
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
-
-                    """
-                    if objects[index][ObjectProp.Velocity] != 0:
-                        objects[index][ObjectProp.PrevVelocity] = self.currentVelocityforNext
-
-                    objects[index][ObjectProp.Velocity] += (objects[index][ObjectProp.K_up] - objects[index][ObjectProp.K_down]) * 80 * dt
-                    self.currentVelocityforNext = np.fabs(objects[index][ObjectProp.Velocity])
-                    objects[index][ObjectProp.Dir] += (objects[index][ObjectProp.K_right] - objects[index][ObjectProp.K_left]) * 50 * dt
-
-                    if index == 0:
-                        print(objects[index][ObjectProp.Velocity], objects[index][ObjectProp.PrevVelocity])
-                        #print(self.time, self.currentVelocityforNext[1])
-
-                    if (objects[index][ObjectProp.Dir] >= 360):
-                        objects[index][ObjectProp.Dir] -= 360
-                    elif (objects[index][ObjectProp.Dir] < 0):
-                        objects[index][ObjectProp.Dir] += 360
-
-                    rad = objects[index][ObjectProp.Dir] * np.pi / 180
-                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
-                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
-                    """
-
-
 
             self.check_kill()
             self.objects.current_objects = objects
