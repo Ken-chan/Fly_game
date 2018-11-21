@@ -156,10 +156,11 @@ class Objects(Process):
     def is_inside_cone(self, a, b, diff_vector, dir_wide):
         a = a / np.linalg.norm(a)
         b = b / np.linalg.norm(b)
-        scalar = np.sum(np.multiply(a, b))
+        diff_vector = diff_vector / np.linalg.norm(diff_vector)
+        scalar_a_b = np.sum(np.multiply(a, b))
+        scalar_a_diff = np.sum(np.multiply(a, diff_vector))
         min_scalar = np.cos(np.pi/180 * dir_wide)
-        a_is_back = True if np.sum(np.multiply(a, diff_vector)) > 0 else False
-        return True if scalar >= min_scalar and a_is_back else False
+        return True if scalar_a_b >= min_scalar and scalar_a_diff >= min_scalar else False
 
     def check_kill(self):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
@@ -168,6 +169,7 @@ class Objects(Process):
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                     x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
+                    #print("x {}, y, {} dir {}".format(x1, y1, objects[index][ObjectProp.Dir] ))
                     if x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0:
                         self.delete_object(index, objects)
                         continue
@@ -175,11 +177,11 @@ class Objects(Process):
                     vec1 = np.array([np.cos(dir1 * np.pi/180), np.sin(dir1 * np.pi/180)])
 
                     for jndex in range(0, ObjectType.ObjArrayTotal):
-                        if objects[jndex][1] != ObjectType.Absent and index != jndex:
+                        if objects[jndex][ObjectProp.ObjType] != ObjectType.Absent and index != jndex:
                             x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
                             dir2 = objects[jndex][ObjectProp.Dir]
                             vec2 = np.array([np.cos(dir2 * np.pi / 180), np.sin(dir2 * np.pi / 180)])
-                            diff_vector = np.array([x2 - x1, y2 - y1])
+                            diff_vector = np.array([y2 - y1, x2 - x1])
                             distance = np.linalg.norm(diff_vector)
                             if distance <= objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
                                 self.delete_object(index, objects)
