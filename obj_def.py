@@ -8,7 +8,7 @@ class ObjectType:
     Player1 = np.int32(4)
     Player2 = np.int32(5)
 
-    ObjArrayTotal = np.int32(23)
+    ObjArrayTotal = np.int32(24)
     offsets = {
         Player1: (np.int32(0), np.int32(0)),
         Player2: (np.int32(1), np.int32(1)),

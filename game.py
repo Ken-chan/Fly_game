@@ -2,6 +2,8 @@ import pyglet, json
 from view import Renderer
 import messages
 from messages import Messenger
+import argparse
+import datetime
 import time
 from gui_controls import GUIcontrols
 from ai_controls import AIcontrols
@@ -13,15 +15,23 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height):
+    def __init__(self, screen_width, screen_height, history_path=None):
         super(Game, self).__init__()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
+        if history_path is None:
+            now_time = datetime.datetime.now()
+            self.history_path = now_time.strftime("%Y_%m_%d_%H:%M:%S")+'.txt'
+            self.clear_file(self.history_path)
+            self.is_it_move_from_history = False
+        else:
+            self.history_path = history_path
+            self.is_it_move_from_history = True
         self.fps_display = pyglet.clock.ClockDisplay()
 
         self.messenger = Messenger()
-        self.Objects = Objects(self.messenger)
+        self.Objects = Objects(self.messenger, history_path=self.history_path)
         self.ai_controls = AIcontrols(self.messenger)
         self.gui_controls = GUIcontrols(self.messenger)
 
@@ -33,7 +43,6 @@ class Game:
 
         self.objects = None
         self.history_list = []
-        self.is_it_move_from_history = False
         self.functions = {messages.Game.Quit: self.quit,
                           messages.Game.UpdateObjects: self.update_objects,
                           messages.Game.Pause: self.game_pause_simulation,
@@ -41,18 +50,9 @@ class Game:
 
     # /Part of working with log files starts
 
-    def clear_file(self, file):
-        with open(file, "w") as file:  # just to open with argument which clean file
+    def clear_file(self, file_path):
+        with open(file_path, "w") as file:  # just to open with argument which clean file
             pass
-
-    def save_history_file_txt(self, file, str):
-        with open(file, 'a') as f:
-            f.write(str + ' ')
-
-    def save_history_json(self, history_file, objects_data):
-        with open(history_file, 'a', encoding="utf-8") as file:
-            json.dump(objects_data, file)
-            file.write('\n')
 
     # /Part of working with log files ends
     def quit(self):
@@ -90,21 +90,17 @@ class Game:
 
             # saving movement
             # self.save_history_file_txt("history.txt", objects_copy[1][ObjectProp.Xcoord], objects_copy[1][ObjectProp.Ycoord], objects_copy[1][ObjectProp.Dir])
-            string_object = ''
-            for index in range(0, ObjectType.ObjArrayTotal):
-                if objects_copy[index][ObjectProp.ObjType] != ObjectType.Absent:
-                    for i in range(0 , len(objects_copy[index])):
-                        string_object += str(objects_copy[index][i]) + ' ' #make string of properies of every object(not absent)
-            string_object += '\n'
-            self.save_history_file_txt("history.txt", string_object)
-        # no need to update graphics on every objects refreshment event
-        # we sheduled it on 1/30 s. right?
+            #string_object = ''
+            #for index in range(0, ObjectType.ObjArrayTotal):
+            #    if objects_copy[index][ObjectProp.ObjType] != ObjectType.Absent:
+            #        for i in range(0 , len(objects_copy[index])):
+            #            string_object += str(objects_copy[index][i]) + ' ' #make string of properies of every object(not absent)
+            #string_object += '\n'
+            #self.save_history_file_txt("history.txt", string_object)
 
     def run_game(self):
         #Save movement
         #print("previous history file was deleted", '\n', "Creating new file...")
-        self.clear_file("history.txt")
-        self.is_it_move_from_history = False
 
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
         pyglet.gl.glClearColor(0.6, 0.6, 0.6, 0)
@@ -154,5 +150,12 @@ class Game:
 
 
 if __name__ == "__main__":
-    game = Game(800, 600)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-f", "--file", type=str, required=False,
+                    help="path to history file")
+    args = vars(ap.parse_args())
+    if 'file' in args:
+        game = Game(800,600, args['file'])
+    else:
+        game = Game(800, 600)
     game.run_game()

@@ -10,7 +10,7 @@ attack_cone_wide = 20
 
 
 class ObjectsState:
-    Start, Pause, Run, Exit, RunFromFile = range(5)
+    Start, Pause, Run, Exit, RunFromFile, FileEnd = range(6)
 
 
 class ObjectArray:
@@ -59,6 +59,10 @@ class ObjectArray:
                 return True
         return False
 
+    def substitute_objects(self, new_objects):
+        self.current_objects = new_objects
+        return
+
     def get_objects(self, link_only=False):
         if link_only:
             return self.current_objects
@@ -67,7 +71,7 @@ class ObjectArray:
 
 
 class Objects(Process):
-    def __init__(self, messenger):
+    def __init__(self, messenger, history_path):
         super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
         self.messenger = messenger
@@ -76,7 +80,10 @@ class Objects(Process):
         self.battle_field_height = 0
         self.objects = ObjectArray()
         self.index_moving = 0
-        self.history_list = self.make_history_list_of_moving("history.txt")
+        self.hist_file_name = history_path
+        self.loaded_history = None
+        self.history_index = 0
+        self.history_time_len = 0
         self.time = 0
         self.currentVelocityforNext = .0
         #self.player_action = PlayerAction(self.objects)
@@ -108,6 +115,31 @@ class Objects(Process):
         with open(history_file, 'r') as file:
             history_list = file.readlines()
         return history_list
+
+    def load_history_file(self, file):
+        with open(file, 'r') as fd:
+            state_str = fd.readlines()
+        time_len = len(state_str)
+        self.loaded_history = np.zeros((time_len, ObjectType.ObjArrayTotal, ObjectProp.Total))
+        strind = 0
+        for line in state_str:
+            numsback_str = line.split(',')
+            numsback = np.array([float(item) for item in numsback_str])
+            reshaped = np.reshape(numsback, (ObjectType.ObjArrayTotal, ObjectProp.Total))
+            #print('{} {} '.format(type(reshaped), reshaped.ndim))
+            #print('{} {}'.format(type(self.loaded_history), self.loaded_history.ndim))
+            self.loaded_history[strind] = reshaped
+            strind += 1
+        self.history_time_len = time_len
+
+    def save_history_file(self, file, obj_array):
+        flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
+        obj_str = ''
+        for item in flat_obj:
+            obj_str += '{},'.format(item)
+        obj_str = obj_str[:-1]
+        with open(file, 'a') as f:
+            f.write(obj_str + '\n')
 
     def update_game_settings(self, configuration):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
@@ -192,24 +224,24 @@ class Objects(Process):
 
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
+            self.save_history_file(self.hist_file_name, objects)
+            self.check_kill()
+            self.objects.current_objects = objects
+            self.messenger.game_update_objects(self.objects.get_objects())
+            self.messenger.ai_update_objects(self.objects.get_objects())
 
         if self.objects_state == ObjectsState.RunFromFile:
-            for index in range(0, ObjectType.ObjArrayTotal):
-                if objects[index][1] != ObjectType.Absent:
-                    if self.index_moving != len(self.history_list):
-                        json_string = self.history_list[self.index_moving]
-                        parsed = json.loads(json_string)
-                        if int(parsed['ObjectID']) == objects[index][ObjectProp.ObjId]:
-                            objects[index][ObjectProp.Xcoord] = parsed['Xcoord']
-                            objects[index][ObjectProp.Ycoord] = parsed['Ycoord']
-                            objects[index][ObjectProp.Dir] = parsed['Direction']
-                        self.index_moving += 1
-                    else:
-                        self.index_moving = 0
-        self.check_kill()
-        self.objects.current_objects = objects
-        self.messenger.game_update_objects(self.objects.get_objects())
-        self.messenger.ai_update_objects(self.objects.get_objects())
+            if self.loaded_history is None:
+                self.load_history_file(self.hist_file_name)
+                self.history_index = 0
+            if self.history_time_len <= self.history_index:
+                self.objects_state = ObjectsState.FileEnd
+                self.messenger.game_quit()
+                return
+            self.objects.substitute_objects(self.loaded_history[self.history_index])
+            self.history_index += 1
+            self.messenger.game_update_objects(self.objects.get_objects())
+            self.messenger.ai_update_objects(self.objects.get_objects())
 
     def read_mes(self, dt):
         if self.objects_state != ObjectsState.Exit:
