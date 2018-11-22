@@ -22,7 +22,7 @@ class Game:
         self.screen_height = screen_height
         if history_path is None:
             now_time = datetime.datetime.now()
-            self.history_path = now_time.strftime("%Y_%m_%d_%H:%M:%S")+'.txt'
+            self.history_path = now_time.strftime("history")+'.txt'
             self.clear_file(self.history_path)
             self.is_it_move_from_history = False
         else:
@@ -113,9 +113,9 @@ class Game:
                          ObjectType.Bot2: [],
                          ObjectType.Player2: []}
         configuration[ObjectType.FieldSize].append(battle_field_size)
-        configuration[ObjectType.Player1].append((500, 50, 15))
+        configuration[ObjectType.Player1].append((500, 50, 1, 15)) # 1 - PLANE
         #configuration[ObjectType.Player2].append((500, 450))
-        configuration[ObjectType.Bot2].append((500, 450, 15))
+        configuration[ObjectType.Bot2].append((500, 450, 2, 15)) # 2 - HELICOPTER
 
         self.game_state = GameState.ActiveGame
         self.renderer.set_battle_fiel_size(battle_field_size[0],battle_field_size[1])

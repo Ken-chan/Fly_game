@@ -54,5 +54,7 @@ class ObjectProp:
     TurnControl = np.int32(10)
     State = np.int32(11)
     R_size = np.int32(12)
-    Total = np.int32(13)
+    Type = np.int32(13)
+    Total = np.int32(14)
+
 

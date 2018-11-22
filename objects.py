@@ -25,23 +25,23 @@ class ObjectArray:
         if configuration:
             for key in configuration:
                 for item in configuration[key]:
-                    if len(item) == 3:
-                        x, y, r = item
-                        self.add_object(key, x, y, r)
+                    if len(item) == 4:
+                        x, y, type, r = item
+                        self.add_object(key, x, y, type, r)
                     else:
                         x, y = item
-                        self.add_object(key, x, y, 0)
+                        self.add_object(key, x, y, 0, 0)
 
     def generate_empty_objects(self):
         current_objects = np.zeros((ObjectType.ObjArrayTotal, ObjectProp.Total))
         current_objects[:, 0] = np.arange(ObjectType.ObjArrayTotal)
         return current_objects
 
-    def generate_new_object(self, ind, obj_type, x, y, dir, size):
-        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, 0, size])
+    def generate_new_object(self, ind, obj_type, x, y, dir, size, type):
+        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, 0, size, type])
 
-    def add_object(self, unit_type, x, y, r):
-        print("add object: {} {} {} {}".format(unit_type,x,y,r))
+    def add_object(self, unit_type, x, y, type, r):
+        print("add object: {} {} {} {}".format(unit_type,x, y, type, r))
         if unit_type == ObjectType.FieldSize:
             self.battle_field_width = x
             self.battle_field_height = y
@@ -55,7 +55,7 @@ class ObjectArray:
                 else:
                     dir = 180
                 #self.current_objects[ind][ObjectProp.R_size] = 20
-                self.current_objects[ind] = self.generate_new_object(ind, unit_type, x, y, dir, r)
+                self.current_objects[ind] = self.generate_new_object(ind, unit_type, x, y, dir, r, type)
                 return True
         return False
 
@@ -206,13 +206,16 @@ class Objects(Process):
                     objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
                     objects[index][ObjectProp.PrevAngleVel] = objects[index][ObjectProp.AngleVel]
 
+                    pep = 0
                     k1 = 130
                     k2 = 0.01
                     k3 = 0.05
                     k4 = 110 #Yep
                     k5 = 0.01
+                    if objects[index][ObjectProp.Type] == 1:
+                        pep = 1.1 # let it be here( i know i bastard wanna sleep i will remake this D:)
 
-                    a = k1 * objects[index][ObjectProp.VelControl] - k2 * np.abs(objects[index][ObjectProp.AngleVel]) * objects[index][ObjectProp.Velocity] - \
+                    a = k1 * (objects[index][ObjectProp.VelControl] + pep) - k2 * np.abs(objects[index][ObjectProp.AngleVel]) * objects[index][ObjectProp.Velocity] - \
                         k3 * objects[index][ObjectProp.Velocity]
 
                     b = k4 * objects[index][ObjectProp.TurnControl] - k5 * objects[index][ObjectProp.AngleVel]
