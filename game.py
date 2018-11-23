@@ -114,9 +114,9 @@ class Game:
                          ObjectType.Bot2: [],
                          ObjectType.Player2: []}
         configuration[ObjectType.FieldSize].append(battle_field_size)
-        configuration[ObjectType.Player1].append((500, 50, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+        configuration[ObjectType.Player1].append((500, 50, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
         #configuration[ObjectType.Player2].append((500, 450))
-        configuration[ObjectType.Bot2].append((500, 450, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
+        configuration[ObjectType.Player2].append((500, 950, 270, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
 
         self.game_state = GameState.ActiveGame
         self.renderer.set_battle_field_size(battle_field_size[0], battle_field_size[1])

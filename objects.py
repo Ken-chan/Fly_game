@@ -21,22 +21,22 @@ class ObjectArray:
         if configuration:
             for key in configuration:
                 for item in configuration[key]:
-                    if len(item) == 4:
-                        x, y, vehicle_type, r = item
-                        self.add_object(key, x, y, vehicle_type, r)
+                    if len(item) == 5:
+                        x, y, direction, vehicle_type, r = item
+                        self.add_object(key, x, y, direction, vehicle_type, r)
                     else:
                         x, y = item
-                        self.add_object(key, x, y, 0, 0)
+                        self.add_object(key, x, y, 0, 0, 0)
 
     def generate_empty_objects(self):
         current_objects = np.zeros((ObjectType.ObjArrayTotal, ObjectProp.Total))
         current_objects[:, 0] = np.arange(ObjectType.ObjArrayTotal)
         return current_objects
 
-    def generate_new_object(self, ind, obj_type, x, y, dir, size, vehicle_type):
-        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, 0, size, vehicle_type])
+    def generate_new_object(self, ind, obj_type, x, y, direction, size, vehicle_type):
+        return np.array([ind, obj_type, x, y, direction, 0, 0, 0, 0, 0, 0, 0, size, vehicle_type])
 
-    def add_object(self, unit_type, x, y, vehicle_type, r):
+    def add_object(self, unit_type, x, y, direction, vehicle_type, r):
         print("add object: {} {} {} {}".format(unit_type, x, y, vehicle_type, r))
         if unit_type == ObjectType.FieldSize:
             self.battle_field_width = x
@@ -46,12 +46,7 @@ class ObjectArray:
         for ind in range(start, end+1):
             #search for empty space for object
             if self.current_objects[ind][ObjectProp.ObjType] == ObjectType.Absent:
-                if unit_type == ObjectType.Player1 or unit_type == ObjectType.Bot1:
-                    dir = 0
-                else:
-                    dir = 180
-                #self.current_objects[ind][ObjectProp.R_size] = 20
-                self.current_objects[ind] = self.generate_new_object(ind, unit_type, x, y, dir, r, vehicle_type)
+                self.current_objects[ind] = self.generate_new_object(ind, unit_type, x, y, direction, r, vehicle_type)
                 return True
         return False
 
@@ -177,7 +172,7 @@ class Objects(Process):
                             x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
                             dir2 = objects[jndex][ObjectProp.Dir]
                             vec2 = np.array([np.cos(dir2 * np.pi / 180), np.sin(dir2 * np.pi / 180)])
-                            diff_vector = np.array([y2 - y1, x2 - x1])
+                            diff_vector = np.array([x2 - x1, y2 - y1])
                             distance = np.linalg.norm(diff_vector)
                             if distance <= objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
                                 self.delete_object(index, objects)
@@ -217,8 +212,8 @@ class Objects(Process):
                     objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
                     rad = objects[index][ObjectProp.Dir] * np.pi / 180
 
-                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
-                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
+                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
+                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
             self.save_history_file(self.hist_file_name, objects)
             self.check_kill()
             self.objects.current_objects = objects

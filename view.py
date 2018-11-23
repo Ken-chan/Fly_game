@@ -60,7 +60,7 @@ class Renderer:
                     #                          current_object[ObjectProp.Dir]) # THATS MAKING THESE UGLY PICTURES sorry :c
                     self.objects_sprites[index].update(x=(current_object[ObjectProp.Xcoord]*size_proportion_width),
                                                        y=(current_object[ObjectProp.Ycoord]*size_proportion_height),
-                                                       rotation=current_object[ObjectProp.Dir])
+                                                       rotation= -current_object[ObjectProp.Dir])
 
     # need to refactor
     def make_part_of_circle(self, numpoints, rel_x, rel_y, phi, unit_angle):
@@ -94,7 +94,7 @@ class Bot_sprite1(Sprite):
         self.img.anchor_x = self.img.width // 2
         self.img.anchor_y = self.img.height // 2
         super(Bot_sprite1, self).__init__(batch=batch, img=self.img)
-        self.update(scale_x=0.1, scale_y = 0.15)
+        self.update(scale_x=0.15, scale_y = 0.11)
 
 class Bot_sprite2(Sprite):
     def __init__(self, batch):
@@ -102,7 +102,7 @@ class Bot_sprite2(Sprite):
         self.img.anchor_x = self.img.width // 2
         self.img.anchor_y = self.img.height // 2
         super(Bot_sprite2, self).__init__(batch=batch, img=self.img)
-        self.update(scale_x=0.1, scale_y = 0.15)
+        self.update(scale_x=0.15, scale_y = 0.1)
 
 class Player_sprite1(Sprite):
     def __init__(self, batch):
@@ -110,7 +110,7 @@ class Player_sprite1(Sprite):
         self.img.anchor_x = self.img.width // 2
         self.img.anchor_y = self.img.height // 2
         super(Player_sprite1, self).__init__(batch=batch, img=self.img)
-        self.update(scale_x=0.1, scale_y = 0.15)
+        self.update(scale_x=0.15, scale_y = 0.1)
 
 class Player_sprite2(Sprite):
     def __init__(self, batch):
@@ -118,7 +118,7 @@ class Player_sprite2(Sprite):
         self.img.anchor_x = self.img.width // 2
         self.img.anchor_y = self.img.height // 2
         super(Player_sprite2, self).__init__(batch=batch, img=self.img)
-        self.update(scale_x=0.1, scale_y = 0.15)
+        self.update(scale_x=0.15, scale_y = 0.1)
 
 
 

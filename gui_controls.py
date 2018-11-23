@@ -84,9 +84,9 @@ class KbControl(BaseControl):
         if key in (pygletkey.DOWN, pygletkey.S):
             new_vel = vel-1 if pushed else vel+1
         if key in (pygletkey.D, pygletkey.RIGHT):
-            new_turn = turn+1 if pushed else turn-1
-        if key in (pygletkey.A, pygletkey.LEFT):
             new_turn = turn-1 if pushed else turn+1
+        if key in (pygletkey.A, pygletkey.LEFT):
+            new_turn = turn+1 if pushed else turn-1
         if new_turn is not None and new_turn != turn:
             self.messenger.objects_set_control_signal(ObjectType.offset(team)[0], ObjectProp.TurnControl, new_turn)
             self.player_controls[team][1] = new_turn
