@@ -20,6 +20,7 @@ class Game:
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.battle_field_size = (1000, 1000)
         if history_path is None:
             now_time = datetime.datetime.now()
             #self.history_path = now_time.strftime("history")+'.txt' #wtf is this. you didn't even look what does it mean
@@ -33,7 +34,7 @@ class Game:
 
         self.messenger = Messenger()
         self.Objects = Objects(self.messenger, history_path=self.history_path)
-        self.ai_controls = AIcontrols(self.messenger)
+        self.ai_controls = AIcontrols(self.messenger, self.battle_field_size)
         self.gui_controls = GUIcontrols(self.messenger)
 
         self.renderer = Renderer(self.screen_width, self.screen_height)
@@ -106,20 +107,19 @@ class Game:
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
         pyglet.gl.glClearColor(0.6, 0.6, 0.6, 0)
         self.game_window.set_location(200, 50)
-        battle_field_size = (1000,1000)
         # later we should make configuration loader from config file
         configuration = {ObjectType.FieldSize: [],
                          ObjectType.Bot1: [],
                          ObjectType.Player1: [],
                          ObjectType.Bot2: [],
                          ObjectType.Player2: []}
-        configuration[ObjectType.FieldSize].append(battle_field_size)
+        configuration[ObjectType.FieldSize].append(self.battle_field_size)
         configuration[ObjectType.Player1].append((500, 50, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
         #configuration[ObjectType.Player2].append((500, 450))
-        configuration[ObjectType.Player2].append((500, 950, 270, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
+        configuration[ObjectType.Bot2].append((500, 950, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
 
         self.game_state = GameState.ActiveGame
-        self.renderer.set_battle_field_size(battle_field_size[0], battle_field_size[1])
+        self.renderer.set_battle_field_size(self.battle_field_size[0], self.battle_field_size[1])
         if self.is_it_move_from_history:
             self.messenger.objects_run_from_file_simulation()
         else:

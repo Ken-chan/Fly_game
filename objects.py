@@ -186,8 +186,8 @@ class Objects(Process):
         for kndex in range(1, ObjectProp.Total):
             objects[jndex][kndex] = 0
 
-    def add_object(self, unit_type, x, y, vehicle_type, r):
-        self.objects.add_object(unit_type, x, y, vehicle_type, r)
+    def add_object(self, unit_type, x, y, direction, vehicle_type, r):
+        self.objects.add_object(unit_type, x, y, direction, vehicle_type, r)
 
     def calc_v_diff(self, object_state):
         min_v_add = 0
