@@ -54,7 +54,16 @@ class ObjectProp:
     TurnControl = np.int32(10)
     State = np.int32(11)
     R_size = np.int32(12)
-    Type = np.int32(13)
+    VehicleType = np.int32(13)
     Total = np.int32(14)
 
-
+class Constants:
+    DefaultObjectRadius = np.int32(15)
+    AttackRange = np.int32(200)
+    MinPlaneVel = np.int32(150)
+    AttackConeWide = np.int32(20)
+    MinVelAccCoef = np.int32(2)
+    VelAccCoef = np.int32(130)
+    TurnDissipationCoef = np.float(0.01)
+    AirResistanceCoef = np.float(0.05)
+    TurnAccCoef = np.int32(110)

@@ -4,10 +4,6 @@ import messages
 from obj_def import *
 import json
 
-alpha = 60
-range_of_atack = 200
-attack_cone_wide = 20
-
 
 class ObjectsState:
     Start, Pause, Run, Exit, RunFromFile, FileEnd = range(6)
@@ -26,8 +22,8 @@ class ObjectArray:
             for key in configuration:
                 for item in configuration[key]:
                     if len(item) == 4:
-                        x, y, type, r = item
-                        self.add_object(key, x, y, type, r)
+                        x, y, vehicle_type, r = item
+                        self.add_object(key, x, y, vehicle_type, r)
                     else:
                         x, y = item
                         self.add_object(key, x, y, 0, 0)
@@ -37,11 +33,11 @@ class ObjectArray:
         current_objects[:, 0] = np.arange(ObjectType.ObjArrayTotal)
         return current_objects
 
-    def generate_new_object(self, ind, obj_type, x, y, dir, size, type):
-        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, 0, size, type])
+    def generate_new_object(self, ind, obj_type, x, y, dir, size, vehicle_type):
+        return np.array([ind, obj_type, x, y, dir, 0, 0, 0, 0, 0, 0, 0, size, vehicle_type])
 
-    def add_object(self, unit_type, x, y, type, r):
-        print("add object: {} {} {} {}".format(unit_type,x, y, type, r))
+    def add_object(self, unit_type, x, y, vehicle_type, r):
+        print("add object: {} {} {} {}".format(unit_type, x, y, vehicle_type, r))
         if unit_type == ObjectType.FieldSize:
             self.battle_field_width = x
             self.battle_field_height = y
@@ -55,7 +51,7 @@ class ObjectArray:
                 else:
                     dir = 180
                 #self.current_objects[ind][ObjectProp.R_size] = 20
-                self.current_objects[ind] = self.generate_new_object(ind, unit_type, x, y, dir, r, type)
+                self.current_objects[ind] = self.generate_new_object(ind, unit_type, x, y, dir, r, vehicle_type)
                 return True
         return False
 
@@ -187,7 +183,7 @@ class Objects(Process):
                                 self.delete_object(index, objects)
                                 self.delete_object(jndex, objects)
                                 break
-                            if distance < range_of_atack and self.is_inside_cone(vec1, vec2, diff_vector, attack_cone_wide):
+                            if distance < Constants.AttackRange and self.is_inside_cone(vec1, vec2, diff_vector, Constants.AttackConeWide):
                                 self.delete_object(jndex, objects)
 
     def delete_object(self, jndex, objects):
@@ -195,37 +191,29 @@ class Objects(Process):
         for kndex in range(1, ObjectProp.Total):
             objects[jndex][kndex] = 0
 
-    def add_object(self, unit_type, x, y, r):
-        self.objects.add_object(unit_type, x, y, r)
+    def add_object(self, unit_type, x, y, vehicle_type, r):
+        self.objects.add_object(unit_type, x, y, vehicle_type, r)
+
+    def calc_v_diff(self, object_state):
+        min_v_add = 0
+        if object_state[ObjectProp.VehicleType] == ObjectSubtype.Plane:
+            min_v_add = Constants.MinVelAccCoef * np.abs(object_state[ObjectProp.Velocity] - Constants.MinPlaneVel) if object_state[ObjectProp.Velocity] < Constants.MinPlaneVel else 0
+        dv = Constants.VelAccCoef * (object_state[ObjectProp.VelControl]) - Constants.TurnDissipationCoef * np.abs(object_state[ObjectProp.AngleVel]) * \
+             object_state[ObjectProp.Velocity] - Constants.AirResistanceCoef * object_state[ObjectProp.Velocity] + min_v_add
+        w = Constants.TurnAccCoef * object_state[ObjectProp.TurnControl]
+        return dv, w
 
     def update_units(self, dt):
         objects = self.objects.get_objects(link_only=True)
         if self.objects_state == ObjectsState.Run:
             for index in range(0, ObjectType.ObjArrayTotal):
-                if objects[index][1] != ObjectType.Absent:
+                if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                     objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
                     objects[index][ObjectProp.PrevAngleVel] = objects[index][ObjectProp.AngleVel]
-
-                    pep = 0
-                    k1 = 130
-                    k2 = 0.01
-                    k3 = 0.05
-                    k4 = 110 #Yep
-                    k5 = 0.01
-                    if objects[index][ObjectProp.Type] == 1:
-                        pep = 1.1 # let it be here( i know i bastard wanna sleep i will remake this D:)
-
-                    a = k1 * (objects[index][ObjectProp.VelControl] + pep) - k2 * np.abs(objects[index][ObjectProp.AngleVel]) * objects[index][ObjectProp.Velocity] - \
-                        k3 * objects[index][ObjectProp.Velocity]
-
-                    b = k4 * objects[index][ObjectProp.TurnControl] - k5 * objects[index][ObjectProp.AngleVel]
-                    #velocity of angle
-                    objects[index][ObjectProp.Velocity] = a * dt + objects[index][ObjectProp.PrevVelocity]
-                    #objects[index][ObjectProp.AngleVel] = b * dt + objects[index][ObjectProp.PrevAngleVel]
-                    objects[index][ObjectProp.AngleVel] = k4 * objects[index][ObjectProp.TurnControl]
-
+                    dv, w = self.calc_v_diff(objects[index])
+                    objects[index][ObjectProp.Velocity] = dv * dt + objects[index][ObjectProp.PrevVelocity]
+                    objects[index][ObjectProp.AngleVel] = w
                     objects[index][ObjectProp.Dir] += objects[index][ObjectProp.AngleVel] * dt
-
                     objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
                     rad = objects[index][ObjectProp.Dir] * np.pi / 180
 
@@ -257,4 +245,5 @@ class Objects(Process):
                 if data is None:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
+
 

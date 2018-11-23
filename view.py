@@ -36,7 +36,7 @@ class Renderer:
 
             self.objects_sprites.append(new_obj_sprite)
 
-    def set_battle_fiel_size(self, x, y):
+    def set_battle_field_size(self, x, y):
         self.battle_field_width = x
         self.battle_field_height = y
 
