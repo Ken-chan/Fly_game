@@ -20,6 +20,8 @@ class Renderer:
 
     def init_sprites(self):
         self.objects_sprites = []
+        self.cone_sprites = []
+        cone = None
         new_obj_sprite = None
 
         for index in range(0, ObjectType.ObjArrayTotal):
@@ -27,14 +29,19 @@ class Renderer:
 
             if object_type == ObjectType.Player1:
                 new_obj_sprite = Player_sprite1(batch=self.batch)
+                cone = Cone_sprite(batch=self.batch)
             elif object_type == ObjectType.Player2:
                 new_obj_sprite = Player_sprite2(batch=self.batch)
+                cone = Cone_sprite(batch=self.batch)
             elif object_type == ObjectType.Bot1:
                 new_obj_sprite = Bot_sprite1(batch=self.batch)
+                cone = Cone_sprite(batch=self.batch)
             elif object_type == ObjectType.Bot2:
                 new_obj_sprite = Bot_sprite2(batch=self.batch)
+                cone = Cone_sprite(batch=self.batch)
 
             self.objects_sprites.append(new_obj_sprite)
+            self.cone_sprites.append(cone)
 
     def set_battle_field_size(self, x, y):
         self.battle_field_width = x
@@ -49,8 +56,10 @@ class Renderer:
                 #print(self.objects_copy[index])
                 if self.objects_copy[index][ObjectProp.ObjType] == ObjectType.Absent:
                     self.objects_sprites[index].visible = False
+                    self.cone_sprites[index].visible = False
                 else:
                     self.objects_sprites[index].visible = True
+                    self.cone_sprites[index].visible = True
                     current_object = self.objects_copy[index]
                     size_proportion_width = self.screen_width / self.battle_field_width
                     size_proportion_height = self.screen_height / self.battle_field_height
@@ -58,9 +67,16 @@ class Renderer:
                     #self.draw_zone_of_defense(current_object[ObjectProp.Xcoord]*size_proportion_width,
                     #                          current_object[ObjectProp.Ycoord]*size_proportion_height,
                     #                          current_object[ObjectProp.Dir]) # THATS MAKING THESE UGLY PICTURES sorry :c
-                    self.objects_sprites[index].update(x=(current_object[ObjectProp.Xcoord]*size_proportion_width),
-                                                       y=(current_object[ObjectProp.Ycoord]*size_proportion_height),
+                    self.objects_sprites[index].update(x=size_proportion_width * (current_object[ObjectProp.Xcoord]),
+                                                       y=size_proportion_height * (current_object[ObjectProp.Ycoord]),
                                                        rotation= -current_object[ObjectProp.Dir])
+
+                    self.cone_sprites[index].update(x=size_proportion_width * (current_object[ObjectProp.Xcoord]), # -
+                                                        #100 * np.cos(-np.radians(current_object[ObjectProp.Dir]))),
+                                                    y=size_proportion_height * (current_object[ObjectProp.Ycoord]), # -
+                                                        #100 * np.sin(-np.radians(current_object[ObjectProp.Dir]))),
+                                                    rotation= -current_object[ObjectProp.Dir])
+
 
     # need to refactor
     def make_part_of_circle(self, numpoints, rel_x, rel_y, phi, unit_angle):
@@ -120,6 +136,12 @@ class Player_sprite2(Sprite):
         super(Player_sprite2, self).__init__(batch=batch, img=self.img)
         self.update(scale_x=0.15, scale_y = 0.1)
 
-
+class Cone_sprite(Sprite):
+    def __init__(self, batch):
+        self.img = pyglet.image.load("images/coneRot.png")
+        self.img.anchor_x = self.img.width
+        self.img.anchor_y = self.img.height // 2
+        super(Cone_sprite, self).__init__(batch=batch, img=self.img)
+        self.update(scale = 0.5)
 
 

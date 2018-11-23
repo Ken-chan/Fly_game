@@ -62,7 +62,7 @@ class ObjectArray:
 
 
 class Objects(Process):
-    def __init__(self, messenger, history_path):
+    def __init__(self, messenger, configuration, history_path):
         super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
         self.messenger = messenger
@@ -70,6 +70,7 @@ class Objects(Process):
         self.battle_field_width = 0
         self.battle_field_height = 0
         self.objects = ObjectArray()
+        self.update_game_settings(configuration)
         self.index_moving = 0
         self.hist_file_name = history_path
         self.loaded_history = None
