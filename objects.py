@@ -154,12 +154,14 @@ class Objects(Process):
         min_scalar = np.cos(np.pi/180 * dir_wide)
         return True if scalar_a_b >= min_scalar and scalar_a_diff >= min_scalar else False
 
-    def check_kill(self):
+    def check_kill_and_end_of_game(self):
+        count_of_survives = 0
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             objects = self.objects.get_objects(link_only=True)
 
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
+                    count_of_survives += 1
                     x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
                     #print("x {}, y, {} dir {}".format(x1, y1, objects[index][ObjectProp.Dir] ))
                     if x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0:
@@ -181,6 +183,9 @@ class Objects(Process):
                                 break
                             if distance < Constants.AttackRange and self.is_inside_cone(vec1, vec2, diff_vector, Constants.AttackConeWide):
                                 self.delete_object(jndex, objects)
+            # END_OF_GAME_TRIGGERED
+            if count_of_survives <= 1:
+                self.messenger.end_of_game()
 
     def delete_object(self, jndex, objects):
         print("Killed unit number ", jndex)
@@ -216,7 +221,7 @@ class Objects(Process):
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
             self.save_history_file(self.hist_file_name, objects)
-            self.check_kill()
+            self.check_kill_and_end_of_game()
             self.objects.current_objects = objects
             self.messenger.game_update_objects(self.objects.get_objects())
             self.messenger.ai_update_objects(self.objects.get_objects())

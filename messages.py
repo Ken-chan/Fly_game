@@ -2,7 +2,7 @@ from multiprocessing import Queue
 import time
 
 class Game:
-    Quit, UpdateField, UpdateObjects, RunNewGame, Pause, ActiveGame = range(6)
+    Quit, UpdateField, UpdateObjects, RunNewGame, Pause, ActiveGame, RestartGame = range(7)
 class GuiControls:
     StopGui, StartGame, UpdateField, UpdateObjects, HandleMouse, HandleKey = range(6)
 class GuiScreen:
@@ -57,6 +57,14 @@ class Messenger:
     def game_unpause(self):
         self.send_message(self.game_queue, Game.ActiveGame)
         self.send_message(self.objects_queue, Objects.Run)
+
+    def restart_game(self):
+        self.send_message(self.game_queue, Game.RestartGame)
+        print('Restart game')
+
+    def end_of_game(self):
+        print('End of Game')
+        self.game_pause() #THINKING ABOUT THAT
 
     #def player_pressed_key(self, pressed, key):
      #   self.send_message(self.objects_queue, Objects.PlayerPressedKey, {'pressed': pressed, 'key': key})
