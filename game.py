@@ -32,8 +32,19 @@ class Game:
             self.is_it_move_from_history = True
         self.fps_display = pyglet.clock.ClockDisplay()
 
+        self.configuration = {ObjectType.FieldSize: [],
+                         ObjectType.Bot1: [],
+                         ObjectType.Player1: [],
+                         ObjectType.Bot2: [],
+                         ObjectType.Player2: []}
+        self.configuration[ObjectType.FieldSize].append(self.battle_field_size)
+        self.configuration[ObjectType.Player1].append((500, 50, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+        # configuration[ObjectType.Player2].append((500, 450))
+        self.configuration[ObjectType.Player2].append(
+            (500, 950, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+
         self.messenger = Messenger()
-        self.Objects = Objects(self.messenger, history_path=self.history_path)
+        self.Objects = Objects(self.messenger, self.configuration, history_path=self.history_path)
         self.ai_controls = AIcontrols(self.messenger, self.battle_field_size)
         self.gui_controls = GUIcontrols(self.messenger)
 
@@ -48,7 +59,8 @@ class Game:
         self.functions = {messages.Game.Quit: self.quit,
                           messages.Game.UpdateObjects: self.update_objects,
                           messages.Game.Pause: self.game_pause_simulation,
-                          messages.Game.ActiveGame: self.game_unpaused}
+                          messages.Game.ActiveGame: self.game_unpaused,
+                          messages.Game.RestartGame: self.game_restart}
 
     # /Part of working with log files starts
 
@@ -70,6 +82,13 @@ class Game:
 
     def game_unpaused(self):
         self.game_state = GameState.ActiveGame
+
+    def game_restart(self):
+        #self.quit()
+        pyglet.app.exit()
+        time.sleep(1)
+        self.run_game() #THINKING ABOUT IT(HOW TO MAKE CORRECT)
+
 
     def read_messages(self, dt):
         while True:
@@ -107,24 +126,13 @@ class Game:
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
         pyglet.gl.glClearColor(0.6, 0.6, 0.6, 0)
         self.game_window.set_location(200, 50)
-        # later we should make configuration loader from config file
-        configuration = {ObjectType.FieldSize: [],
-                         ObjectType.Bot1: [],
-                         ObjectType.Player1: [],
-                         ObjectType.Bot2: [],
-                         ObjectType.Player2: []}
-        configuration[ObjectType.FieldSize].append(self.battle_field_size)
-        configuration[ObjectType.Player1].append((500, 50, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
-        #configuration[ObjectType.Player2].append((500, 450))
-        configuration[ObjectType.Bot2].append((500, 950, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
-
         self.game_state = GameState.ActiveGame
         self.renderer.set_battle_field_size(self.battle_field_size[0], self.battle_field_size[1])
         if self.is_it_move_from_history:
             self.messenger.objects_run_from_file_simulation()
         else:
             self.messenger.objects_run_simulation()
-        self.messenger.objects_set_game_settings(configuration)
+        self.messenger.objects_set_game_settings(self.configuration)
         self.messenger.ai_start_game()
 
         @self.game_window.event

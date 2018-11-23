@@ -75,6 +75,8 @@ class KbControl(BaseControl):
             else:
                 self.messenger.game_unpause()
             self.game_is_paused = not self.game_is_paused
+        elif key == pygletkey.R and pushed:
+            self.messenger.restart_game()
 
     def change_player_control(self, team, pushed, key):
         vel, turn = self.player_controls[team]
