@@ -73,8 +73,10 @@ class Renderer:
 
                     self.cone_sprites[index].update(x=size_proportion_width * (current_object[ObjectProp.Xcoord]), # -
                                                         #100 * np.cos(-np.radians(current_object[ObjectProp.Dir]))),
+                                                        # This, to move center of cone on the bottom of objects
                                                     y=size_proportion_height * (current_object[ObjectProp.Ycoord]), # -
                                                         #100 * np.sin(-np.radians(current_object[ObjectProp.Dir]))),
+                                                        # Do not need this, cause of make anchors
                                                     rotation= -current_object[ObjectProp.Dir])
 
 
@@ -139,9 +141,11 @@ class Player_sprite2(Sprite):
 class Cone_sprite(Sprite):
     def __init__(self, batch):
         self.img = pyglet.image.load("images/coneRot.png")
-        self.img.anchor_x = self.img.width
+        self.img.anchor_x = self.img.width - 15
         self.img.anchor_y = self.img.height // 2
+        self.img.blit(0,0) #Blit just add image on the screen with these anchors. Without this anchors don't work
         super(Cone_sprite, self).__init__(batch=batch, img=self.img)
-        self.update(scale = 0.5)
+        self.update(scale_x = 0.45, scale_y = 0.45) #PERFECTLY CALCULATED ON FIELD(1000, 1000)
+
 
 
