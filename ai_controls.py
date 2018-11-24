@@ -85,16 +85,25 @@ class DumbAI(Dummy):
         self.enemy_dir = np.float(0.0)
         self.enemy_dir_vec = np.array([0.0,0.0])
         self.enemy_vel = np.float(0.0)
-
+        self.aim_coord = np.array([0.0, 0.0])
+        self.diff_coord = np.array([0.0, 0.0])
+        self.angle, self.rotation_side = np.float(0.0), np.float(0.0)
+        self.turn_mod = np.float(0.0)
+        self.turn_ctrl = np.float(0.0)
+        self.rotation_matrix = np.array([[0.0, 0.0], [0.0, 0.0]])
+        self.vec1, self.vec2 = np.array([0.0, 0.0]), np.array([0.0, 0.0])
+        self.vec2_rel = np.array([0.0, 0.0])
+        self.angle_min = np.float(0.0)
+        self.vel_ctrl = np.float(0.0)
+        self.rot_side = np.float(0.0)
 
     def calc_nearest_dir(self, vec1, vec2):
-        vec1, vec2 = vec1 / np.linalg.norm(vec1), vec2 / np.linalg.norm(vec2)
-        rotation_matrix = np.array([[vec1[0], vec1[1]], [-vec1[1], vec1[0]]])
-        vec2_rel = np.matmul(rotation_matrix, vec2)
-        angle_min = np.abs(np.arccos(vec2_rel[0])) * 180 / np.pi
-        rotation_side = 1 if np.sign(vec2_rel[1]) >= 0 else -1
-        return angle_min, rotation_side
-
+        self.vec1, self.vec2 = vec1 / np.linalg.norm(vec1), vec2 / np.linalg.norm(vec2)
+        self.rotation_matrix = np.array([[vec1[0], vec1[1]], [-vec1[1], vec1[0]]])
+        self.vec2_rel = np.matmul(self.rotation_matrix, self.vec2)
+        self.angle_min = np.abs(np.arccos(self.vec2_rel[0])) * 180 / np.pi
+        self.rotation_side = np.float(1) if np.sign(self.vec2_rel[1]) >= 0 else np.float(-1)
+        return self.angle_min, self.rotation_side
 
     def calc_behaviour(self, objects_state):
         self.obj = objects_state[self.index]
@@ -105,10 +114,10 @@ class DumbAI(Dummy):
         if self.battle_field_size[0] - self.crit_approx < self.obj_coord[0] or self.obj_coord[0] < self.crit_approx \
                 or self.battle_field_size[1] - self.crit_approx < self.obj_coord[1] or self.obj_coord[1] < self.crit_approx:
             self.centre_dir = self.centre_coord - self.obj_coord
-            angle, rotation_side = self.calc_nearest_dir(self.obj_dir_vec, self.centre_dir)
-            rot_side = (1 / 180 * angle) * rotation_side
-            vel_ctrl = 1 if angle <= 90 else -1
-            return rot_side, vel_ctrl
+            self.angle, self.rotation_side = self.calc_nearest_dir(self.obj_dir_vec, self.centre_dir)
+            self.rot_side = (1 / 180 * self.angle) * self.rotation_side
+            self.vel_ctrl = np.float(1) if self.angle <= np.float(90) else np.float(-1)
+            return self.rot_side, self.vel_ctrl
 
         self.enemy = objects_state[self.enemy_index]
         self.enemy_coord = np.array([self.enemy[ObjectProp.Xcoord], self.enemy[ObjectProp.Ycoord]])
@@ -116,11 +125,11 @@ class DumbAI(Dummy):
         self.enemy_dir_vec = np.array([np.cos(self.obj_dir * np.pi / 180), np.sin(self.obj_dir * np.pi / 180)])
         self.enemy_vel = self.enemy[ObjectProp.Velocity]
 
-        aim_coord = self.enemy_coord - np.array([self.r_attack * np.cos(self.enemy_dir * np.pi / 180), self.r_attack * np.sin(self.enemy_dir * np.pi / 180)])
-        diff_coord = aim_coord - self.obj_coord
-        angle, rotation_side = self.calc_nearest_dir(self.obj_dir_vec, diff_coord)
-        turn_mod = 1 if angle > 30 else 1/30 * angle
-        turn_ctrl = rotation_side * turn_mod
+        self.aim_coord = self.enemy_coord - np.array([self.r_attack * np.cos(self.enemy_dir * np.pi / 180), self.r_attack * np.sin(self.enemy_dir * np.pi / 180)])
+        self.diff_coord = self.aim_coord - self.obj_coord
+        self.angle, self.rotation_side = self.calc_nearest_dir(self.obj_dir_vec, self.diff_coord)
+        self.turn_mod = np.float(1) if self.angle > np.float(30) else np.float(1/30) * self.angle
+        self.turn_ctrl = self.rotation_side * self.turn_mod
 
-        vel_ctrl = 1 if np.linalg.norm(diff_coord) > self.r_crit else 0
-        return turn_ctrl, vel_ctrl
+        self.vel_ctrl = np.float(1) if np.linalg.norm(self.diff_coord) > self.r_crit else np.float(0)
+        return self.turn_ctrl, self.vel_ctrl
