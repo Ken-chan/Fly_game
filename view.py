@@ -56,7 +56,6 @@ class Renderer:
     def update_graphics(self):
         if self.renderer_state == RendererState.Game and self.objects_copy is not None:
             for index in range(0, len(self.objects_sprites)):
-                #print(self.objects_copy[index])
                 if self.objects_copy[index][ObjectProp.ObjType] == ObjectType.Absent:
                     self.objects_sprites[index].visible = False
                     self.cone_sprites[index].visible = False

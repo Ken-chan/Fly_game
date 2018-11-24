@@ -37,7 +37,6 @@ class ObjectArray:
         return np.array([ind, obj_type, x, y, direction, 0, 0, 0, 0, 0, 0, 0, size, vehicle_type])
 
     def add_object(self, unit_type, x, y, direction, vehicle_type, r):
-        print("add object: {} {} {} {}".format(unit_type, x, y, vehicle_type, r))
         if unit_type == ObjectType.FieldSize:
             self.battle_field_width = x
             self.battle_field_height = y
@@ -118,8 +117,6 @@ class Objects(Process):
             numsback_str = line.split(',')
             numsback = np.array([float(item) for item in numsback_str])
             reshaped = np.reshape(numsback, (ObjectType.ObjArrayTotal, ObjectProp.Total))
-            #print('{} {} '.format(type(reshaped), reshaped.ndim))
-            #print('{} {}'.format(type(self.loaded_history), self.loaded_history.ndim))
             self.loaded_history[strind] = reshaped
             strind += 1
         self.history_time_len = time_len
@@ -163,7 +160,6 @@ class Objects(Process):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                     count_of_survives += 1
                     x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
-                    #print("x {}, y, {} dir {}".format(x1, y1, objects[index][ObjectProp.Dir] ))
                     if x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0:
                         self.delete_object(index, objects)
                         continue

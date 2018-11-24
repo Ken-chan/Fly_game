@@ -40,7 +40,7 @@ class Game:
         self.configuration[ObjectType.FieldSize].append(self.battle_field_size)
         self.configuration[ObjectType.Player1].append((500, 50, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
         # configuration[ObjectType.Player2].append((500, 450))
-        self.configuration[ObjectType.Player2].append(
+        self.configuration[ObjectType.Bot2].append(
             (500, 950, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
 
         self.messenger = Messenger()
@@ -132,7 +132,6 @@ class Game:
             self.messenger.objects_run_from_file_simulation()
         else:
             self.messenger.objects_run_simulation()
-        self.messenger.objects_set_game_settings(self.configuration)
         self.messenger.ai_start_game()
 
         @self.game_window.event

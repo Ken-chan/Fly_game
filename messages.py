@@ -37,7 +37,7 @@ class Messenger:
         try:
             queue.put(mess)
         except Exception as e:
-            print("send excetion: {}".format(e))
+            print("send exception: {}".format(e))
             pass
 
     def get_message(self, obj_type):
