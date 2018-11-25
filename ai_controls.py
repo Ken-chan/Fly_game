@@ -70,9 +70,10 @@ class DumbAI(Dummy):
         super(DumbAI, self).__init__(index)
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
-        self.r_attack = 100
-        self.crit_approx = 100
-        self.r_crit = 100
+        self.r_attack = np.int32(100)
+        self.crit_approx = np.int32(100)
+        self.r_crit = np.int32(100)
+        self.collision_crit = np.int32(50)
         self.enemy_index = ObjectType.offset(ObjectType.Player1)[0]
         self.obj = np.zeros(ObjectProp.Total)
         self.obj_coord = np.array([0.0,0.0])
@@ -111,6 +112,11 @@ class DumbAI(Dummy):
         self.obj_dir = self.obj[ObjectProp.Dir]
         self.obj_dir_vec[0], self.obj_dir_vec[1] = np.cos(self.obj_dir * np.pi / 180), np.sin(self.obj_dir * np.pi / 180)
         self.obj_vel = self.obj[ObjectProp.Velocity]
+        self.enemy = objects_state[self.enemy_index]
+        self.enemy_coord = np.array([self.enemy[ObjectProp.Xcoord], self.enemy[ObjectProp.Ycoord]])
+        self.enemy_dir = self.enemy[ObjectProp.Dir]
+        self.enemy_dir_vec = np.array([np.cos(self.enemy_dir * np.pi / 180), np.sin(self.enemy_dir * np.pi / 180)])
+        self.enemy_vel = self.enemy[ObjectProp.Velocity]
         if self.battle_field_size[0] - self.crit_approx < self.obj_coord[0] or self.obj_coord[0] < self.crit_approx \
                 or self.battle_field_size[1] - self.crit_approx < self.obj_coord[1] or self.obj_coord[1] < self.crit_approx:
             self.centre_dir = self.centre_coord - self.obj_coord
@@ -119,11 +125,13 @@ class DumbAI(Dummy):
             self.vel_ctrl = np.float(1) if self.angle <= np.float(90) else np.float(-1)
             return self.rot_side, self.vel_ctrl
 
-        self.enemy = objects_state[self.enemy_index]
-        self.enemy_coord = np.array([self.enemy[ObjectProp.Xcoord], self.enemy[ObjectProp.Ycoord]])
-        self.enemy_dir = self.enemy[ObjectProp.Dir]
-        self.enemy_dir_vec = np.array([np.cos(self.obj_dir * np.pi / 180), np.sin(self.obj_dir * np.pi / 180)])
-        self.enemy_vel = self.enemy[ObjectProp.Velocity]
+        if np.linalg.norm(self.enemy_coord - self.obj_coord) < self.collision_crit:
+            self.angle, self.rotation_side = self.calc_nearest_dir(self.obj_dir_vec, self.enemy_coord - self.obj_coord)
+            if self.angle < 90:
+                self.turn_ctrl = -self.rotation_side
+                self.vel_ctrl = -1
+                print("avoid collision")
+                return self.turn_ctrl, self.vel_ctrl
 
         self.aim_coord = self.enemy_coord - np.array([self.r_attack * np.cos(self.enemy_dir * np.pi / 180), self.r_attack * np.sin(self.enemy_dir * np.pi / 180)])
         self.diff_coord = self.aim_coord - self.obj_coord
