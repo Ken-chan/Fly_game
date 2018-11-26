@@ -100,7 +100,7 @@ class DumbAI(Dummy):
 
     def calc_nearest_dir(self, vec1, vec2):
         self.vec1, self.vec2 = vec1 / np.linalg.norm(vec1), vec2 / np.linalg.norm(vec2)
-        self.rotation_matrix = np.array([[vec1[0], vec1[1]], [-vec1[1], vec1[0]]])
+        self.rotation_matrix[0][0], self.rotation_matrix[0][1], self.rotation_matrix[1][0], self.rotation_matrix[1][1]= vec1[0], vec1[1], -vec1[1], vec1[0]
         self.vec2_rel = np.matmul(self.rotation_matrix, self.vec2)
         self.angle_min = np.abs(np.arccos(self.vec2_rel[0])) * 180 / np.pi
         self.rotation_side = np.float(1) if np.sign(self.vec2_rel[1]) >= 0 else np.float(-1)
@@ -113,9 +113,9 @@ class DumbAI(Dummy):
         self.obj_dir_vec[0], self.obj_dir_vec[1] = np.cos(self.obj_dir * np.pi / 180), np.sin(self.obj_dir * np.pi / 180)
         self.obj_vel = self.obj[ObjectProp.Velocity]
         self.enemy = objects_state[self.enemy_index]
-        self.enemy_coord = np.array([self.enemy[ObjectProp.Xcoord], self.enemy[ObjectProp.Ycoord]])
+        self.enemy_coord[0], self.enemy_coord[1] = self.enemy[ObjectProp.Xcoord], self.enemy[ObjectProp.Ycoord]
         self.enemy_dir = self.enemy[ObjectProp.Dir]
-        self.enemy_dir_vec = np.array([np.cos(self.enemy_dir * np.pi / 180), np.sin(self.enemy_dir * np.pi / 180)])
+        self.enemy_dir_vec[0], self.enemy_dir_vec[1] = np.cos(self.enemy_dir * np.pi / 180), np.sin(self.enemy_dir * np.pi / 180)
         self.enemy_vel = self.enemy[ObjectProp.Velocity]
         if self.battle_field_size[0] - self.crit_approx < self.obj_coord[0] or self.obj_coord[0] < self.crit_approx \
                 or self.battle_field_size[1] - self.crit_approx < self.obj_coord[1] or self.obj_coord[1] < self.crit_approx:
@@ -130,10 +130,10 @@ class DumbAI(Dummy):
             if self.angle < 90:
                 self.turn_ctrl = -self.rotation_side
                 self.vel_ctrl = -1
-                print("avoid collision")
                 return self.turn_ctrl, self.vel_ctrl
 
-        self.aim_coord = self.enemy_coord - np.array([self.r_attack * np.cos(self.enemy_dir * np.pi / 180), self.r_attack * np.sin(self.enemy_dir * np.pi / 180)])
+        self.aim_coord[0] = self.enemy_coord[0] - self.r_attack * np.cos(self.enemy_dir * np.pi / 180)
+        self.aim_coord[1] = self.enemy_coord[1] - self.r_attack * np.sin(self.enemy_dir * np.pi / 180)
         self.diff_coord = self.aim_coord - self.obj_coord
         self.angle, self.rotation_side = self.calc_nearest_dir(self.obj_dir_vec, self.diff_coord)
         self.turn_mod = np.float(1) if self.angle > np.float(30) else np.float(1/30) * self.angle
