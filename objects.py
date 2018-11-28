@@ -148,29 +148,29 @@ class Objects(Process):
         diff_vector = diff_vector / np.linalg.norm(diff_vector)
         scalar_a_b = np.sum(np.multiply(a, b))
         scalar_a_diff = np.sum(np.multiply(a, diff_vector))
-        min_scalar = np.cos(np.pi/180 * dir_wide)
+        min_scalar = np.cos(np.radians(dir_wide))
         return True if scalar_a_b >= min_scalar and scalar_a_diff >= min_scalar else False
 
     def check_kill_and_end_of_game(self):
-        count_of_survives = 0
+        team1_survives = 0
+        team2_survives = 0
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             objects = self.objects.get_objects(link_only=True)
 
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
-                    count_of_survives += 1
                     x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
                     if x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0:
                         self.delete_object(index, objects)
                         continue
                     dir1 = objects[index][ObjectProp.Dir]
-                    vec1 = np.array([np.cos(dir1 * np.pi/180), np.sin(dir1 * np.pi/180)])
+                    vec1 = np.array([np.cos(np.radians(dir1)), np.sin(np.radians(dir1))])
 
                     for jndex in range(0, ObjectType.ObjArrayTotal):
                         if objects[jndex][ObjectProp.ObjType] != ObjectType.Absent and index != jndex:
                             x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
                             dir2 = objects[jndex][ObjectProp.Dir]
-                            vec2 = np.array([np.cos(dir2 * np.pi / 180), np.sin(dir2 * np.pi / 180)])
+                            vec2 = np.array([np.cos(np.radians(dir2)), np.sin(np.radians(dir2))])
                             diff_vector = np.array([x2 - x1, y2 - y1])
                             distance = np.linalg.norm(diff_vector)
                             if distance <= objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
@@ -179,8 +179,16 @@ class Objects(Process):
                                 break
                             if distance < Constants.AttackRange and self.is_inside_cone(vec1, vec2, diff_vector, Constants.AttackConeWide):
                                 self.delete_object(jndex, objects)
+
+                            #Count survives to check end of game
+                            if ObjectType.type_by_id(jndex) == ObjectType.Bot1 or \
+                                    ObjectType.type_by_id(jndex) == ObjectType.Player1:
+                                team1_survives += 1
+                            elif ObjectType.type_by_id(jndex) == ObjectType.Bot2 or \
+                                    ObjectType.type_by_id(jndex) == ObjectType.Player2:
+                                team2_survives += 1
             # END_OF_GAME_TRIGGERED
-            if count_of_survives <= 1:
+            if team1_survives < 1 or team2_survives < 1:
                 self.messenger.end_of_game()
 
     def delete_object(self, jndex, objects):
@@ -212,8 +220,7 @@ class Objects(Process):
                     objects[index][ObjectProp.AngleVel] = w
                     objects[index][ObjectProp.Dir] += objects[index][ObjectProp.AngleVel] * dt
                     objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
-                    rad = objects[index][ObjectProp.Dir] * np.pi / 180
-
+                    rad = np.radians(objects[index][ObjectProp.Dir])
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
             self.save_history_file(self.hist_file_name, objects)

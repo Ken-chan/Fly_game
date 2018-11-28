@@ -22,7 +22,6 @@ class Renderer:
         self.objects_sprites = []
         self.cone_sprites = []
         self.rev_cone_sprites = []
-        cone = None
         new_obj_sprite = None
 
         for index in range(0, ObjectType.ObjArrayTotal):
@@ -30,13 +29,10 @@ class Renderer:
 
             if object_type == ObjectType.Player1:
                 new_obj_sprite = Player_sprite1(batch=self.batch)
-                #cone = Cone_sprite(batch=self.batch)
             elif object_type == ObjectType.Player2:
                 new_obj_sprite = Player_sprite2(batch=self.batch)
-                #cone = Cone_sprite(batch=self.batch)
             elif object_type == ObjectType.Bot1:
                 new_obj_sprite = Bot_sprite1(batch=self.batch)
-                #cone = Cone_sprite(batch=self.batch)
             elif object_type == ObjectType.Bot2:
                 new_obj_sprite = Bot_sprite2(batch=self.batch)
             cone = Cone_sprite(batch=self.batch)
@@ -63,13 +59,12 @@ class Renderer:
                 else:
                     self.objects_sprites[index].visible = True
                     self.cone_sprites[index].visible = True
+                    self.rev_cone_sprites[index].visible = True
                     current_object = self.objects_copy[index]
                     size_proportion_width = self.screen_width / self.battle_field_width
                     size_proportion_height = self.screen_height / self.battle_field_height
-                    size_proportion_dir = self.screen_width / self.screen_height
-                    #self.draw_zone_of_defense(current_object[ObjectProp.Xcoord]*size_proportion_width,
-                    #                          current_object[ObjectProp.Ycoord]*size_proportion_height,
-                    #                          current_object[ObjectProp.Dir]) # THATS MAKING THESE UGLY PICTURES sorry :c
+                    #size_proportion_dir = self.screen_width / self.screen_height
+
                     self.objects_sprites[index].update(x=size_proportion_width * (current_object[ObjectProp.Xcoord]),
                                                        y=size_proportion_height * (current_object[ObjectProp.Ycoord]),
                                                        rotation= -current_object[ObjectProp.Dir])
@@ -81,32 +76,10 @@ class Renderer:
                                                         #100 * np.sin(-np.radians(current_object[ObjectProp.Dir]))),
                                                         # Do not need this, cause of make anchors
                                                     rotation= -current_object[ObjectProp.Dir])
-                    self.rev_cone_sprites[index].update(x=size_proportion_width * (current_object[ObjectProp.Xcoord]),  # -
-                                                    # 100 * np.cos(-np.radians(current_object[ObjectProp.Dir]))),
-                                                    # This, to move center of cone on the bottom of objects
-                                                    y=size_proportion_height * (current_object[ObjectProp.Ycoord]),  # -
-                                                    # 100 * np.sin(-np.radians(current_object[ObjectProp.Dir]))),
-                                                    # Do not need this, cause of make anchors
-                                                    rotation=-current_object[ObjectProp.Dir]+180)
 
-
-    # need to refactor
-    def make_part_of_circle(self, numpoints, rel_x, rel_y, phi, unit_angle):
-        global circle
-        vertices = []
-        for i in range(numpoints):
-            angle = np.radians(float(i) / numpoints * 2 * phi + 90 - phi)
-            x = 150 * np.cos(angle - unit_angle) + rel_x
-            y = 150 * np.sin(angle - unit_angle) + rel_y
-            vertices += [x, y]
-        vertices += [rel_x, rel_y]
-        circle = pyglet.graphics.vertex_list(numpoints + 1, ('v2f', vertices))
-
-    def draw_zone_of_defense(self, x, y, dir):
-        self.make_part_of_circle(50, x, y, 30, np.radians(dir))
-        circle.draw(pyglet.gl.GL_LINE_LOOP)
-
-    # need to refactor
+                    self.rev_cone_sprites[index].update(x=size_proportion_width  * (current_object[ObjectProp.Xcoord]),
+                                                        y=size_proportion_height * (current_object[ObjectProp.Ycoord]),
+                                                        rotation=-current_object[ObjectProp.Dir] + 180)
 
 class Sprite(pyglet.sprite.Sprite):
 
@@ -155,7 +128,7 @@ class Cone_sprite(Sprite):
         self.img.anchor_y = self.img.height // 2
         self.img.blit(0,0) #Blit just add image on the screen with these anchors. Without this anchors don't work
         super(Cone_sprite, self).__init__(batch=batch, img=self.img)
-        self.update(scale_x = 0.45, scale_y = 0.45) #PERFECTLY CALCULATED ON FIELD(1000, 1000)
+        self.update(scale_x = 0.45, scale_y = 0.45) #PERFECTLY CALCULATED ON FIELD(800, 600)
 
 
 

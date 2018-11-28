@@ -63,7 +63,7 @@ class Constants:
     MinPlaneVel = np.int32(150)
     AttackConeWide = np.int32(20)
     MinVelAccCoef = np.int32(2)
-    VelAccCoef = np.int32(130)
+    VelAccCoef = np.int32(120)
     TurnDissipationCoef = np.float(0.01)
     AirResistanceCoef = np.float(0.05)
     TurnAccCoef = np.int32(110)

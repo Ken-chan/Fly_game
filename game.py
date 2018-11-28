@@ -23,8 +23,9 @@ class Game:
         self.battle_field_size = (1000, 1000)
         if history_path is None:
             now_time = datetime.datetime.now()
-            #self.history_path = now_time.strftime("history")+'.txt' #wtf is this. you didn't even look what does it mean
-            self.history_path = 'history.txt'
+            self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt' #wtf is this. you didn't even look what does it mean
+                                                                              #sorry windows doesn't like ':' I'am ashamed
+            # self.history_path = 'history.txt'
             self.clear_file(self.history_path)
             self.is_it_move_from_history = False
         else:
@@ -38,10 +39,10 @@ class Game:
                          ObjectType.Bot2: [],
                          ObjectType.Player2: []}
         self.configuration[ObjectType.FieldSize].append(self.battle_field_size)
-        self.configuration[ObjectType.Player1].append((500, 50, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+        self.configuration[ObjectType.Player1].append((500, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
         # configuration[ObjectType.Player2].append((500, 450))
         self.configuration[ObjectType.Bot2].append(
-            (500, 950, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+            (500, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
 
         self.messenger = Messenger()
         self.Objects = Objects(self.messenger, self.configuration, history_path=self.history_path)
@@ -109,19 +110,7 @@ class Game:
             self.renderer.update_objects(objects_copy)
             self.renderer.update_graphics()
 
-            # saving movement
-            # self.save_history_file_txt("history.txt", objects_copy[1][ObjectProp.Xcoord], objects_copy[1][ObjectProp.Ycoord], objects_copy[1][ObjectProp.Dir])
-            #string_object = ''
-            #for index in range(0, ObjectType.ObjArrayTotal):
-            #    if objects_copy[index][ObjectProp.ObjType] != ObjectType.Absent:
-            #        for i in range(0 , len(objects_copy[index])):
-            #            string_object += str(objects_copy[index][i]) + ' ' #make string of properies of every object(not absent)
-            #string_object += '\n'
-            #self.save_history_file_txt("history.txt", string_object)
-
     def run_game(self):
-        #Save movement
-        #print("previous history file was deleted", '\n', "Creating new file...")
 
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
         pyglet.gl.glClearColor(0.6, 0.6, 0.6, 0)
@@ -163,7 +152,7 @@ if __name__ == "__main__":
                     help="path to history file")
     args = vars(ap.parse_args())
     if 'file' in args:
-        game = Game(800,600, args['file'])
+        game = Game(800, 600, args['file'])
     else:
         game = Game(800, 600)
     game.run_game()
