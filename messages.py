@@ -11,7 +11,7 @@ class Objects:
     Quit, UpdateField, AddObject, SetControlSignal, KingChangeItem, Pause, Run, \
     UpdateGameSettings, TrainUnit, BuyItem, UseItem, UpdateObjects, RunFromFile = range(13)
 class AIcontrols:
-    Quit, Pause, Run, UpdateObjects = range(4)
+    Quit, Pause, Run, UpdateObjects, UpdateAiSettings = range(5)
 
 
 class Messenger:
@@ -85,8 +85,9 @@ class Messenger:
     def objects_set_control_signal(self, index, sig_type, sig_val):
         self.send_message(self.objects_queue, Objects.SetControlSignal, {'obj_index': index, 'sig_type': sig_type, 'sig_val': sig_val})
 
-    def objects_set_game_settings(self, configuration):
-        self.send_message(self.objects_queue, Objects.UpdateGameSettings, {'configuration': configuration})
+    # we do it with initialization w/o messages
+    #def objects_set_game_settings(self, configuration):
+    #    self.send_message(self.objects_queue, Objects.UpdateGameSettings, {'configuration': configuration})
 
     def objects_run_simulation(self):
         self.send_message(self.objects_queue, Objects.Run)

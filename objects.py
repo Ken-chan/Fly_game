@@ -102,11 +102,6 @@ class Objects(Process):
     def run_history(self):
         self.objects_state = ObjectsState.RunFromFile
 
-    def make_history_list_of_moving(self, history_file):
-        with open(history_file, 'r') as file:
-            history_list = file.readlines()
-        return history_list
-
     def load_history_file(self, file):
         with open(file, 'r') as fd:
             state_str = fd.readlines()

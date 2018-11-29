@@ -10,12 +10,14 @@ class AIcontrolsState:
 
 
 class AIcontrols(Process):
-    def __init__(self, messenger, battle_field_size):
+    def __init__(self, messenger, configuration):
         super(AIcontrols, self).__init__()
         self.ai_state = AIcontrolsState.Start
         self.messenger = messenger
-        self.battle_field_size = np.array(battle_field_size)
+        self.battle_field_size = np.array((0,0))
         self.objects_copy = None
+        self.configuration = None
+        self.update_ai_settings(configuration)
         self.ai_objs = []
         for index in range(0, ObjectType.ObjArrayTotal):
             self.ai_objs.append(Dummy(index))
@@ -23,7 +25,8 @@ class AIcontrols(Process):
         self.ai_objs[dumb_ai_index] = DumbAI(dumb_ai_index, self.battle_field_size)
         self.functions = {messages.AIcontrols.Quit: self.stop_ai,
                           messages.AIcontrols.UpdateObjects: self.update_objects,
-                          messages.AIcontrols.Run: self.start_ai_controls}
+                          messages.AIcontrols.Run: self.start_ai_controls,
+                          messages.AIcontrols.UpdateAiSettings: self.update_ai_settings}
 
         pyglet.clock.schedule_interval(self.read_mes, 1.0 / 30.0)
         pyglet.clock.schedule_interval(self.recalc, 1.0 / 30.0)
@@ -44,6 +47,16 @@ class AIcontrols(Process):
 
     def update_objects(self, objects_copy):
         self.objects_copy = objects_copy
+
+    def update_ai_settings(self, configuration):
+        self.configuration = configuration
+        if configuration:
+            for key in configuration:
+                for item in configuration[key]:
+                    if key == ObjectType.FieldSize:
+                        self.battle_field_size = np.array((item[0],item[1]))
+
+
 
     def recalc(self, dt):
         if self.ai_state == AIcontrolsState.Run and self.objects_copy is not None:

@@ -46,7 +46,7 @@ class Game:
 
         self.messenger = Messenger()
         self.Objects = Objects(self.messenger, self.configuration, history_path=self.history_path)
-        self.ai_controls = AIcontrols(self.messenger, self.battle_field_size)
+        self.ai_controls = AIcontrols(self.messenger, self.configuration)
         self.gui_controls = GUIcontrols(self.messenger)
 
         self.renderer = Renderer(self.screen_width, self.screen_height)
