@@ -1,5 +1,18 @@
 import numpy as np
 
+class Teams:
+    Team1 = np.int32(0)
+    Team2 = np.int32(1)
+
+    @classmethod
+    def team_by_id(cls, obj_id):
+        if ObjectType.type_by_id(obj_id) == ObjectType.Bot1 or ObjectType.type_by_id(obj_id) == ObjectType.Player1:
+            return cls.Team1
+        elif ObjectType.type_by_id(obj_id) == ObjectType.Bot2 or ObjectType.type_by_id(obj_id) == ObjectType.Player2:
+            return cls.Team2
+        else:
+            return None
+
 class ObjectType:
     Absent = np.int32(0)
     FieldSize = np.int32(1)

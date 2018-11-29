@@ -8,6 +8,16 @@ from random import *
 class AIcontrolsState:
     Start, Run, Exit = range(3)
 
+class AItype:
+    Dummy, DumbAi = range(2)
+
+    @classmethod
+    def contruct_ai(cls, aitype, index, battle_field_size):
+        if aitype == cls.DumbAi:
+            return DumbAI(index, battle_field_size)
+        elif aitype == cls.Dummy:
+            return Dummy(index)
+
 
 class AIcontrols(Process):
     def __init__(self, messenger, configuration):
@@ -17,12 +27,10 @@ class AIcontrols(Process):
         self.battle_field_size = np.array((0,0))
         self.objects_copy = None
         self.configuration = None
-        self.update_ai_settings(configuration)
         self.ai_objs = []
         for index in range(0, ObjectType.ObjArrayTotal):
             self.ai_objs.append(Dummy(index))
-        dumb_ai_index = ObjectType.offset(ObjectType.Bot2)[0]
-        self.ai_objs[dumb_ai_index] = DumbAI(dumb_ai_index, self.battle_field_size)
+        self.update_ai_settings(configuration)
         self.functions = {messages.AIcontrols.Quit: self.stop_ai,
                           messages.AIcontrols.UpdateObjects: self.update_objects,
                           messages.AIcontrols.Run: self.start_ai_controls,
@@ -51,11 +59,23 @@ class AIcontrols(Process):
     def update_ai_settings(self, configuration):
         self.configuration = configuration
         if configuration:
+            offset_counter = {}
             for key in configuration:
                 for item in configuration[key]:
+                    if key not in offset_counter:
+                        offset_counter[key] = 0
+                    else:
+                        offset_counter[key] += 1
+
                     if key == ObjectType.FieldSize:
                         self.battle_field_size = np.array((item[0],item[1]))
-
+                    if key in (ObjectType.Player1, ObjectType.Player2, ObjectType.Bot1, ObjectType.Bot2):
+                        if len(item) == 6:
+                            _, _, _, _, _, aitype = item
+                            off_counter = offset_counter[key]
+                            obj_offset, _ = ObjectType.offset(key)
+                            obj_ind = obj_offset + off_counter
+                            self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size)
 
 
     def recalc(self, dt):

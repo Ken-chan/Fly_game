@@ -24,9 +24,12 @@ class ObjectArray:
                     if len(item) == 5:
                         x, y, direction, vehicle_type, r = item
                         self.add_object(key, x, y, direction, vehicle_type, r)
+                    elif len(item) == 6:
+                        x, y, direction, vehicle_type, r, aitype = item
                     else:
                         x, y = item
-                        self.add_object(key, x, y, 0, 0, 0)
+                        direction, vehicle_type, r = 0, 0, 0
+                    self.add_object(key, x, y, direction, vehicle_type, r)
 
     def generate_empty_objects(self):
         current_objects = np.zeros((ObjectType.ObjArrayTotal, ObjectProp.Total))
@@ -176,11 +179,9 @@ class Objects(Process):
                                 self.delete_object(jndex, objects)
 
                             #Count survives to check end of game
-                            if ObjectType.type_by_id(jndex) == ObjectType.Bot1 or \
-                                    ObjectType.type_by_id(jndex) == ObjectType.Player1:
+                            if Teams.team_by_id(jndex) == Teams.Team1:
                                 team1_survives += 1
-                            elif ObjectType.type_by_id(jndex) == ObjectType.Bot2 or \
-                                    ObjectType.type_by_id(jndex) == ObjectType.Player2:
+                            elif Teams.team_by_id(jndex) == Teams.Team2:
                                 team2_survives += 1
             # END_OF_GAME_TRIGGERED
             if team1_survives < 1 or team2_survives < 1:
