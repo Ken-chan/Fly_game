@@ -172,8 +172,6 @@ class DumbAI(Dummy):
                 if nearest_distance is None or nearest_distance > curr_dist:
                     nearest_distance = curr_dist
                     self.nearest_object_id = ind
-        if self.index == 2:
-            print(self.nearest_enemy_id, self.nearest_object_id)
         return self.nearest_enemy_id, self.nearest_object_id
 
 
@@ -203,7 +201,6 @@ class DumbAI(Dummy):
                 if self.angle < 90:
                     self.turn_ctrl = -self.rotation_side
                     self.vel_ctrl = -1
-                print("evade collision {}".format(self.index))
                 return self.turn_ctrl, self.vel_ctrl
 
         if self.enemy is not None:
