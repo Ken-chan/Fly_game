@@ -3,6 +3,8 @@ import numpy as np
 class Teams:
     Team1 = np.int32(0)
     Team2 = np.int32(1)
+    Team1_ids = None
+    Team2_ids = None
 
     @classmethod
     def team_by_id(cls, obj_id):
@@ -12,6 +14,24 @@ class Teams:
             return cls.Team2
         else:
             return None
+
+    @classmethod
+    def get_team_obj_ids(cls, team):
+        if team == cls.Team1:
+            if cls.Team1_ids is None:
+                cls.Team1_ids = [ObjectType.offset(ObjectType.Player1)[0]] + [x for x in range(ObjectType.offset(ObjectType.Bot1)[0], ObjectType.offset(ObjectType.Bot1)[1] + 1)]
+            return cls.Team1_ids
+        elif team == cls.Team2:
+            if cls.Team2_ids is None:
+                cls.Team2_ids = [ObjectType.offset(ObjectType.Player2)[0]] + [x for x in range(ObjectType.offset(ObjectType.Bot2)[0], ObjectType.offset(ObjectType.Bot2)[1] + 1)]
+            return cls.Team2_ids
+
+    @classmethod
+    def get_opposite_team(cls, team):
+        if team == cls.Team1:
+            return cls.Team2
+        elif team == cls.Team2:
+            return cls.Team1
 
 class ObjectType:
     Absent = np.int32(0)

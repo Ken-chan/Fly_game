@@ -42,11 +42,11 @@ class Game:
         self.configuration[ObjectType.Player1].append((500, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
         self.configuration[ObjectType.Bot1].append(
             (400, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        # configuration[ObjectType.Player2].append((500, 450))
         self.configuration[ObjectType.Bot2].append(
             (500, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
         self.configuration[ObjectType.Bot2].append(
             (400, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+        self.configuration[ObjectType.Player2].append((600, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
 
         self.messenger = Messenger()
         self.Objects = Objects(self.messenger, self.configuration, history_path=self.history_path)

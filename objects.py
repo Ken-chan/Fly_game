@@ -175,7 +175,8 @@ class Objects(Process):
                                 self.delete_object(index, objects)
                                 self.delete_object(jndex, objects)
                                 break
-                            if distance < Constants.AttackRange and self.is_inside_cone(vec1, vec2, diff_vector, Constants.AttackConeWide):
+
+                            if Teams.team_by_id(index)!= Teams.team_by_id(jndex) and distance < Constants.AttackRange and self.is_inside_cone(vec1, vec2, diff_vector, Constants.AttackConeWide):
                                 self.delete_object(jndex, objects)
 
                             #Count survives to check end of game
