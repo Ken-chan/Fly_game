@@ -63,9 +63,9 @@ class ObjectArray:
 
 
 
-class Objects(Process):
+class Objects:
     def __init__(self, messenger, configuration, history_path):
-        super(Objects, self).__init__()
+        #super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
         self.messenger = messenger
         self.configuration = None

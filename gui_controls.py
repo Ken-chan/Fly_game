@@ -1,6 +1,7 @@
 import messages
 from multiprocessing import Process
 from pyglet.window import key as pygletkey
+import pyglet
 from obj_def import ObjectType, ObjectProp
 
 
@@ -8,9 +9,9 @@ class GUIcontrolsState:
     Start, InGame, Exit = range(3)
 
 
-class GUIcontrols(Process):
+class GUIcontrols:
     def __init__(self, messenger):
-        super(GUIcontrols, self).__init__()
+        #super(GUIcontrols, self).__init__()
         self.gui_state = GUIcontrolsState.InGame
         self.messenger = messenger
 
@@ -22,9 +23,10 @@ class GUIcontrols(Process):
         self.functions = {messages.GuiControls.StopGui: self.stop_gui,
                           messages.GuiControls.StartGame: self.start_game,
                           messages.GuiControls.HandleKey: self.handle_kb_event}
+        pyglet.clock.schedule_interval(self.run, 1 / 30.0)
 
-    def run(self):
-        while self.gui_state != GUIcontrolsState.Exit:
+    def run(self, dt):
+        if self.gui_state != GUIcontrolsState.Exit:
             while True:
                 data = self.messenger.get_message(messages.GuiControls)
                 if not data:

@@ -19,9 +19,9 @@ class AItype:
             return Dummy(index)
 
 
-class AIcontrols(Process):
+class AIcontrols:
     def __init__(self, messenger, configuration):
-        super(AIcontrols, self).__init__()
+        #super(AIcontrols, self).__init__()
         self.ai_state = AIcontrolsState.Start
         self.messenger = messenger
         self.battle_field_size = np.array((0,0))
@@ -104,7 +104,7 @@ class DumbAI(Dummy):
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
         self.r_attack = np.int32(100)
-        self.crit_approx = np.int32(100)
+        self.crit_approx = np.int32(50)
         self.r_crit = np.int32(100)
         self.collision_crit = np.int32(130)
         self.enemy_index = np.int32(0)

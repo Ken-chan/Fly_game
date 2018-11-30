@@ -43,7 +43,7 @@ class Game:
         self.configuration[ObjectType.Bot1].append(
             (400, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
         self.configuration[ObjectType.Bot1].append(
-            (100, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+            (700, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
         self.configuration[ObjectType.Bot1].append(
             (200, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
         self.configuration[ObjectType.Bot1].append(
@@ -60,8 +60,8 @@ class Game:
         self.configuration[ObjectType.Bot2].append(
             (200, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
         self.configuration[ObjectType.Bot2].append(
-            (100, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        self.configuration[ObjectType.Player2].append((600, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+            (700, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+        #self.configuration[ObjectType.Player2].append((600, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
 
         self.messenger = Messenger()
         self.Objects = Objects(self.messenger, self.configuration, history_path=self.history_path)
@@ -70,9 +70,9 @@ class Game:
 
         self.renderer = Renderer(self.screen_width, self.screen_height)
 
-        self.Objects.start()
-        self.ai_controls.start()
-        self.gui_controls.start()
+        #self.Objects.start()
+        #self.ai_controls.start()
+        #self.gui_controls.start()
 
         self.objects = None
         self.history_list = []
@@ -92,9 +92,9 @@ class Game:
     def quit(self):
         self.game_state = GameState.Exit
         self.messenger.shutdown()
-        self.Objects.join()
-        self.gui_controls.join()
-        self.ai_controls.join()
+        #self.Objects.join()
+        #self.gui_controls.join()
+        #self.ai_controls.join()
         pyglet.app.exit()
 
     def game_pause_simulation(self):
@@ -171,7 +171,7 @@ if __name__ == "__main__":
                     help="path to history file")
     args = vars(ap.parse_args())
     if 'file' in args:
-        game = Game(800, 600, args['file'])
+        game = Game(1000, 1000, args['file'])
     else:
-        game = Game(800, 600)
+        game = Game(1000, 1000)
     game.run_game()
