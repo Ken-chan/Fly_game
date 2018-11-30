@@ -77,7 +77,6 @@ class AIcontrols:
                             obj_ind = obj_offset + off_counter
                             self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size)
 
-
     def recalc(self, dt):
         if self.ai_state == AIcontrolsState.Run and self.objects_copy is not None:
             for index in range(0, ObjectType.ObjArrayTotal):

@@ -23,8 +23,7 @@ class Game:
         self.battle_field_size = (1000, 1000)
         if history_path is None:
             now_time = datetime.datetime.now()
-            self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt' #wtf is this. you didn't even look what does it mean
-                                                                              #sorry windows doesn't like ':' I'am ashamed
+            self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
             # self.history_path = 'history.txt'
             self.clear_file(self.history_path)
             self.is_it_move_from_history = False
@@ -70,10 +69,6 @@ class Game:
 
         self.renderer = Renderer(self.screen_width, self.screen_height)
 
-        #self.Objects.start()
-        #self.ai_controls.start()
-        #self.gui_controls.start()
-
         self.objects = None
         self.history_list = []
         self.functions = {messages.Game.Quit: self.quit,
@@ -92,9 +87,6 @@ class Game:
     def quit(self):
         self.game_state = GameState.Exit
         self.messenger.shutdown()
-        #self.Objects.join()
-        #self.gui_controls.join()
-        #self.ai_controls.join()
         pyglet.app.exit()
 
     def game_pause_simulation(self):
