@@ -226,7 +226,6 @@ class DumbAI(Dummy):
             self.obj_diff_coord = self.obj_coord - self.enemy_coord
             self.angle_objs, self.rotation_side_objs = self.calc_nearest_dir(self.obj_dir_vec, self.enemy_dir_vec)
             if self.angle > 175 and self.angle_objs > 175 and self.obj[ObjectProp.Velocity] > 130 and np.linalg.norm(self.enemy_coord - self.obj_coord) < self.front_crit_collision:
-                print("avoid front collision 2")
                 self.turn_ctrl = 1
                 self.vel_ctrl = -1
                 return self.turn_ctrl, self.vel_ctrl
