@@ -15,22 +15,6 @@ class GameState:
 
 
 class Game:
-    '''def config( self, bot1, bot2, player1, player2, sizeX, sizeY ):
-        pos1 = sizeX/(bot1 + player1 + 1)
-        pos2 = sizeX/(bot2 + player2 + 1)
-        if player1 == 1:
-            self.configuration[ObjectType.Player1].append((pos1, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
-        if player2 == 1:
-            self.configuration[ObjectType.Player2].append((pos2, sizeY, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
-
-        for i in range(1, bot1 + 1):
-            self.configuration[ObjectType.Bot1].append(
-                    (pos1 * (i + player1), 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-            
-        for i in range(1, bot2 + 1):
-            self.configuration[ObjectType.Bot2].append(
-                    (pos2 * (i + player2), sizeY, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))'''
-    
     def __init__(self, screen_width, screen_height, history_path=None):
         super(Game, self).__init__()
         self.game_state = GameState.Start
@@ -49,35 +33,12 @@ class Game:
         self.fps_display = pyglet.clock.ClockDisplay()
 
         self.configuration = {ObjectType.FieldSize: [],
-                         ObjectType.Bot1: [],
-                         ObjectType.Player1: [],
-                         ObjectType.Bot2: [],
-                         ObjectType.Player2: []}
+                              ObjectType.Bot1: [],
+                              ObjectType.Player1: [],
+                              ObjectType.Bot2: [],
+                              ObjectType.Player2: []}
         self.configuration[ObjectType.FieldSize].append(self.battle_field_size)
-        self.configuration[ObjectType.Player1].append((500, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
-        self.configuration[ObjectType.Bot1].append(
-            (400, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        self.configuration[ObjectType.Bot1].append(
-            (700, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        self.configuration[ObjectType.Bot1].append(
-            (200, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        self.configuration[ObjectType.Bot1].append(
-            (300, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        self.configuration[ObjectType.Bot1].append(
-            (600, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-
-        self.configuration[ObjectType.Bot2].append(
-            (500, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        self.configuration[ObjectType.Bot2].append(
-            (400, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        self.configuration[ObjectType.Bot2].append(
-            (300, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        self.configuration[ObjectType.Bot2].append(
-            (200, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        self.configuration[ObjectType.Bot2].append(
-            (700, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-        #self.configuration[ObjectType.Player2].append((600, 1000, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
-        #self.config(6, 6, 0, 0, self.battle_field_size[0], self.battle_field_size[1])
+        self.prepare_config(5, 6, True, False, self.battle_field_size[0], self.battle_field_size[1])
 
         self.messenger = Messenger()
         self.Objects = Objects(self.messenger, self.configuration, history_path=self.history_path)
@@ -92,9 +53,22 @@ class Game:
                           messages.Game.UpdateObjects: self.update_objects,
                           messages.Game.Pause: self.game_pause_simulation,
                           messages.Game.ActiveGame: self.game_unpaused}
-                          #messages.Game.RestartGame: self.game_restart}
 
-    # /Part of working with log files starts
+    def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
+            pos1 = sizeX/(bot1 + player1 + 1)
+            pos2 = sizeX/(bot2 + player2 + 1)
+            if player1:
+                self.configuration[ObjectType.Player1].append((pos1, 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+            if player2:
+                self.configuration[ObjectType.Player2].append((pos2, sizeY, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+
+            for i in range(1, bot1 + 1):
+                self.configuration[ObjectType.Bot1].append(
+                        (pos1 * (i + player1), 0, 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+
+            for i in range(1, bot2 + 1):
+                self.configuration[ObjectType.Bot2].append(
+                        (pos2 * (i + player2), sizeY, 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
     def clear_file(self, file_path):
         with open(file_path, "w") as file:  # just to open with argument which clean file

@@ -105,7 +105,8 @@ class DumbAI(Dummy):
         self.r_attack = np.int32(100)
         self.crit_approx = np.int32(50)
         self.r_crit = np.int32(100)
-        self.collision_crit = np.int32(130)
+        self.collision_crit = np.int32(100)
+        self.front_crit_collision = np.int32(350)
         self.enemy_index = np.int32(0)
         self.obj = np.zeros(ObjectProp.Total)
         self.obj_coord = np.array([0.0,0.0])
@@ -138,6 +139,11 @@ class DumbAI(Dummy):
         self.nearest_object_id = None
         self.nearest_object = np.zeros(ObjectProp.Total)
         self.nearest_coord = np.array([0.0, 0.0])
+        self.nearest_dir_vec = np.array([0.0, 0.0])
+        self.nearest_dir = np.float(0.0)
+        self.obj_diff_coord = np.array([0.0, 0.0])
+        self.angle_objs = np.float(0.0)
+        self.rotation_side_objs = np.float(0.0)
 
     def calc_nearest_dir(self, vec1, vec2):
         self.vec1, self.vec2 = vec1 / np.linalg.norm(vec1), vec2 / np.linalg.norm(vec2)
@@ -173,7 +179,6 @@ class DumbAI(Dummy):
                     self.nearest_object_id = ind
         return self.nearest_enemy_id, self.nearest_object_id
 
-
     def calc_behaviour(self, objects_state):
         self.obj = objects_state[self.index]
         self.obj_coord[0], self.obj_coord[1] = self.obj[ObjectProp.Xcoord], self.obj[ObjectProp.Ycoord]
@@ -195,6 +200,16 @@ class DumbAI(Dummy):
         if self.nearest_object is not None:
             self.nearest_coord[0] = self.nearest_object[ObjectProp.Xcoord]
             self.nearest_coord[1] = self.nearest_object[ObjectProp.Ycoord]
+            self.nearest_dir = self.nearest_object[ObjectProp.Dir]
+            self.nearest_dir_vec[0], self.nearest_dir_vec[1] = np.cos(np.radians(self.nearest_dir)), np.sin(np.radians(self.nearest_dir))
+            self.angle, self.rotation_side = self.calc_nearest_dir(self.nearest_dir_vec, self.obj_dir_vec)
+            self.obj_diff_coord = self.obj_coord - self.enemy_coord
+            self.angle_objs, self.rotation_side_objs = self.calc_nearest_dir(self.obj_dir_vec, self.nearest_dir_vec)
+            if self.angle > 175 and self.angle_objs > 175 and self.obj[ObjectProp.Velocity] > 130 and np.linalg.norm(self.nearest_coord - self.obj_coord) < self.front_crit_collision:
+                self.turn_ctrl = 1
+                self.vel_ctrl = -1
+                return self.turn_ctrl, self.vel_ctrl
+
             if np.linalg.norm(self.nearest_coord - self.obj_coord) < self.collision_crit:
                 self.angle, self.rotation_side = self.calc_nearest_dir(self.obj_dir_vec, self.nearest_coord - self.obj_coord)
                 if self.angle < 90:
@@ -207,6 +222,14 @@ class DumbAI(Dummy):
             self.enemy_dir = self.enemy[ObjectProp.Dir]
             self.enemy_dir_vec[0], self.enemy_dir_vec[1] = np.cos(np.radians(self.enemy_dir)), np.sin(np.radians(self.enemy_dir))
             self.enemy_vel = self.enemy[ObjectProp.Velocity]
+            self.angle, self.rotation_side = self.calc_nearest_dir(self.enemy_dir_vec, self.obj_dir_vec)
+            self.obj_diff_coord = self.obj_coord - self.enemy_coord
+            self.angle_objs, self.rotation_side_objs = self.calc_nearest_dir(self.obj_dir_vec, self.enemy_dir_vec)
+            if self.angle > 175 and self.angle_objs > 175 and self.obj[ObjectProp.Velocity] > 130 and np.linalg.norm(self.enemy_coord - self.obj_coord) < self.front_crit_collision:
+                print("avoid front collision 2")
+                self.turn_ctrl = 1
+                self.vel_ctrl = -1
+                return self.turn_ctrl, self.vel_ctrl
 
             self.aim_coord[0] = self.enemy_coord[0] - self.r_attack * np.cos(np.radians(self.enemy_dir))
             self.aim_coord[1] = self.enemy_coord[1] - self.r_attack * np.sin(np.radians(self.enemy_dir))
