@@ -15,7 +15,8 @@ class ObjectArray:
         self.objects_height = None
         self.battle_field_width = 0
         self.battle_field_height = 0
-        self.current_objects = self.generate_empty_objects()
+        self.current_objects = None
+        self.generate_empty_objects()
 
     def set_objects_settings(self, configuration=None):
         if configuration:
@@ -32,9 +33,8 @@ class ObjectArray:
                     self.add_object(key, x, y, direction, vehicle_type, r)
 
     def generate_empty_objects(self):
-        current_objects = np.zeros((ObjectType.ObjArrayTotal, ObjectProp.Total))
-        current_objects[:, 0] = np.arange(ObjectType.ObjArrayTotal)
-        return current_objects
+        self.current_objects = np.zeros((ObjectType.ObjArrayTotal, ObjectProp.Total))
+        self.current_objects[:, 0] = np.arange(ObjectType.ObjArrayTotal)
 
     def generate_new_object(self, ind, obj_type, x, y, direction, size, vehicle_type):
         return np.array([ind, obj_type, x, y, direction, 0, 0, 0, 0, 0, 0, 0, size, vehicle_type])
@@ -80,6 +80,8 @@ class Objects:
         self.history_time_len = 0
         self.time = 0
         self.currentVelocityforNext = .0
+        self.history_mode = False
+        self.restart_counter = 0
         #self.player_action = PlayerAction(self.objects)
         self.functions = {messages.Objects.Quit: self.quit,
                           messages.Objects.AddObject: self.objects.add_object,
@@ -87,6 +89,7 @@ class Objects:
                           messages.Objects.Pause: self.pause_simulation,
                           messages.Objects.Run: self.run_simulation,
                           messages.Objects.RunFromFile: self.run_history,
+                          messages.Objects.Restart: self.restart,
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
         #self.objects_state = ObjectsState.Pause
 
@@ -102,8 +105,17 @@ class Objects:
     def run_simulation(self):
         self.objects_state = ObjectsState.Run
 
+    def restart(self):
+        if self.history_mode:
+            return
+        self.objects.generate_empty_objects()
+        self.objects.set_objects_settings(self.configuration)
+        self.objects_state = ObjectsState.Run
+        self.restart_counter += 1
+
     def run_history(self):
         self.objects_state = ObjectsState.RunFromFile
+        self.history_mode = True
 
     def load_history_file(self, file):
         with open(file, 'r') as fd:
@@ -119,13 +131,15 @@ class Objects:
             strind += 1
         self.history_time_len = time_len
 
-    def save_history_file(self, file, obj_array):
+    def save_history_file(self, file_name, obj_array):
         flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
         obj_str = ''
         for item in flat_obj:
             obj_str += '{},'.format(item)
         obj_str = obj_str[:-1]
-        with open(file, 'a') as f:
+        if self.restart_counter != 0:
+            file_name = str(self.restart_counter)+'_'+ file_name
+        with open(file_name, 'a') as f:
             f.write(obj_str + '\n')
 
     def update_game_settings(self, configuration):

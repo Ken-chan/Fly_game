@@ -8,8 +8,8 @@ class GuiControls:
 class GuiScreen:
     TerminateScreen, StartNewGame, UpdateRenderedSurface = range(3)
 class Objects:
-    Quit, UpdateField, AddObject, SetControlSignal, KingChangeItem, Pause, Run, \
-    UpdateGameSettings, TrainUnit, BuyItem, UseItem, UpdateObjects, RunFromFile = range(13)
+    Quit, UpdateField, AddObject, SetControlSignal, KingChangeItem, Pause, Run, Restart,\
+    UpdateGameSettings, TrainUnit, BuyItem, UseItem, UpdateObjects, RunFromFile = range(14)
 class AIcontrols:
     Quit, Pause, Run, UpdateObjects, UpdateAiSettings = range(5)
 
@@ -59,12 +59,12 @@ class Messenger:
         self.send_message(self.objects_queue, Objects.Run)
 
     def restart_game(self):
-        self.send_message(self.game_queue, Game.RestartGame)
+        self.send_message(self.objects_queue, Objects.Restart)
+        self.game_unpause()
         print('Restart game')
 
     def end_of_game(self):
         print('End of Game')
-
         self.game_pause() #THINKING ABOUT THAT
 
     #def player_pressed_key(self, pressed, key):
@@ -91,6 +91,9 @@ class Messenger:
 
     def objects_run_simulation(self):
         self.send_message(self.objects_queue, Objects.Run)
+
+    def objects_restart_simulation(self):
+        self.send_message(self.objects_queue, Objects.Restart)
 
     def objects_run_from_file_simulation(self):
         self.send_message(self.objects_queue, Objects.RunFromFile)

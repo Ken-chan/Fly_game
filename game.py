@@ -74,8 +74,8 @@ class Game:
         self.functions = {messages.Game.Quit: self.quit,
                           messages.Game.UpdateObjects: self.update_objects,
                           messages.Game.Pause: self.game_pause_simulation,
-                          messages.Game.ActiveGame: self.game_unpaused,
-                          messages.Game.RestartGame: self.game_restart}
+                          messages.Game.ActiveGame: self.game_unpaused}
+                          #messages.Game.RestartGame: self.game_restart}
 
     # /Part of working with log files starts
 
@@ -95,11 +95,11 @@ class Game:
     def game_unpaused(self):
         self.game_state = GameState.ActiveGame
 
-    def game_restart(self):
-        #self.quit()
-        pyglet.app.exit()
-        time.sleep(1)
-        self.run_game() #THINKING ABOUT IT(HOW TO MAKE CORRECT)
+    #def game_restart(self):
+    #    #self.quit()
+    #    pyglet.app.exit()
+    #    time.sleep(1)
+    #    self.run_game() #THINKING ABOUT IT(HOW TO MAKE CORRECT)
 
 
     def read_messages(self, dt):
