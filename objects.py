@@ -115,6 +115,7 @@ class Objects:
         self.objects.set_objects_settings(self.configuration)
         self.objects_state = ObjectsState.Run
         self.restart_counter += 1
+        self.playtime = 0
 
     def run_history(self):
         self.objects_state = ObjectsState.RunFromFile

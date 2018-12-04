@@ -205,7 +205,7 @@ class DumbAI(Dummy):
             self.nearest_dir_vec[0], self.nearest_dir_vec[1] = np.cos(np.radians(self.nearest_dir)), np.sin(np.radians(self.nearest_dir))
             self.angle, self.rotation_side = self.calc_nearest_dir(self.nearest_dir_vec, self.obj_dir_vec)
             self.obj_diff_coord = self.obj_coord - self.enemy_coord
-            self.angle_objs, self.rotation_side_objs = self.calc_nearest_dir(self.obj_dir_vec, self.nearest_dir_vec)
+            self.angle_objs, self.rotation_side_objs = self.calc_nearest_dir(self.obj_dir_vec, self.obj_diff_coord)
             if self.angle > 175 and self.angle_objs > 175 and self.obj[ObjectProp.Velocity] > 130 and np.linalg.norm(self.nearest_coord - self.obj_coord) < self.front_crit_collision:
                 self.turn_ctrl = 1
                 self.vel_ctrl = -1
