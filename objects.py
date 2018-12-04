@@ -82,6 +82,8 @@ class Objects:
         self.currentVelocityforNext = .0
         self.history_mode = False
         self.restart_counter = 0
+        self.playtime = 0
+        self.maxplaytime = 100
         #self.player_action = PlayerAction(self.objects)
         self.functions = {messages.Objects.Quit: self.quit,
                           messages.Objects.AddObject: self.objects.add_object,
@@ -239,6 +241,9 @@ class Objects:
             self.objects.current_objects = objects
             self.messenger.game_update_objects(self.objects.get_objects())
             self.messenger.ai_update_objects(self.objects.get_objects())
+            self.playtime += 1
+            if self.playtime == self.maxplaytime:
+                self.messenger.end_of_game()
 
         if self.objects_state == ObjectsState.RunFromFile:
             if self.loaded_history is None:
