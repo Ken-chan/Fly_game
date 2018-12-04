@@ -31,6 +31,8 @@ class Game:
             self.history_path = history_path
             self.is_it_move_from_history = True
         self.fps_display = pyglet.clock.ClockDisplay()
+        self.playtime = 0
+        self.maxplaytime = 1000
 
         self.configuration = {ObjectType.FieldSize: [],
                               ObjectType.Bot1: [],
@@ -53,6 +55,7 @@ class Game:
                           messages.Game.UpdateObjects: self.update_objects,
                           messages.Game.Pause: self.game_pause_simulation,
                           messages.Game.ActiveGame: self.game_unpaused}
+		
 
     def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
             pos1 = sizeX/(bot1 + player1 + 1)
@@ -111,6 +114,9 @@ class Game:
             self.objects = objects_copy
             self.renderer.update_objects(objects_copy)
             self.renderer.update_graphics()
+            self.playtime += 1
+            if self.playtime == self.maxplaytime:
+                self.quit()
 
     def run_game(self):
 
