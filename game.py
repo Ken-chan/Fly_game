@@ -9,6 +9,7 @@ from gui_controls import GUIcontrols
 from ai_controls import AIcontrols, AItype
 from objects import Objects
 from obj_def import *
+import gc
 
 class GameState:
     Start, ActiveGame, Menu, Exit, Pause = range(5)
@@ -17,6 +18,7 @@ class GameState:
 class Game:
     def __init__(self, screen_width, screen_height, history_path=None):
         super(Game, self).__init__()
+        gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -32,8 +34,7 @@ class Game:
             self.is_it_move_from_history = True
         self.fps_display = pyglet.clock.ClockDisplay()
         self.playtime = 0
-        self.maxplaytime = 1000
-
+        self.framerate = 60
         self.configuration = {ObjectType.FieldSize: [],
                               ObjectType.Bot1: [],
                               ObjectType.Player1: [],
@@ -55,7 +56,6 @@ class Game:
                           messages.Game.UpdateObjects: self.update_objects,
                           messages.Game.Pause: self.game_pause_simulation,
                           messages.Game.ActiveGame: self.game_unpaused}
-		
 
     def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
             pos1 = sizeX/(bot1 + player1 + 1)
@@ -63,15 +63,15 @@ class Game:
             if player1:
                 self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-15, 15), 0 + np.random.randint(30), 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
             if player2:
-                self.configuration[ObjectType.Player2].append((pos2+ np.random.randint(-15, 15), sizeY - np.random.randint(30), 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+                self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-15, 15), sizeY - np.random.randint(30), 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
 
             for i in range(1, bot1 + 1):
                 self.configuration[ObjectType.Bot1].append(
-                        (pos1 * (i + player1)+ np.random.randint(-15, 15), 0 + np.random.randint(30), 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+                        (pos1 * (i + player1) + np.random.randint(-15, 15), 0 + np.random.randint(30), 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
             for i in range(1, bot2 + 1):
                 self.configuration[ObjectType.Bot2].append(
-                        (pos2 * (i + player2)+ np.random.randint(-15, 15), sizeY - np.random.randint(30), 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+                        (pos2 * (i + player2) + np.random.randint(-15, 15), sizeY - np.random.randint(30), 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
     def clear_file(self, file_path):
         with open(file_path, "w") as file:  # just to open with argument which clean file
@@ -88,13 +88,6 @@ class Game:
 
     def game_unpaused(self):
         self.game_state = GameState.ActiveGame
-
-    #def game_restart(self):
-    #    #self.quit()
-    #    pyglet.app.exit()
-    #    time.sleep(1)
-    #    self.run_game() #THINKING ABOUT IT(HOW TO MAKE CORRECT)
-
 
     def read_messages(self, dt):
         while True:
@@ -114,9 +107,6 @@ class Game:
             self.objects = objects_copy
             self.renderer.update_objects(objects_copy)
             self.renderer.update_graphics()
-            self.playtime += 1
-            if self.playtime == self.maxplaytime:
-                self.quit()
 
     def run_game(self):
 
@@ -149,8 +139,8 @@ class Game:
             self.quit()
 
         # we need to remember about hard nailed graphics. much later we should fix it somehow
-        pyglet.clock.schedule_interval(self.read_messages, 1.0 / 60.0)
-        pyglet.clock.schedule_interval(self.update_graphics, 1.0 / 60.0)
+        pyglet.clock.schedule_interval(self.read_messages, 1.0 / self.framerate)
+        pyglet.clock.schedule_interval(self.update_graphics, 1.0 / self.framerate)
         pyglet.app.run()
 
 

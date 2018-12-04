@@ -83,7 +83,8 @@ class Objects:
         self.history_mode = False
         self.restart_counter = 0
         self.playtime = 0
-        self.maxplaytime = 100
+        self.framerate = 30
+        self.maxplaytime = 60 * self.framerate
         #self.player_action = PlayerAction(self.objects)
         self.functions = {messages.Objects.Quit: self.quit,
                           messages.Objects.AddObject: self.objects.add_object,
@@ -95,8 +96,8 @@ class Objects:
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
         #self.objects_state = ObjectsState.Pause
 
-        pyglet.clock.schedule_interval(self.read_mes, 1.0 / 30.0)
-        pyglet.clock.schedule_interval(self.update_units, 1.0 / 30.0)
+        pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
+        pyglet.clock.schedule_interval(self.update_units, 1.0 / self.framerate)
 
     def quit(self):
         self.objects_state = ObjectsState.Exit
@@ -242,7 +243,7 @@ class Objects:
             self.messenger.game_update_objects(self.objects.get_objects())
             self.messenger.ai_update_objects(self.objects.get_objects())
             self.playtime += 1
-            if self.playtime == self.maxplaytime:
+            if self.playtime >= self.maxplaytime:
                 self.messenger.end_of_game()
 
         if self.objects_state == ObjectsState.RunFromFile:

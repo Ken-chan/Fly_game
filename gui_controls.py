@@ -20,10 +20,11 @@ class GUIcontrols:
         self.cycles = 0
         self.kb_control = KbControl(1, self.messenger)
         self.gui_state = GUIcontrolsState.InGame
+        self.framerate = 30
         self.functions = {messages.GuiControls.StopGui: self.stop_gui,
                           messages.GuiControls.StartGame: self.start_game,
                           messages.GuiControls.HandleKey: self.handle_kb_event}
-        pyglet.clock.schedule_interval(self.run, 1 / 30.0)
+        pyglet.clock.schedule_interval(self.run, 1 / self.framerate)
 
     def run(self, dt):
         if self.gui_state != GUIcontrolsState.Exit:

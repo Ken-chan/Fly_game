@@ -31,13 +31,14 @@ class AIcontrols:
         for index in range(0, ObjectType.ObjArrayTotal):
             self.ai_objs.append(Dummy(index))
         self.update_ai_settings(configuration)
+        self.framerate = 30
         self.functions = {messages.AIcontrols.Quit: self.stop_ai,
                           messages.AIcontrols.UpdateObjects: self.update_objects,
                           messages.AIcontrols.Run: self.start_ai_controls,
                           messages.AIcontrols.UpdateAiSettings: self.update_ai_settings}
 
-        pyglet.clock.schedule_interval(self.read_mes, 1.0 / 30.0)
-        pyglet.clock.schedule_interval(self.recalc, 1.0 / 30.0)
+        pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
+        pyglet.clock.schedule_interval(self.recalc, 1.0 / self.framerate)
 
     def read_mes(self, dt):
         if self.ai_state != AIcontrolsState.Exit:
