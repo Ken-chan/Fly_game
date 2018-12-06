@@ -64,8 +64,8 @@ class Renderer:
                     self.rev_cone_sprites[index].visible = False
                 else:
                     self.objects_sprites[index].visible = True
-                    self.cone_sprites[index].visible = True
-                    self.rev_cone_sprites[index].visible = True
+                    self.cone_sprites[index].visible = False
+                    self.rev_cone_sprites[index].visible = False
                     current_object = self.objects_copy[index]
                     size_proportion_width = self.screen_width / self.battle_field_width
                     size_proportion_height = self.screen_height / self.battle_field_height

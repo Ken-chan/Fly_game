@@ -32,7 +32,7 @@ class Game:
         else:
             self.history_path = history_path
             self.is_it_move_from_history = True
-        self.fps_display = pyglet.clock.ClockDisplay()
+        #self.fps_display = pyglet.clock.ClockDisplay()
         self.playtime = 0
         self.framerate = 60
         self.configuration = {ObjectType.FieldSize: [],
@@ -41,7 +41,7 @@ class Game:
                               ObjectType.Bot2: [],
                               ObjectType.Player2: []}
         self.configuration[ObjectType.FieldSize].append(self.battle_field_size)
-        self.prepare_config(5, 6, True, False, self.battle_field_size[0], self.battle_field_size[1])
+        self.prepare_config(6, 6, False, False, self.battle_field_size[0], self.battle_field_size[1])
 
         self.messenger = Messenger()
         self.Objects = Objects(self.messenger, self.configuration, history_path=self.history_path)
@@ -111,7 +111,7 @@ class Game:
     def run_game(self):
 
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
-        pyglet.gl.glClearColor(0.6, 0.6, 0.6, 0)
+        pyglet.gl.glClearColor(0.1, 0.1, 0.1, 0)
         self.game_window.set_location(200, 50)
         self.game_state = GameState.ActiveGame
         self.renderer.set_battle_field_size(self.battle_field_size[0], self.battle_field_size[1])
@@ -121,10 +121,10 @@ class Game:
             self.messenger.objects_run_simulation()
         self.messenger.ai_start_game()
 
-        @self.game_window.event
-        def on_draw():
-            if self.game_state != GameState.Pause:
-                self.fps_display.draw()
+        #@self.game_window.event
+        #def on_draw():
+        #    if self.game_state != GameState.Pause:
+        #s        self.fps_display.draw()
 
         @self.game_window.event
         def on_key_press(key, modif):
