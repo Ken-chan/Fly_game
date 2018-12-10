@@ -1,12 +1,11 @@
-import pyglet, json
+import pyglet
 from view import Renderer
-import messages
 from messages import Messenger
-import argparse
-import datetime
-import time
 from gui_controls import GUIcontrols
 from ai_controls import AIcontrols, AItype
+import messages
+import argparse
+import datetime
 from objects import Objects
 from obj_def import *
 import gc
@@ -25,8 +24,8 @@ class Game:
         self.battle_field_size = (1000, 1000)
         if history_path is None:
             now_time = datetime.datetime.now()
-            self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
-            # self.history_path = 'history.txt'
+            #self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
+            self.history_path = 'history.txt'
             self.clear_file(self.history_path)
             self.is_it_move_from_history = False
         else:
@@ -47,7 +46,6 @@ class Game:
         self.Objects = Objects(self.messenger, self.configuration, history_path=self.history_path)
         self.ai_controls = AIcontrols(self.messenger, self.configuration)
         self.gui_controls = GUIcontrols(self.messenger)
-
         self.renderer = Renderer(self.screen_width, self.screen_height)
 
         self.objects = None
@@ -61,23 +59,24 @@ class Game:
             pos1 = sizeX/(bot1 + player1 + 1)
             pos2 = sizeX/(bot2 + player2 + 1)
             if player1:
-                self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-15, 15), 0 + np.random.randint(30), 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+                self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-15, 15), 0 + np.random.randint(30),
+                                                               90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
             if player2:
-                self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-15, 15), sizeY - np.random.randint(30), 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+                self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-15, 15), sizeY - np.random.randint(30),
+                                                               270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
 
             for i in range(1, bot1 + 1):
-                self.configuration[ObjectType.Bot1].append(
-                        (pos1 * (i + player1) + np.random.randint(-15, 15), 0 + np.random.randint(30), 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+                self.configuration[ObjectType.Bot1].append((pos1 * (i + player1) + np.random.randint(-15, 15), 0 + np.random.randint(30),
+                                                            90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
             for i in range(1, bot2 + 1):
-                self.configuration[ObjectType.Bot2].append(
-                        (pos2 * (i + player2) + np.random.randint(-15, 15), sizeY - np.random.randint(30), 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+                self.configuration[ObjectType.Bot2].append((pos2 * (i + player2) + np.random.randint(-15, 15), sizeY - np.random.randint(30),
+                                                            270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
     def clear_file(self, file_path):
         with open(file_path, "w") as file:  # just to open with argument which clean file
             pass
 
-    # /Part of working with log files ends
     def quit(self):
         self.game_state = GameState.Exit
         self.messenger.shutdown()
@@ -111,7 +110,7 @@ class Game:
     def run_game(self):
 
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
-        pyglet.gl.glClearColor(0.1, 0.1, 0.1, 0)
+        pyglet.gl.glClearColor(0.3, 0.3, 0.3, 0)
         self.game_window.set_location(200, 50)
         self.game_state = GameState.ActiveGame
         self.renderer.set_battle_field_size(self.battle_field_size[0], self.battle_field_size[1])
@@ -124,7 +123,7 @@ class Game:
         #@self.game_window.event
         #def on_draw():
         #    if self.game_state != GameState.Pause:
-        #s        self.fps_display.draw()
+        #        self.fps_display.draw()
 
         @self.game_window.event
         def on_key_press(key, modif):

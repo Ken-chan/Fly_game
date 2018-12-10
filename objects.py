@@ -2,7 +2,6 @@ from multiprocessing import Process, Queue
 import pyglet
 import messages
 from obj_def import *
-import json
 
 
 class ObjectsState:
@@ -85,6 +84,8 @@ class Objects:
         self.playtime = 0
         self.framerate = 30
         self.maxplaytime = 60 * self.framerate
+        self.team1_survives = None
+        self.team2_survives = None
         #self.player_action = PlayerAction(self.objects)
         self.functions = {messages.Objects.Quit: self.quit,
                           messages.Objects.AddObject: self.objects.add_object,
@@ -159,17 +160,19 @@ class Objects:
             objects[obj_index][sig_type] = sig_val
 
     def is_inside_cone(self, a, b, diff_vector, dir_wide):
-        a = a / np.linalg.norm(a)
-        b = b / np.linalg.norm(b)
+        self.a = a / np.linalg.norm(a)
+        self.b = b / np.linalg.norm(b)
         diff_vector = diff_vector / np.linalg.norm(diff_vector)
-        scalar_a_b = np.sum(np.multiply(a, b))
-        scalar_a_diff = np.sum(np.multiply(a, diff_vector))
+        scalar_a_b = np.sum(np.multiply(self.a, self.b))
+        scalar_a_diff = np.sum(np.multiply(self.a, diff_vector))
         min_scalar = np.cos(np.radians(dir_wide))
         return True if scalar_a_b >= min_scalar and scalar_a_diff >= min_scalar else False
 
     def check_kill_and_end_of_game(self):
-        team1_survives = 0
-        team2_survives = 0
+        self.team1_survives, self.team2_survives = 0, 0
+        self.dir1, self.vec1 = None, None
+        self.dir2, self.vec2 = None, None
+        self.diff_vector, self.distance = None, None
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             objects = self.objects.get_objects(link_only=True)
 
@@ -179,31 +182,32 @@ class Objects:
                     if x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0:
                         self.delete_object(index, objects)
                         continue
-                    dir1 = objects[index][ObjectProp.Dir]
-                    vec1 = np.array([np.cos(np.radians(dir1)), np.sin(np.radians(dir1))])
+                    self.dir1 = objects[index][ObjectProp.Dir]
+                    self.vec1 = np.array([np.cos(np.radians(self.dir1)), np.sin(np.radians(self.dir1))])
 
                     for jndex in range(0, ObjectType.ObjArrayTotal):
                         if objects[jndex][ObjectProp.ObjType] != ObjectType.Absent and index != jndex:
                             x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
-                            dir2 = objects[jndex][ObjectProp.Dir]
-                            vec2 = np.array([np.cos(np.radians(dir2)), np.sin(np.radians(dir2))])
-                            diff_vector = np.array([x2 - x1, y2 - y1])
-                            distance = np.linalg.norm(diff_vector)
-                            if distance <= objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
+                            self.dir2 = objects[jndex][ObjectProp.Dir]
+                            self.vec2 = np.array([np.cos(np.radians(self.dir2)), np.sin(np.radians(self.dir2))])
+                            self.diff_vector = np.array([x2 - x1, y2 - y1])
+                            self.distance = np.linalg.norm(self.diff_vector)
+                            if self.distance <= objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
                                 self.delete_object(index, objects)
                                 self.delete_object(jndex, objects)
                                 break
 
-                            if Teams.team_by_id(index)!= Teams.team_by_id(jndex) and distance < Constants.AttackRange and self.is_inside_cone(vec1, vec2, diff_vector, Constants.AttackConeWide):
+                            if Teams.team_by_id(index)!= Teams.team_by_id(jndex) and self.distance < Constants.AttackRange and \
+                                    self.is_inside_cone(self.vec1, self.vec2, self.diff_vector, Constants.AttackConeWide):
                                 self.delete_object(jndex, objects)
 
                             #Count survives to check end of game
                             if Teams.team_by_id(jndex) == Teams.Team1:
-                                team1_survives += 1
+                                self.team1_survives += 1
                             elif Teams.team_by_id(jndex) == Teams.Team2:
-                                team2_survives += 1
+                                self.team2_survives += 1
             # END_OF_GAME_TRIGGERED
-            if team1_survives < 1 or team2_survives < 1:
+            if self.team1_survives < 1 or self.team2_survives < 1:
                 self.messenger.end_of_game()
 
     def delete_object(self, jndex, objects):
@@ -225,14 +229,15 @@ class Objects:
 
     def update_units(self, dt):
         objects = self.objects.get_objects(link_only=True)
+        self.dv, self.w = None, None
         if self.objects_state == ObjectsState.Run:
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                     objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
                     objects[index][ObjectProp.PrevAngleVel] = objects[index][ObjectProp.AngleVel]
-                    dv, w = self.calc_v_diff(objects[index])
-                    objects[index][ObjectProp.Velocity] = dv * dt + objects[index][ObjectProp.PrevVelocity]
-                    objects[index][ObjectProp.AngleVel] = w
+                    self.dv, self.w = self.calc_v_diff(objects[index])
+                    objects[index][ObjectProp.Velocity] = self.dv * dt + objects[index][ObjectProp.PrevVelocity]
+                    objects[index][ObjectProp.AngleVel] = self.w
                     objects[index][ObjectProp.Dir] += objects[index][ObjectProp.AngleVel] * dt
                     objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
                     rad = np.radians(objects[index][ObjectProp.Dir])
