@@ -25,8 +25,8 @@ class Game:
         self.battle_field_size = (1000, 1000)
         if history_path is None:
             now_time = datetime.datetime.now()
-            #self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
-            self.history_path = 'history.txt'
+            self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
+            #self.history_path = 'delete_me_pls.txt'
             self.clear_file(self.history_path)
             self.is_it_move_from_history = False
         else:
@@ -41,7 +41,7 @@ class Game:
                               ObjectType.Bot2: [],
                               ObjectType.Player2: []}
         self.configuration[ObjectType.FieldSize].append(self.battle_field_size)
-        self.prepare_config(6, 6, False, False, self.battle_field_size[0], self.battle_field_size[1])
+        self.prepare_config(0, 0, 1, 1, self.battle_field_size[0], self.battle_field_size[1])
         if(self.train_mode):
             self.ai_controls = AIcontrols(self.configuration)
             self.Objects = Objects(self.configuration, history_path=self.history_path, ai_controls=self.ai_controls)
@@ -64,10 +64,10 @@ class Game:
             pos2 = sizeX/(bot2 + player2 + 1)
             if player1:
                 self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-15, 15), 0 + np.random.randint(30),
-                                                               90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+                                                               90, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
             if player2:
                 self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-15, 15), sizeY - np.random.randint(30),
-                                                               270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+                                                               270, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
 
             for i in range(1, bot1 + 1):
                 self.configuration[ObjectType.Bot1].append((pos1 * (i + player1) + np.random.randint(-15, 15), 0 + np.random.randint(30),

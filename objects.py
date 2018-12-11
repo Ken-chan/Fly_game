@@ -15,6 +15,7 @@ class ObjectArray:
         self.battle_field_width = 0
         self.battle_field_height = 0
         self.current_objects = None
+        self.start_ind, self.end_ind = None, None
         self.generate_empty_objects()
 
     def set_objects_settings(self, configuration=None):
@@ -43,8 +44,8 @@ class ObjectArray:
             self.battle_field_width = x
             self.battle_field_height = y
             return True
-        start, end = ObjectType.offset(unit_type)
-        for ind in range(start, end+1):
+        self.start_ind, self.end_ind = ObjectType.offset(unit_type)
+        for ind in range(self.start_ind, self.end_ind+1):
             #search for empty space for object
             if self.current_objects[ind][ObjectProp.ObjType] == ObjectType.Absent:
                 self.current_objects[ind] = self.generate_new_object(ind, unit_type, x, y, direction, r, vehicle_type)
@@ -87,8 +88,27 @@ class Objects:
         self.playtime = 0
         self.framerate = 30
         self.maxplaytime = 60 * self.framerate
-        self.team1_survives = None
-        self.team2_survives = None
+        #initialization starts
+        self.team1_survives = np.int32(0)
+        self.team2_survives = np.int32(0)
+        self.x1, self.x2, self.y1, self.y2 = np.float(0.0), np.float(0.0), np.float(0.0), np.float(0.0)
+        self.a_vec, self.b_vec = None, None
+        self.vec1 = np.array([0.0, 0.0])
+        self.vec2 = np.array([0.0, 0.0])
+        self.dir2 = np.float(0.0)
+        self.dir1 = np.float(0.0)
+        self.distance = np.float(0.0)
+        self.diff_vector = np.array([0.0, 0.0])
+        self.diff_vector_norm = None
+        self.scalar_a_b = np.float(0.0)
+        self.scalar_a_diff = np.float(0.0)
+        self.min_scalar = np.float(0.0)
+
+        self.min_v_add = np.int32(0)
+        self.dv, self.w = np.float(0.0), np.float(0.0)
+        self.dv_calc, self.w_calc = np.float(0.0), np.float(0.0)
+        self.cur_rad = np.float(0.0)
+        #initialization ends
         if(self.messenger is not None):
             #self.player_action = PlayerAction(self.objects)
             self.functions = {messages.Objects.Quit: self.quit,
@@ -147,6 +167,7 @@ class Objects:
         self.history_time_len = time_len
 
     def save_history_file(self, file_name, obj_array):
+        pass
         flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
         obj_str = ''
         for item in flat_obj:
@@ -169,39 +190,36 @@ class Objects:
             objects = self.objects.get_objects(link_only=True)
             objects[obj_index][sig_type] = sig_val
 
-    def is_inside_cone(self, a, b, diff_vector, dir_wide):
-        self.a = a / np.linalg.norm(a)
-        self.b = b / np.linalg.norm(b)
-        diff_vector = diff_vector / np.linalg.norm(diff_vector)
-        scalar_a_b = np.sum(np.multiply(self.a, self.b))
-        scalar_a_diff = np.sum(np.multiply(self.a, diff_vector))
-        min_scalar = np.cos(np.radians(dir_wide))
-        return True if scalar_a_b >= min_scalar and scalar_a_diff >= min_scalar else False
+    def is_inside_cone(self, a, b, diff_vect, dir_wide):
+        self.a_vec = a / np.linalg.norm(a)
+        self.b_vec = b / np.linalg.norm(b)
+        self.diff_vector_norm = diff_vect / np.linalg.norm(diff_vect)
+        self.scalar_a_b = np.sum(np.multiply(self.a_vec, self.b_vec), dtype=np.float)
+        self.scalar_a_diff = np.sum(np.multiply(self.a_vec, self.diff_vector_norm), dtype=np.float)
+        self.min_scalar = np.cos(np.radians(dir_wide))
+        return True if self.scalar_a_b >= self.min_scalar and self.scalar_a_diff >= self.min_scalar else False
 
     def check_kill_and_end_of_game(self):
-        self.team1_survives, self.team2_survives = 0, 0
-        self.dir1, self.vec1 = None, None
-        self.dir2, self.vec2 = None, None
-        self.diff_vector, self.distance = None, None
+        self.team1_survives, self.team2_survives = 1, 1 #not triggered end of game
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             objects = self.objects.get_objects(link_only=True)
             #print(objects, "   curr obj")
 
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
-                    x1, y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
-                    if x1 > self.battle_field_width or y1 > self.battle_field_height or x1 < 0 or y1 < 0:
+                    self.x1, self.y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
+                    if self.x1 > self.battle_field_width or self.y1 > self.battle_field_height or self.x1 < 0 or self.y1 < 0:
                         self.delete_object(index, objects)
                         continue
                     self.dir1 = objects[index][ObjectProp.Dir]
-                    self.vec1 = np.array([np.cos(np.radians(self.dir1)), np.sin(np.radians(self.dir1))])
+                    self.vec1[0],self.vec1[1] = np.cos(np.radians(self.dir1)), np.sin(np.radians(self.dir1))
 
                     for jndex in range(0, ObjectType.ObjArrayTotal):
                         if objects[jndex][ObjectProp.ObjType] != ObjectType.Absent and index != jndex:
-                            x2, y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
+                            self.x2, self.y2 = objects[jndex][ObjectProp.Xcoord], objects[jndex][ObjectProp.Ycoord]
                             self.dir2 = objects[jndex][ObjectProp.Dir]
                             self.vec2 = np.array([np.cos(np.radians(self.dir2)), np.sin(np.radians(self.dir2))])
-                            self.diff_vector = np.array([x2 - x1, y2 - y1])
+                            self.diff_vector[0], self.diff_vector[1] = self.x2 - self.x1, self.y2 - self.y1
                             self.distance = np.linalg.norm(self.diff_vector)
                             if self.distance <= objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
                                 self.delete_object(index, objects)
@@ -225,6 +243,10 @@ class Objects:
                     print("end of game")
                     self.in_game = False
 
+    def make_loss_func(self, configuration, battle_height, battle_width):
+        ###
+        pass
+
     def delete_object(self, jndex, objects):
         print("Killed unit number ", jndex)
         for kndex in range(1, ObjectProp.Total):
@@ -234,19 +256,18 @@ class Objects:
         self.objects.add_object(unit_type, x, y, direction, vehicle_type, r)
 
     def calc_v_diff(self, object_state):
-        min_v_add = 0
+        self.min_v_add = 0
         if object_state[ObjectProp.VehicleType] == ObjectSubtype.Plane:
-            min_v_add = Constants.MinVelAccCoef * np.abs(object_state[ObjectProp.Velocity] - Constants.MinPlaneVel) if object_state[ObjectProp.Velocity] < Constants.MinPlaneVel else 0
-        dv = Constants.VelAccCoef * (object_state[ObjectProp.VelControl]) - Constants.TurnDissipationCoef * np.abs(object_state[ObjectProp.AngleVel]) * \
-             object_state[ObjectProp.Velocity] - Constants.AirResistanceCoef * object_state[ObjectProp.Velocity] + min_v_add
-        w = Constants.TurnAccCoef * object_state[ObjectProp.TurnControl]
-        return dv, w
+            self.min_v_add = Constants.MinVelAccCoef * np.abs(object_state[ObjectProp.Velocity] - Constants.MinPlaneVel) if object_state[ObjectProp.Velocity] < Constants.MinPlaneVel else 0
+        self.dv_calc = Constants.VelAccCoef * (object_state[ObjectProp.VelControl]) - Constants.TurnDissipationCoef * np.abs(object_state[ObjectProp.AngleVel]) * \
+             object_state[ObjectProp.Velocity] - Constants.AirResistanceCoef * object_state[ObjectProp.Velocity] + self.min_v_add
+        self.w_calc = Constants.TurnAccCoef * object_state[ObjectProp.TurnControl]
+        return self.dv_calc, self.w_calc
 
     def update_units(self, dt):
         objects = self.objects.get_objects(link_only=True)
         #print(objects, "  update ")
 
-        self.dv, self.w = None, None
         if self.objects_state == ObjectsState.Run:
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
@@ -257,9 +278,9 @@ class Objects:
                     objects[index][ObjectProp.AngleVel] = self.w
                     objects[index][ObjectProp.Dir] += objects[index][ObjectProp.AngleVel] * dt
                     objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
-                    rad = np.radians(objects[index][ObjectProp.Dir])
-                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
-                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
+                    self.cur_rad = np.radians(objects[index][ObjectProp.Dir])
+                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.cos(self.cur_rad) * dt
+                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(self.cur_rad) * dt
             self.save_history_file(self.hist_file_name, objects)
             self.objects.current_objects = objects
             self.check_kill_and_end_of_game()
@@ -297,5 +318,6 @@ class Objects:
                 if data is None:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
+
 
 

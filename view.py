@@ -10,13 +10,19 @@ class Renderer:
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.objects_copy = None
-        self.battle_field_width = None
-        self.battle_field_height = None
-        self.scaling_factor = None
+        self.battle_field_width = np.int32(0)
+        self.battle_field_height = np.int32(0)
+        self.scaling_factor = np.float(0.0)
 
         self.objects_sprites = None
         self.cone_sprites = None
         self.rev_cone_sprites = None
+        self.new_obj_sprite = None
+        self.cone, self.rev_cone = None, None
+        self.objects_type = None
+        self.current_object = None
+        self.size_proportion_width = np.float(0.0)
+        self.size_proportion_height = np.float(0.0)
 
         self.batch = pyglet.graphics.Batch()
 
@@ -27,10 +33,8 @@ class Renderer:
         self.objects_sprites = []
         self.cone_sprites = []
         self.rev_cone_sprites = []
-        self.new_obj_sprite = None
-        self.cone, self.rev_cone = None, None
         self.scaling_factor = self.screen_width / 800
-        self.objects_type = None
+
 
         for index in range(0, ObjectType.ObjArrayTotal):
             self.objects_type = ObjectType.type_by_id(index)
@@ -58,9 +62,6 @@ class Renderer:
         self.objects_copy = objects
 
     def update_graphics(self):
-        self.current_object = None
-        self.size_proportion_width = None
-        self.size_proportion_height = None
         if self.renderer_state == RendererState.Game and self.objects_copy is not None:
             for index in range(0, len(self.objects_sprites)):
                 if self.objects_copy[index][ObjectProp.ObjType] == ObjectType.Absent:
@@ -74,21 +75,21 @@ class Renderer:
                     self.current_object = self.objects_copy[index]
                     self.size_proportion_width = self.screen_width / self.battle_field_width
                     self.size_proportion_height = self.screen_height / self.battle_field_height
-                    #size_proportion_dir = self.screen_width / self.screen_height
+                    # size_proportion_dir = self.screen_width / self.screen_height
 
                     self.objects_sprites[index].update(x=self.size_proportion_width * (self.current_object[ObjectProp.Xcoord]),
                                                        y=self.size_proportion_height * (self.current_object[ObjectProp.Ycoord]),
                                                        rotation= -self.current_object[ObjectProp.Dir])
 
-                    self.cone_sprites[index].update(x=self.size_proportion_width * (self.current_object[ObjectProp.Xcoord]), # -
-                                                        #100 * np.cos(-np.radians(current_object[ObjectProp.Dir]))),
+                    self.cone_sprites[index].update(x=self.size_proportion_width * (self.current_object[ObjectProp.Xcoord]),
+                                                        # 100 * np.cos(-np.radians(current_object[ObjectProp.Dir]))),
                                                         # This, to move center of cone on the bottom of objects
-                                                    y=self.size_proportion_height * (self.current_object[ObjectProp.Ycoord]), # -
-                                                        #100 * np.sin(-np.radians(current_object[ObjectProp.Dir]))),
+                                                    y=self.size_proportion_height * (self.current_object[ObjectProp.Ycoord]),
+                                                        # 100 * np.sin(-np.radians(current_object[ObjectProp.Dir]))),
                                                         # Do not need this, cause of make anchors
-                                                    rotation= -self.current_object[ObjectProp.Dir])
+                                                    rotation=-self.current_object[ObjectProp.Dir])
 
-                    self.rev_cone_sprites[index].update(x=self.size_proportion_width  * (self.current_object[ObjectProp.Xcoord]),
+                    self.rev_cone_sprites[index].update(x=self.size_proportion_width * (self.current_object[ObjectProp.Xcoord]),
                                                         y=self.size_proportion_height * (self.current_object[ObjectProp.Ycoord]),
                                                         rotation=-self.current_object[ObjectProp.Dir] + 180)
 
