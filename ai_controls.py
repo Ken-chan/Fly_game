@@ -21,7 +21,7 @@ class AIcontrols:
         #super(AIcontrols, self).__init__()
         self.ai_state = AIcontrolsState.Start
         self.messenger = messenger
-        self.battle_field_size = np.array((0,0))
+        self.battle_field_size = np.array([0.0, 0.0])
         self.objects_copy = None
         self.configuration = None
         self.ai_objs = []
@@ -68,7 +68,7 @@ class AIcontrols:
                         offset_counter[key] += 1
 
                     if key == ObjectType.FieldSize:
-                        self.battle_field_size = np.array((item[0],item[1]))
+                        self.battle_field_size[0], self.battle_field_size[1] = item[0], item[1]
                     if key in (ObjectType.Player1, ObjectType.Player2, ObjectType.Bot1, ObjectType.Bot2):
                         if len(item) == 6:
                             _, _, _, _, _, aitype = item
@@ -159,6 +159,9 @@ class DumbAI(Dummy):
         self.obj_diff_coord = np.array([0.0, 0.0])
         self.angle_objs = np.float(0.0)
         self.rotation_side_objs = np.float(0.0)
+
+
+
 
     def calc_nearest_dir(self, vec1, vec2):
         self.vec1, self.vec2 = vec1 / np.linalg.norm(vec1), vec2 / np.linalg.norm(vec2)

@@ -61,7 +61,38 @@ class ObjectArray:
             return self.current_objects
         return np.copy(self.current_objects)
 
+class Loss():
+    def __init__(self, configuration):
+        self.configuration = None
+        self.battle_field_size = np.array([0.0, 0.0])
+        self.set_congiguration(configuration)
 
+        self.min_x = np.float(0.0)
+        self.min_y = np.float(0.0)
+        self.min_distance = np.float(0.0)
+        self.loss_distance = np.float(0.0)
+
+    def set_congiguration(self, configuration):
+        self.configuration = configuration
+        if configuration:
+            for key in configuration:
+                for item in configuration[key]:
+                    if key == ObjectType.FieldSize:
+                        self.battle_field_size[0], self.battle_field_size[1] = item[0], item[1]
+
+    def calc_loss_of_distance(self, object):
+        if object[ObjectProp.Xcoord] <= np.fabs(self.battle_field_size[0] - object[ObjectProp.Xcoord]):
+            self.min_x = object[ObjectProp.Xcoord]
+        else:
+            self.min_x = np.fabs(self.battle_field_size[0] - object[ObjectProp.Xcoord])
+        if object[ObjectProp.Ycoord] <= np.fabs(self.battle_field_size[1] - object[ObjectProp.Ycoord]):
+            self.min_y = object[ObjectProp.Ycoord]
+        else:
+            self.min_y = np.fabs(self.battle_field_size[1] - object[ObjectProp.Ycoord])
+
+        self.min_distance = np.minimum(self.min_x , self.min_y)
+        self.loss_distance = 100/(self.min_distance) if self.min_distance < 200 else 0
+        print(self.loss_distance)
 
 class Objects:
     def __init__(self, configuration, history_path, messenger=None, ai_controls=None):
@@ -88,6 +119,8 @@ class Objects:
         self.playtime = 0
         self.framerate = 30
         self.maxplaytime = 60 * self.framerate
+
+        self.Loss = Loss(self.configuration)
         #initialization starts
         self.team1_survives = np.int32(0)
         self.team2_survives = np.int32(0)
@@ -235,6 +268,12 @@ class Objects:
                                 self.team1_survives += 1
                             elif Teams.team_by_id(jndex) == Teams.Team2:
                                 self.team2_survives += 1
+
+                            ## TRY LOSS
+                            self.Loss.calc_loss_of_distance(objects[jndex])
+
+
+
             # END_OF_GAME_TRIGGERED
             if self.team1_survives < 1 or self.team2_survives < 1:
                 if( not self.train_mode):
@@ -242,10 +281,6 @@ class Objects:
                 else:
                     print("end of game")
                     self.in_game = False
-
-    def make_loss_func(self, configuration, battle_height, battle_width):
-        ###
-        pass
 
     def delete_object(self, jndex, objects):
         print("Killed unit number ", jndex)

@@ -6,7 +6,7 @@ from ai_controls import AIcontrols, AItype
 import messages
 import argparse
 import datetime
-from objects import Objects
+from objects import Objects, Loss
 from obj_def import *
 import gc
 
@@ -51,6 +51,8 @@ class Game:
             self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger)
             self.gui_controls = GUIcontrols(self.messenger)
             self.renderer = Renderer(self.screen_width, self.screen_height)
+            self.loss = Loss(self.configuration)
+
 
             self.objects = None
             self.history_list = []
