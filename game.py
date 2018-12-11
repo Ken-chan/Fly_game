@@ -15,12 +15,13 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False):
         super(Game, self).__init__()
         gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.train_mode = train_mode
         self.battle_field_size = (1000, 1000)
         if history_path is None:
             now_time = datetime.datetime.now()
@@ -41,19 +42,22 @@ class Game:
                               ObjectType.Player2: []}
         self.configuration[ObjectType.FieldSize].append(self.battle_field_size)
         self.prepare_config(6, 6, False, False, self.battle_field_size[0], self.battle_field_size[1])
+        if(self.train_mode):
+            self.ai_controls = AIcontrols(self.configuration)
+            self.Objects = Objects(self.configuration, history_path=self.history_path, ai_controls=self.ai_controls)
+        else:
+            self.messenger = Messenger()
+            self.Objects = Objects(self.configuration, history_path=self.history_path, messenger=self.messenger)
+            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger)
+            self.gui_controls = GUIcontrols(self.messenger)
+            self.renderer = Renderer(self.screen_width, self.screen_height)
 
-        self.messenger = Messenger()
-        self.Objects = Objects(self.messenger, self.configuration, history_path=self.history_path)
-        self.ai_controls = AIcontrols(self.messenger, self.configuration)
-        self.gui_controls = GUIcontrols(self.messenger)
-        self.renderer = Renderer(self.screen_width, self.screen_height)
-
-        self.objects = None
-        self.history_list = []
-        self.functions = {messages.Game.Quit: self.quit,
-                          messages.Game.UpdateObjects: self.update_objects,
-                          messages.Game.Pause: self.game_pause_simulation,
-                          messages.Game.ActiveGame: self.game_unpaused}
+            self.objects = None
+            self.history_list = []
+            self.functions = {messages.Game.Quit: self.quit,
+                              messages.Game.UpdateObjects: self.update_objects,
+                              messages.Game.Pause: self.game_pause_simulation,
+                              messages.Game.ActiveGame: self.game_unpaused}
 
     def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
             pos1 = sizeX/(bot1 + player1 + 1)
@@ -147,9 +151,14 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--file", type=str, required=False,
                     help="path to history file")
+    ap.add_argument("-t", "--train", required=False, action='store_true',
+                    help="training mode")
     args = vars(ap.parse_args())
-    if 'file' in args:
+    if args['train'] :
+        game = Game(1000, 1000, train_mode=args['train'])
+    elif 'file' in args:
         game = Game(1000, 1000, args['file'])
+        game.run_game()
     else:
         game = Game(1000, 1000)
-    game.run_game()
+        game.run_game()

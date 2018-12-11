@@ -1,9 +1,6 @@
-from multiprocessing import Process, Queue
 import pyglet
 import messages
 from obj_def import *
-from random import *
-
 
 class AIcontrolsState:
     Start, Run, Exit = range(3)
@@ -20,7 +17,7 @@ class AItype:
 
 
 class AIcontrols:
-    def __init__(self, messenger, configuration):
+    def __init__(self, configuration, messenger=None):
         #super(AIcontrols, self).__init__()
         self.ai_state = AIcontrolsState.Start
         self.messenger = messenger
@@ -32,13 +29,15 @@ class AIcontrols:
             self.ai_objs.append(Dummy(index))
         self.update_ai_settings(configuration)
         self.framerate = 30
-        self.functions = {messages.AIcontrols.Quit: self.stop_ai,
-                          messages.AIcontrols.UpdateObjects: self.update_objects,
-                          messages.AIcontrols.Run: self.start_ai_controls,
-                          messages.AIcontrols.UpdateAiSettings: self.update_ai_settings}
+        if( self.messenger):
+            self.functions = {messages.AIcontrols.Quit: self.stop_ai,
+                              messages.AIcontrols.UpdateObjects: self.update_objects,
+                              messages.AIcontrols.Run: self.start_ai_controls,
+                              messages.AIcontrols.UpdateAiSettings: self.update_ai_settings}
 
-        pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
-        pyglet.clock.schedule_interval(self.recalc, 1.0 / self.framerate)
+            pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
+            pyglet.clock.schedule_interval(self.recalc, 1.0 / self.framerate)
+
 
     def read_mes(self, dt):
         if self.ai_state != AIcontrolsState.Exit:
@@ -78,8 +77,8 @@ class AIcontrols:
                             obj_ind = obj_offset + off_counter
                             self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size)
 
-    def recalc(self, dt):
-        if self.ai_state == AIcontrolsState.Run and self.objects_copy is not None:
+    def recalc(self, dt,objects_for_train=None, train=False):
+        if not train and self.ai_state == AIcontrolsState.Run and self.objects_copy is not None:
             for index in range(0, ObjectType.ObjArrayTotal):
                 if self.objects_copy[index][ObjectProp.ObjType] == ObjectType.Absent:
                     continue
@@ -89,6 +88,21 @@ class AIcontrols:
                 turn_ctrl, vel_ctrl = result
                 self.messenger.objects_set_control_signal(index, ObjectProp.VelControl, vel_ctrl)
                 self.messenger.objects_set_control_signal(index, ObjectProp.TurnControl, turn_ctrl)
+        if(train):
+            for index in range(0, ObjectType.ObjArrayTotal):
+                #global objects_for_train
+                _objects_for_train = objects_for_train
+                #print(_objects_for_train)
+                if _objects_for_train[index][ObjectProp.ObjType] == ObjectType.Absent:
+                    continue
+                result = self.ai_objs[index].calc_behaviour(_objects_for_train)
+                if result is None:
+                    continue
+                turn_ctrl, vel_ctrl = result
+                _objects_for_train[index][ObjectProp.VelControl] = vel_ctrl
+                _objects_for_train[index][ObjectProp.TurnControl] = turn_ctrl
+
+                return _objects_for_train
 
 class Dummy:
     def __init__(self, index):

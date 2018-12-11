@@ -63,11 +63,14 @@ class ObjectArray:
 
 
 class Objects:
-    def __init__(self, messenger, configuration, history_path):
+    def __init__(self, configuration, history_path, messenger=None, ai_controls=None):
         #super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
+        self.train_mode = False
+        self.in_game = True
         self.messenger = messenger
         self.configuration = None
+        self.ai_controls = ai_controls
         self.battle_field_width = 0
         self.battle_field_height = 0
         self.objects = ObjectArray()
@@ -86,19 +89,26 @@ class Objects:
         self.maxplaytime = 60 * self.framerate
         self.team1_survives = None
         self.team2_survives = None
-        #self.player_action = PlayerAction(self.objects)
-        self.functions = {messages.Objects.Quit: self.quit,
-                          messages.Objects.AddObject: self.objects.add_object,
-                          messages.Objects.SetControlSignal: self.set_control_signal,
-                          messages.Objects.Pause: self.pause_simulation,
-                          messages.Objects.Run: self.run_simulation,
-                          messages.Objects.RunFromFile: self.run_history,
-                          messages.Objects.Restart: self.restart,
-                          messages.Objects.UpdateGameSettings: self.update_game_settings}
-        #self.objects_state = ObjectsState.Pause
+        if(self.messenger is not None):
+            #self.player_action = PlayerAction(self.objects)
+            self.functions = {messages.Objects.Quit: self.quit,
+                              messages.Objects.AddObject: self.objects.add_object,
+                              messages.Objects.SetControlSignal: self.set_control_signal,
+                              messages.Objects.Pause: self.pause_simulation,
+                              messages.Objects.Run: self.run_simulation,
+                              messages.Objects.RunFromFile: self.run_history,
+                              messages.Objects.Restart: self.restart,
+                              messages.Objects.UpdateGameSettings: self.update_game_settings}
+            #self.objects_state = ObjectsState.Pause
 
-        pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
-        pyglet.clock.schedule_interval(self.update_units, 1.0 / self.framerate)
+            pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
+            pyglet.clock.schedule_interval(self.update_units, 1.0 / self.framerate)
+        else:
+            self.train_mode = True
+            while(self.in_game):
+                #print(self.objects.current_objects)
+                self.update_units(1/self.framerate)
+
 
     def quit(self):
         self.objects_state = ObjectsState.Exit
@@ -175,6 +185,7 @@ class Objects:
         self.diff_vector, self.distance = None, None
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             objects = self.objects.get_objects(link_only=True)
+            #print(objects, "   curr obj")
 
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
@@ -208,7 +219,11 @@ class Objects:
                                 self.team2_survives += 1
             # END_OF_GAME_TRIGGERED
             if self.team1_survives < 1 or self.team2_survives < 1:
-                self.messenger.end_of_game()
+                if( not self.train_mode):
+                    self.messenger.end_of_game()
+                else:
+                    print("end of game")
+                    self.in_game = False
 
     def delete_object(self, jndex, objects):
         print("Killed unit number ", jndex)
@@ -229,6 +244,8 @@ class Objects:
 
     def update_units(self, dt):
         objects = self.objects.get_objects(link_only=True)
+        #print(objects, "  update ")
+
         self.dv, self.w = None, None
         if self.objects_state == ObjectsState.Run:
             for index in range(0, ObjectType.ObjArrayTotal):
@@ -244,13 +261,21 @@ class Objects:
                     objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.cos(rad) * dt
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(rad) * dt
             self.save_history_file(self.hist_file_name, objects)
-            self.check_kill_and_end_of_game()
             self.objects.current_objects = objects
-            self.messenger.game_update_objects(self.objects.get_objects())
-            self.messenger.ai_update_objects(self.objects.get_objects())
-            self.playtime += 1
-            if self.playtime >= self.maxplaytime:
-                self.messenger.end_of_game()
+            self.check_kill_and_end_of_game()
+            if(not self.train_mode):
+                self.messenger.game_update_objects(self.objects.get_objects())
+                self.messenger.ai_update_objects(self.objects.get_objects())
+                self.playtime += 1
+                if self.playtime >= self.maxplaytime:
+                    self.messenger.end_of_game()
+            else:
+                #global objects_for_train
+                objects_for_train = self.objects.current_objects
+                self.objects.current_objects = \
+                    self.ai_controls.recalc(1/self.framerate, self.objects.current_objects, train=True)
+
+                #print(self.objects.current_objects)
 
         if self.objects_state == ObjectsState.RunFromFile:
             if self.loaded_history is None:
