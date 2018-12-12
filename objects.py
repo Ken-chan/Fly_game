@@ -72,6 +72,7 @@ class Loss():
         self.min_x = np.float(0.0)
         self.min_y = np.float(0.0)
         self.norm_min_distance = np.float(0.0)
+        self.a = np.float(0.0)
 
         #Loss value functions
         self.loss_distance = np.float(0.0)
@@ -85,6 +86,7 @@ class Loss():
             for key in configuration:
                 #there count number of survives in each team
                 for item in configuration[key]:
+                    #print(item)
                     if key == ObjectType.FieldSize:
                         self.battle_field_size[0], self.battle_field_size[1] = item[0], item[1]
 
@@ -103,9 +105,9 @@ class Loss():
         else:
             self.norm_min_distance = self.min_y / self.battle_field_size[1]
 
-        self.loss_distance = 1/(self.norm_min_distance) if (self.norm_min_distance < 0.15 and self.norm_min_distance != 0) \
+        self.loss_distance = -0.1/(self.norm_min_distance) if (self.norm_min_distance < 0.15 and self.norm_min_distance != 0) \
                             else 0 #loss is zero in center square of field
-        print(self.loss_distance)
+        #print(self.loss_distance)
 
     def calc_loss_of_enemy_distance(self, object, enemy):
 
@@ -117,9 +119,9 @@ class Loss():
         self.loss_distance_comrade = None
         pass
 
-    def calc_loss_amount_teams(self, surv_team1, surv_team2):
-
-        self.loss_amount_in_teams = None
+    def calc_loss_amount_teams(self, radiant, dire):
+        self.loss_amount_in_teams = 2*(radiant - dire)/(radiant + dire)
+        print(self.loss_amount_in_teams)
         pass
 
     def calc_loss_all(self):
@@ -129,12 +131,14 @@ class Loss():
 
 
 class Objects:
-    def __init__(self, configuration, history_path, messenger=None, ai_controls=None):
+    def __init__(self, configuration, radiant, dire, history_path, messenger=None, ai_controls=None):
         #super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
         self.train_mode = False
         self.in_game = True
         self.messenger = messenger
+        self.radiant = radiant
+        self.dire = dire
         self.configuration = None
         self.ai_controls = ai_controls
         self.battle_field_width = 0
@@ -291,11 +295,17 @@ class Objects:
                             if self.distance <= objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
                                 self.delete_object(index, objects)
                                 self.delete_object(jndex, objects)
+                                self.radiant -= 1
+                                self.dire -= 1
                                 break
 
                             if Teams.team_by_id(index)!= Teams.team_by_id(jndex) and self.distance < Constants.AttackRange and \
                                     self.is_inside_cone(self.vec1, self.vec2, self.diff_vector, Constants.AttackConeWide):
                                 self.delete_object(jndex, objects)
+                                if Teams.team_by_id(jndex) == Teams.Team1:
+                                    self.radiant -= 1
+                                elif Teams.team_by_id(jndex) == Teams.Team2:
+                                    self.dire -= 1
 
                             #Count survives to check end of game
                             if Teams.team_by_id(jndex) == Teams.Team1:
@@ -305,6 +315,7 @@ class Objects:
 
                             ## TRY LOSS
                             self.Loss.calc_loss_of_distance(objects[jndex])
+                            self.Loss.calc_loss_amount_teams(self.radiant, self.dire)
 
 
 
