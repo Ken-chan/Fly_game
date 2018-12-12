@@ -66,16 +66,24 @@ class Loss():
         self.configuration = None
         self.battle_field_size = np.array([0.0, 0.0])
         self.set_congiguration(configuration)
+        self.survives_team1 = np.int32(0)
+        self.survives_team2 = np.int32(0)
 
         self.min_x = np.float(0.0)
         self.min_y = np.float(0.0)
-        self.min_distance = np.float(0.0)
+        self.norm_min_distance = np.float(0.0)
+
+        #Loss value functions
         self.loss_distance = np.float(0.0)
+        self.loss_distance_enemy = np.float(0.0)
+        self.loss_distance_comrade = np.float(0.0)
+        self.loss_amount_in_teams = np.float(0.0)
 
     def set_congiguration(self, configuration):
         self.configuration = configuration
         if configuration:
             for key in configuration:
+                #there count number of survives in each team
                 for item in configuration[key]:
                     if key == ObjectType.FieldSize:
                         self.battle_field_size[0], self.battle_field_size[1] = item[0], item[1]
@@ -90,9 +98,35 @@ class Loss():
         else:
             self.min_y = np.fabs(self.battle_field_size[1] - object[ObjectProp.Ycoord])
 
-        self.min_distance = np.minimum(self.min_x , self.min_y)
-        self.loss_distance = 100/(self.min_distance) if self.min_distance < 200 else 0
+        if self.min_x <= self.min_y:
+            self.norm_min_distance = self.min_x / self.battle_field_size[0] #normalize distance to field size
+        else:
+            self.norm_min_distance = self.min_y / self.battle_field_size[1]
+
+        self.loss_distance = 1/(self.norm_min_distance) if (self.norm_min_distance < 0.15 and self.norm_min_distance != 0) \
+                            else 0 #loss is zero in center square of field
         print(self.loss_distance)
+
+    def calc_loss_of_enemy_distance(self, object, enemy):
+
+        self.loss_distance_enemy = None
+        pass
+
+    def calc_loss_of_comrade_distance(self, object, comrade):
+
+        self.loss_distance_comrade = None
+        pass
+
+    def calc_loss_amount_teams(self, surv_team1, surv_team2):
+
+        self.loss_amount_in_teams = None
+        pass
+
+    def calc_loss_all(self):
+
+        self.loss_all = None
+        pass
+
 
 class Objects:
     def __init__(self, configuration, history_path, messenger=None, ai_controls=None):
@@ -120,7 +154,7 @@ class Objects:
         self.framerate = 30
         self.maxplaytime = 60 * self.framerate
 
-        self.Loss = Loss(self.configuration)
+        self.Loss = Loss(self.configuration) #loss take config from objects(not from game)
         #initialization starts
         self.team1_survives = np.int32(0)
         self.team2_survives = np.int32(0)
