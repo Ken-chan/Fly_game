@@ -64,7 +64,7 @@ class Messenger:
         print('Restart game')
 
     def end_of_game(self):
-        print('End of Game')
+        print("End of game")
         self.game_pause() #THINKING ABOUT THAT
 
     #def player_pressed_key(self, pressed, key):

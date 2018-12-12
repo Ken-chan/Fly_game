@@ -1,4 +1,5 @@
 import pyglet
+from multiprocessing import Pool
 from view import Renderer
 from messages import Messenger
 from gui_controls import GUIcontrols
@@ -23,16 +24,16 @@ class Game:
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 3
-        self.dire_bots = 3
-        self.is_player1_play = 1
-        self.is_player2_play = 3
+        self.radiant_bots = 5
+        self.dire_bots = 6
+        self.is_player1_play = 0
+        self.is_player2_play = 0
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
         if history_path is None:
             now_time = datetime.datetime.now()
-            self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
-            #self.history_path = 'delete_me_pls.txt'
+            #self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
+            self.history_path = 'delete_me_pls.txt'
             self.clear_file(self.history_path)
             self.is_it_move_from_history = False
         else:
@@ -49,25 +50,24 @@ class Game:
         self.configuration[ObjectType.FieldSize].append(self.battle_field_size)
         self.prepare_config(self.radiant_bots, self.dire_bots, self.is_player1_play, self.is_player2_play,
                             self.battle_field_size[0], self.battle_field_size[1])
+        self.messenger = Messenger()
         if(self.train_mode):
-            self.ai_controls = AIcontrols(self.configuration)
+            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger, ai_controls=self.ai_controls)
         else:
-            self.messenger = Messenger()
+            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger)
-            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger)
-            self.gui_controls = GUIcontrols(self.messenger)
-            self.renderer = Renderer(self.screen_width, self.screen_height)
+        self.gui_controls = GUIcontrols(self.messenger)
+        self.renderer = Renderer(self.screen_width, self.screen_height)
 
-
-            self.objects = None
-            self.history_list = []
-            self.functions = {messages.Game.Quit: self.quit,
-                              messages.Game.UpdateObjects: self.update_objects,
-                              messages.Game.Pause: self.game_pause_simulation,
-                              messages.Game.ActiveGame: self.game_unpaused}
+        self.objects = None
+        self.history_list = []
+        self.functions = {messages.Game.Quit: self.quit,
+                          messages.Game.UpdateObjects: self.update_objects,
+                          messages.Game.Pause: self.game_pause_simulation,
+                          messages.Game.ActiveGame: self.game_unpaused}
 
 
 
@@ -76,20 +76,20 @@ class Game:
 
         pos2 = sizeX / (bot2 + player2 + 1)
         if player1:
-            self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-15, 15), 0 + np.random.randint(30),
+            self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-15, 15), 50 + np.random.randint(30),
                                                        90, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
         if player2:
-            self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-15, 15), sizeY - np.random.randint(30),
+            self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-15, 15), sizeY - 50 - np.random.randint(30),
                                                        270, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
 
         for i in range(1, bot1 + 1):
             self.configuration[ObjectType.Bot1].append(
-                (pos1 * (i + player1) + np.random.randint(-15, 15), 0 + np.random.randint(30),
+                (pos1 * (i + player1) + np.random.randint(-15, 15), 50 + np.random.randint(30),
                 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
-                (pos2 * (i + player2) + np.random.randint(-15, 15), sizeY - np.random.randint(30),
+                (pos2 * (i + player2) + np.random.randint(-15, 15), sizeY - 50 - np.random.randint(30),
                  270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
 
@@ -129,7 +129,10 @@ class Game:
             self.renderer.update_graphics()
 
     def run_game(self):
-
+        if (self.train_mode):
+            pyglet.clock.schedule_interval(self.read_messages, 1.0 / 2)
+            pyglet.app.run()
+            return 0
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
         pyglet.gl.glClearColor(0.3, 0.3, 0.3, 0)
         self.game_window.set_location(200, 50)
@@ -168,14 +171,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--file", type=str, required=False,
                     help="path to history file")
-    ap.add_argument("-t", "--train", required=False, action='store_true',
+    ap.add_argument("-t", "--train", required=False, action='store_false',
                     help="training mode")
     args = vars(ap.parse_args())
-    if args['train'] :
-        game = Game(1000, 1000, train_mode=args['train'])
-    elif 'file' in args:
-        game = Game(1000, 1000, args['file'])
-        game.run_game()
+
+    if 'file' in args:
+        game = Game(1000, 1000, args['file'], train_mode=args['train'])
     else:
-        game = Game(1000, 1000)
-        game.run_game()
+        game = Game(1000, 1000, train_mode=args['train'])
+    game.run_game()

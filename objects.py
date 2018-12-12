@@ -120,8 +120,8 @@ class Loss():
         pass
 
     def calc_loss_amount_teams(self, radiant, dire):
-        self.loss_amount_in_teams = 2*(radiant - dire)/(radiant + dire)
-        print(self.loss_amount_in_teams)
+        #self.loss_amount_in_teams = 2*(radiant - dire)/(radiant + dire)
+        #print(self.loss_amount_in_teams)
         pass
 
     def calc_loss_all(self):
@@ -134,7 +134,9 @@ class Objects:
     def __init__(self, configuration, radiant, dire, history_path, messenger=None, ai_controls=None):
         #super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
-        self.train_mode = False
+        self.train_mode = True
+        if(ai_controls == None):
+            self.train_mode = False
         self.in_game = True
         self.messenger = messenger
         self.radiant = radiant
@@ -180,25 +182,25 @@ class Objects:
         self.dv_calc, self.w_calc = np.float(0.0), np.float(0.0)
         self.cur_rad = np.float(0.0)
         #initialization ends
-        if(self.messenger is not None):
-            #self.player_action = PlayerAction(self.objects)
-            self.functions = {messages.Objects.Quit: self.quit,
-                              messages.Objects.AddObject: self.objects.add_object,
-                              messages.Objects.SetControlSignal: self.set_control_signal,
-                              messages.Objects.Pause: self.pause_simulation,
-                              messages.Objects.Run: self.run_simulation,
-                              messages.Objects.RunFromFile: self.run_history,
-                              messages.Objects.Restart: self.restart,
-                              messages.Objects.UpdateGameSettings: self.update_game_settings}
-            #self.objects_state = ObjectsState.Pause
 
+        self.functions = {messages.Objects.Quit: self.quit,
+                          messages.Objects.AddObject: self.objects.add_object,
+                          messages.Objects.SetControlSignal: self.set_control_signal,
+                          messages.Objects.Pause: self.pause_simulation,
+                          messages.Objects.Run: self.run_simulation,
+                          messages.Objects.RunFromFile: self.run_history,
+                          messages.Objects.Restart: self.restart,
+                          messages.Objects.UpdateGameSettings: self.update_game_settings}
+        #self.objects_state = ObjectsState.Pause
+
+        if(self.train_mode):
+            self._index, self._vel_ctrl, self._turn_ctrl = 0, 0, 0
+            self.ai_controls.start_ai_controls()
+            pyglet.clock.schedule(self.update_units)
+        else:
             pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
             pyglet.clock.schedule_interval(self.update_units, 1.0 / self.framerate)
-        else:
-            self.train_mode = True
-            while(self.in_game):
-                #print(self.objects.current_objects)
-                self.update_units(1/self.framerate)
+
 
 
     def quit(self):
@@ -215,6 +217,7 @@ class Objects:
             return
         self.objects.generate_empty_objects()
         self.objects.set_objects_settings(self.configuration)
+        print(self.objects.get_objects(link_only=True))
         self.objects_state = ObjectsState.Run
         self.restart_counter += 1
         self.playtime = 0
@@ -271,7 +274,7 @@ class Objects:
         return True if self.scalar_a_b >= self.min_scalar and self.scalar_a_diff >= self.min_scalar else False
 
     def check_kill_and_end_of_game(self):
-        self.team1_survives, self.team2_survives = 1, 1 #not triggered end of game
+        self.team1_survives, self.team2_survives = 0, 0 #not triggered end of game
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             objects = self.objects.get_objects(link_only=True)
             #print(objects, "   curr obj")
@@ -317,18 +320,16 @@ class Objects:
                             self.Loss.calc_loss_of_distance(objects[jndex])
                             self.Loss.calc_loss_amount_teams(self.radiant, self.dire)
 
-
-
             # END_OF_GAME_TRIGGERED
             if self.team1_survives < 1 or self.team2_survives < 1:
-                if( not self.train_mode):
-                    self.messenger.end_of_game()
-                else:
-                    print("end of game")
-                    self.in_game = False
+                self.messenger.end_of_game()
+                if(self.train_mode):
+                    self.restart()
+
 
     def delete_object(self, jndex, objects):
-        print("Killed unit number ", jndex)
+        print('Killed unit number: {:2} team: {:2} with type {:2}' \
+              .format(jndex, Teams.team_by_id(jndex), ObjectType.name_of_type_by_id(jndex)))
         for kndex in range(1, ObjectProp.Total):
             objects[jndex][kndex] = 0
 
@@ -345,13 +346,15 @@ class Objects:
         return self.dv_calc, self.w_calc
 
     def update_units(self, dt):
+        if(self.train_mode):
+            dt = 1.0 / self.framerate
         objects = self.objects.get_objects(link_only=True)
-        #print(objects, "  update ")
-
+        #print(objects[17])
         if self.objects_state == ObjectsState.Run:
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                     objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
+                    #print(objects[index][ObjectProp.ObjType])
                     objects[index][ObjectProp.PrevAngleVel] = objects[index][ObjectProp.AngleVel]
                     self.dv, self.w = self.calc_v_diff(objects[index])
                     objects[index][ObjectProp.Velocity] = self.dv * dt + objects[index][ObjectProp.PrevVelocity]
@@ -367,16 +370,16 @@ class Objects:
             if(not self.train_mode):
                 self.messenger.game_update_objects(self.objects.get_objects())
                 self.messenger.ai_update_objects(self.objects.get_objects())
-                self.playtime += 1
-                if self.playtime >= self.maxplaytime:
-                    self.messenger.end_of_game()
             else:
-                #global objects_for_train
-                objects_for_train = self.objects.current_objects
-                self.objects.current_objects = \
-                    self.ai_controls.recalc(1/self.framerate, self.objects.current_objects, train=True)
-
-                #print(self.objects.current_objects)
+                self.result = self.ai_controls.recalc(1/self.framerate, self.objects.current_objects)
+                for key in self.result:
+                    self.set_control_signal(key[0], ObjectProp.VelControl, key[1])
+                    self.set_control_signal(key[0], ObjectProp.TurnControl, key[2])
+            self.playtime += 1
+            if self.playtime >= self.maxplaytime:
+                self.messenger.end_of_game()
+                if (self.train_mode):
+                    self.restart()
 
         if self.objects_state == ObjectsState.RunFromFile:
             if self.loaded_history is None:

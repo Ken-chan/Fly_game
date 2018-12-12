@@ -17,9 +17,10 @@ class AItype:
 
 
 class AIcontrols:
-    def __init__(self, configuration, messenger=None):
+    def __init__(self, configuration, messenger=None, train_mode=False):
         #super(AIcontrols, self).__init__()
         self.ai_state = AIcontrolsState.Start
+        self.train_mode = train_mode
         self.messenger = messenger
         self.battle_field_size = np.array([0.0, 0.0])
         self.objects_copy = None
@@ -29,12 +30,11 @@ class AIcontrols:
             self.ai_objs.append(Dummy(index))
         self.update_ai_settings(configuration)
         self.framerate = 30
-        if( self.messenger):
-            self.functions = {messages.AIcontrols.Quit: self.stop_ai,
-                              messages.AIcontrols.UpdateObjects: self.update_objects,
-                              messages.AIcontrols.Run: self.start_ai_controls,
-                              messages.AIcontrols.UpdateAiSettings: self.update_ai_settings}
-
+        self.functions = {messages.AIcontrols.Quit: self.stop_ai,
+                          messages.AIcontrols.UpdateObjects: self.update_objects,
+                          messages.AIcontrols.Run: self.start_ai_controls,
+                          messages.AIcontrols.UpdateAiSettings: self.update_ai_settings}
+        if(self.train_mode == False):
             pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
             pyglet.clock.schedule_interval(self.recalc, 1.0 / self.framerate)
 
@@ -77,8 +77,12 @@ class AIcontrols:
                             obj_ind = obj_offset + off_counter
                             self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size)
 
-    def recalc(self, dt,objects_for_train=None, train=False):
-        if not train and self.ai_state == AIcontrolsState.Run and self.objects_copy is not None:
+    def recalc(self, dt, objects_for_train=None):
+        self.result = []
+        if (objects_for_train is not None):
+            self.train_mode = True
+            self.objects_copy = objects_for_train
+        if self.ai_state == AIcontrolsState.Run and (self.objects_copy is not None or self.train_mode):
             for index in range(0, ObjectType.ObjArrayTotal):
                 if self.objects_copy[index][ObjectProp.ObjType] == ObjectType.Absent:
                     continue
@@ -86,23 +90,13 @@ class AIcontrols:
                 if result is None:
                     continue
                 turn_ctrl, vel_ctrl = result
+                if (self.train_mode):
+                    self.result.append([index, vel_ctrl, turn_ctrl])
+                    continue
                 self.messenger.objects_set_control_signal(index, ObjectProp.VelControl, vel_ctrl)
                 self.messenger.objects_set_control_signal(index, ObjectProp.TurnControl, turn_ctrl)
-        if(train):
-            for index in range(0, ObjectType.ObjArrayTotal):
-                #global objects_for_train
-                _objects_for_train = objects_for_train
-                #print(_objects_for_train)
-                if _objects_for_train[index][ObjectProp.ObjType] == ObjectType.Absent:
-                    continue
-                result = self.ai_objs[index].calc_behaviour(_objects_for_train)
-                if result is None:
-                    continue
-                turn_ctrl, vel_ctrl = result
-                _objects_for_train[index][ObjectProp.VelControl] = vel_ctrl
-                _objects_for_train[index][ObjectProp.TurnControl] = turn_ctrl
-
-                return _objects_for_train
+            if (self.train_mode):
+                return self.result
 
 class Dummy:
     def __init__(self, index):

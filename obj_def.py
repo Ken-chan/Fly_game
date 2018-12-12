@@ -66,6 +66,19 @@ class ObjectType:
             value = cls.Bot2
         return value
 
+    @classmethod
+    def name_of_type_by_id(cls, obj_id):
+        value = "Absent"
+        if obj_id == np.int32(0):
+            value = "Player1"
+        elif obj_id == np.int32(1):
+            value = "Player2"
+        elif 2 <= obj_id <= 12:
+            value = "Bot1"
+        elif 13 <= obj_id <= 23:
+            value = "Bot2"
+        return value
+
 class ObjectSubtype:
     Plane = np.int32(0)
     Helicopter = np.int32(1)
