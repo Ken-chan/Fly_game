@@ -24,10 +24,10 @@ class Game:
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 5
+        self.radiant_bots = 6
         self.dire_bots = 6
-        self.is_player1_play = 0
-        self.is_player2_play = 0
+        self.is_player1_play = 1
+        self.is_player2_play = 1
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
         if history_path is None:
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     args = vars(ap.parse_args())
     args_for_game = [1000, 1000]
     proc_arr = []
-    for index in range (0, 5):
+    for index in range (0, 1):
         proc_arr.append(Process(target=Game, args=args_for_game))
         proc_arr[index].start()
 

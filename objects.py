@@ -66,8 +66,6 @@ class Loss():
         self.configuration = None
         self.battle_field_size = np.array([0.0, 0.0])
         self.set_congiguration(configuration)
-        self.survives_team1 = np.int32(0)
-        self.survives_team2 = np.int32(0)
 
         self.min_x = np.float(0.0)
         self.min_y = np.float(0.0)
@@ -84,9 +82,7 @@ class Loss():
         self.configuration = configuration
         if configuration:
             for key in configuration:
-                #there count number of survives in each team
                 for item in configuration[key]:
-                    #print(item)
                     if key == ObjectType.FieldSize:
                         self.battle_field_size[0], self.battle_field_size[1] = item[0], item[1]
 
@@ -105,22 +101,22 @@ class Loss():
         else:
             self.norm_min_distance = self.min_y / self.battle_field_size[1]
 
-        self.loss_distance = -0.1/(self.norm_min_distance) if (self.norm_min_distance < 0.15 and self.norm_min_distance != 0) \
+        self.loss_distance = -1/(self.norm_min_distance + 1)**3 if (self.norm_min_distance < 0.15 and self.norm_min_distance != 0) \
                             else 0 #loss is zero in center square of field
         #print(self.loss_distance)
 
-    def calc_loss_of_enemy_distance(self, object, enemy):
-
-        self.loss_distance_enemy = None
+    def calc_loss_of_enemy_distance(self, is_inside_cone):
+        self.loss_distance_enemy = 1 if is_inside_cone else 0
+        #print(self.loss_distance_enemy)
         pass
 
     def calc_loss_of_comrade_distance(self, object, comrade):
 
-        self.loss_distance_comrade = None
+        #self.loss_distance_comrade = None
         pass
 
     def calc_loss_amount_teams(self, radiant, dire):
-        #self.loss_amount_in_teams = 2*(radiant - dire)/(radiant + dire)
+        self.loss_amount_in_teams = 2*(radiant - dire)/(radiant + dire)
         #print(self.loss_amount_in_teams)
         pass
 
@@ -139,8 +135,10 @@ class Objects:
             self.train_mode = False
         self.in_game = True
         self.messenger = messenger
-        self.radiant = radiant
-        self.dire = dire
+        self.radiant_start = radiant
+        self.dire_start = dire
+        self.radiant = self.radiant_start
+        self.dire = self.dire_start
         self.configuration = None
         self.ai_controls = ai_controls
         self.battle_field_width = 0
@@ -162,8 +160,8 @@ class Objects:
 
         self.Loss = Loss(self.configuration) #loss take config from objects(not from game)
         #initialization starts
-        self.team1_survives = np.int32(0)
-        self.team2_survives = np.int32(0)
+        #self.team1_survives = np.int32(0)
+        #self.team2_survives = np.int32(0)
         self.x1, self.x2, self.y1, self.y2 = np.float(0.0), np.float(0.0), np.float(0.0), np.float(0.0)
         self.a_vec, self.b_vec = None, None
         self.vec1 = np.array([0.0, 0.0])
@@ -217,10 +215,12 @@ class Objects:
             return
         self.objects.generate_empty_objects()
         self.objects.set_objects_settings(self.configuration)
-        print(self.objects.get_objects(link_only=True))
+        #print(self.objects.get_objects(link_only=True))
         self.objects_state = ObjectsState.Run
         self.restart_counter += 1
         self.playtime = 0
+        self.radiant = self.radiant_start
+        self.dire = self.dire_start
 
     def run_history(self):
         self.objects_state = ObjectsState.RunFromFile
@@ -274,7 +274,7 @@ class Objects:
         return True if self.scalar_a_b >= self.min_scalar and self.scalar_a_diff >= self.min_scalar else False
 
     def check_kill_and_end_of_game(self):
-        self.team1_survives, self.team2_survives = 0, 0 #not triggered end of game
+        #self.team1_survives, self.team2_survives = 0, 0 #not triggered end of game
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             objects = self.objects.get_objects(link_only=True)
             #print(objects, "   curr obj")
@@ -284,6 +284,10 @@ class Objects:
                     self.x1, self.y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
                     if self.x1 > self.battle_field_width or self.y1 > self.battle_field_height or self.x1 < 0 or self.y1 < 0:
                         self.delete_object(index, objects)
+                        if Teams.team_by_id(index) == Teams.Team1:
+                            self.radiant -= 1
+                        elif Teams.team_by_id(index) == Teams.Team2:
+                            self.dire -= 1
                         continue
                     self.dir1 = objects[index][ObjectProp.Dir]
                     self.vec1[0],self.vec1[1] = np.cos(np.radians(self.dir1)), np.sin(np.radians(self.dir1))
@@ -310,18 +314,16 @@ class Objects:
                                 elif Teams.team_by_id(jndex) == Teams.Team2:
                                     self.dire -= 1
 
-                            #Count survives to check end of game
-                            if Teams.team_by_id(jndex) == Teams.Team1:
-                                self.team1_survives += 1
-                            elif Teams.team_by_id(jndex) == Teams.Team2:
-                                self.team2_survives += 1
-
                             ## TRY LOSS
                             self.Loss.calc_loss_of_distance(objects[jndex])
-                            self.Loss.calc_loss_amount_teams(self.radiant, self.dire)
+                            if Teams.team_by_id(jndex) == Teams.Team1:
+                                self.Loss.calc_loss_amount_teams(self.radiant, self.dire)
+                            elif Teams.team_by_id(jndex) == Teams.Team2:
+                                self.Loss.calc_loss_amount_teams(self.dire, self.radiant)
+
 
             # END_OF_GAME_TRIGGERED
-            if self.team1_survives < 1 or self.team2_survives < 1:
+            if self.radiant < 1 or self.dire < 1:
                 self.messenger.end_of_game()
                 if(self.train_mode):
                     self.restart()
