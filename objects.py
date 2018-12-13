@@ -1,4 +1,3 @@
-from multiprocessing import Process, Queue
 import pyglet
 import messages
 from obj_def import *
@@ -46,7 +45,6 @@ class ObjectArray:
             return True
         self.start_ind, self.end_ind = ObjectType.offset(unit_type)
         for ind in range(self.start_ind, self.end_ind+1):
-            #search for empty space for object
             if self.current_objects[ind][ObjectProp.ObjType] == ObjectType.Absent:
                 self.current_objects[ind] = self.generate_new_object(ind, unit_type, x, y, direction, r, vehicle_type)
                 return True
@@ -60,6 +58,7 @@ class ObjectArray:
         if link_only:
             return self.current_objects
         return np.copy(self.current_objects)
+
 
 class Loss():
     def __init__(self, configuration):
@@ -128,10 +127,9 @@ class Loss():
 
 class Objects:
     def __init__(self, configuration, radiant, dire, history_path, messenger=None, ai_controls=None):
-        #super(Objects, self).__init__()
         self.objects_state = ObjectsState.Run
         self.train_mode = True
-        if(ai_controls == None):
+        if ai_controls == None:
             self.train_mode = False
         self.in_game = True
         self.messenger = messenger
@@ -191,15 +189,13 @@ class Objects:
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
         #self.objects_state = ObjectsState.Pause
 
-        if(self.train_mode):
+        if self.train_mode:
             self._index, self._vel_ctrl, self._turn_ctrl = 0, 0, 0
             self.ai_controls.start_ai_controls()
             pyglet.clock.schedule(self.update_units)
         else:
             pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
             pyglet.clock.schedule_interval(self.update_units, 1.0 / self.framerate)
-
-
 
     def quit(self):
         self.objects_state = ObjectsState.Exit
@@ -321,13 +317,11 @@ class Objects:
                             elif Teams.team_by_id(jndex) == Teams.Team2:
                                 self.Loss.calc_loss_amount_teams(self.dire, self.radiant)
 
-
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1:
                 self.messenger.end_of_game()
-                if(self.train_mode):
+                if self.train_mode:
                     self.restart()
-
 
     def delete_object(self, jndex, objects):
         print('Killed unit number: {:2} team: {:2} with type {:2}' \
@@ -348,15 +342,13 @@ class Objects:
         return self.dv_calc, self.w_calc
 
     def update_units(self, dt):
-        if(self.train_mode):
+        if self.train_mode:
             dt = 1.0 / self.framerate
         objects = self.objects.get_objects(link_only=True)
-        #print(objects[17])
         if self.objects_state == ObjectsState.Run:
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                     objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
-                    #print(objects[index][ObjectProp.ObjType])
                     objects[index][ObjectProp.PrevAngleVel] = objects[index][ObjectProp.AngleVel]
                     self.dv, self.w = self.calc_v_diff(objects[index])
                     objects[index][ObjectProp.Velocity] = self.dv * dt + objects[index][ObjectProp.PrevVelocity]
@@ -369,7 +361,7 @@ class Objects:
             self.save_history_file(self.hist_file_name, objects)
             self.objects.current_objects = objects
             self.check_kill_and_end_of_game()
-            if(not self.train_mode):
+            if not self.train_mode:
                 self.messenger.game_update_objects(self.objects.get_objects())
                 self.messenger.ai_update_objects(self.objects.get_objects())
             else:
@@ -380,7 +372,7 @@ class Objects:
             self.playtime += 1
             if self.playtime >= self.maxplaytime:
                 self.messenger.end_of_game()
-                if (self.train_mode):
+                if self.train_mode:
                     self.restart()
 
         if self.objects_state == ObjectsState.RunFromFile:

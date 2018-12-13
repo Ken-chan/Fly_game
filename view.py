@@ -35,7 +35,6 @@ class Renderer:
         self.rev_cone_sprites = []
         self.scaling_factor = self.screen_width / 800
 
-
         for index in range(0, ObjectType.ObjArrayTotal):
             self.objects_type = ObjectType.type_by_id(index)
 
@@ -93,13 +92,14 @@ class Renderer:
                                                         y=self.size_proportion_height * (self.current_object[ObjectProp.Ycoord]),
                                                         rotation=-self.current_object[ObjectProp.Dir] + 180)
 
-class Sprite(pyglet.sprite.Sprite):
 
+class Sprite(pyglet.sprite.Sprite):
     def __init__(self, batch, img, scaling_factor, layer):
         self.img = img
         self.layer = pyglet.graphics.OrderedGroup(layer)
         self.scaling_factor = scaling_factor
         super(Sprite, self).__init__(img=self.img, batch=batch, group=self.layer)
+
 
 class Bot_sprite1(Sprite):
     def __init__(self, batch, scaling_factor):
@@ -109,6 +109,7 @@ class Bot_sprite1(Sprite):
         super(Bot_sprite1, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
         self.update(scale_x=0.15*self.scaling_factor, scale_y = 0.11*self.scaling_factor)
 
+
 class Bot_sprite2(Sprite):
     def __init__(self, batch, scaling_factor):
         self.img = pyglet.image.load("images/bot2.png")
@@ -116,6 +117,7 @@ class Bot_sprite2(Sprite):
         self.img.anchor_y = self.img.height // 2
         super(Bot_sprite2, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
         self.update(scale_x=0.15*self.scaling_factor, scale_y = 0.1*self.scaling_factor)
+
 
 class Player_sprite1(Sprite):
     def __init__(self, batch, scaling_factor):
@@ -125,6 +127,7 @@ class Player_sprite1(Sprite):
         super(Player_sprite1, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
         self.update(scale_x=0.15*self.scaling_factor, scale_y = 0.1*self.scaling_factor)
 
+
 class Player_sprite2(Sprite):
     def __init__(self, batch, scaling_factor):
         self.img = pyglet.image.load("images/player2.png")
@@ -132,6 +135,7 @@ class Player_sprite2(Sprite):
         self.img.anchor_y = self.img.height // 2
         super(Player_sprite2, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
         self.update(scale_x=0.15*self.scaling_factor, scale_y = 0.1*self.scaling_factor)
+
 
 class Cone_sprite(Sprite):
     def __init__(self, batch, scaling_factor):

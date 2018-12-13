@@ -51,7 +51,7 @@ class Game:
         self.prepare_config(self.radiant_bots, self.dire_bots, self.is_player1_play, self.is_player2_play,
                             self.battle_field_size[0], self.battle_field_size[1])
         self.messenger = Messenger()
-        if(self.train_mode):
+        if self.train_mode:
             self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger, ai_controls=self.ai_controls)
@@ -61,7 +61,7 @@ class Game:
                                    messenger=self.messenger)
         self.gui_controls = GUIcontrols(self.messenger)
         self.renderer = Renderer(self.screen_width, self.screen_height)
-
+        self.game_window = None
         self.objects = None
         self.history_list = []
         self.functions = {messages.Game.Quit: self.quit,
@@ -90,8 +90,6 @@ class Game:
             self.configuration[ObjectType.Bot2].append(
                 (pos2 * (i + player2) + np.random.randint(-15, 15), sizeY - 50 - np.random.randint(30),
                  270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
-
-
 
     def clear_file(self, file_path):
         with open(file_path, "w") as file:  # just to open with argument which clean file
@@ -128,7 +126,7 @@ class Game:
             self.renderer.update_graphics()
 
     def run_game(self):
-        if (self.train_mode):
+        if self.train_mode:
             pyglet.clock.schedule_interval(self.read_messages, 1.0 / 2)
             pyglet.app.run()
             return 0
@@ -175,10 +173,11 @@ if __name__ == "__main__":
     args = vars(ap.parse_args())
     args_for_game = [1000, 1000]
     proc_arr = []
-    for index in range (0, 1):
-        proc_arr.append(Process(target=Game, args=args_for_game))
-        proc_arr[index].start()
+    Game(*args_for_game)
+    #for index in range(0, 1):
+    #    proc_arr.append(Process(target=Game, args=args_for_game))
+    #    proc_arr[index].start()
 
-    for index in range (0, 5):
-        proc_arr[index].join()
+    #for index in range(0, 1):
+    #    proc_arr[index].join()
 

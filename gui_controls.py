@@ -1,5 +1,4 @@
 import messages
-from multiprocessing import Process
 from pyglet.window import key as pygletkey
 import pyglet
 from obj_def import ObjectType, ObjectProp
