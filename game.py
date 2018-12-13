@@ -1,5 +1,6 @@
 import pyglet
 from multiprocessing import Pool
+from multiprocessing import Process
 from view import Renderer
 from messages import Messenger
 from gui_controls import GUIcontrols
@@ -17,7 +18,6 @@ class GameState:
 
 class Game:
     def __init__(self, screen_width, screen_height, history_path=None, train_mode=False):
-        super(Game, self).__init__()
         gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
@@ -68,8 +68,7 @@ class Game:
                           messages.Game.UpdateObjects: self.update_objects,
                           messages.Game.Pause: self.game_pause_simulation,
                           messages.Game.ActiveGame: self.game_unpaused}
-
-
+        self.run_game()
 
     def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
         pos1 = sizeX / (bot1 + player1 + 1)
@@ -174,9 +173,12 @@ if __name__ == "__main__":
     ap.add_argument("-t", "--train", required=False, action='store_false',
                     help="training mode")
     args = vars(ap.parse_args())
+    args_for_game = [1000, 1000]
+    proc_arr = []
+    for index in range (0, 5):
+        proc_arr.append(Process(target=Game, args=args_for_game))
+        proc_arr[index].start()
 
-    if 'file' in args:
-        game = Game(1000, 1000, args['file'], train_mode=args['train'])
-    else:
-        game = Game(1000, 1000, train_mode=args['train'])
-    game.run_game()
+    for index in range (0, 5):
+        proc_arr[index].join()
+
