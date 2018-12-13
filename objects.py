@@ -1,6 +1,7 @@
 import pyglet
 import messages
 from obj_def import *
+from tools import Loss
 
 
 class ObjectsState:
@@ -58,71 +59,6 @@ class ObjectArray:
         if link_only:
             return self.current_objects
         return np.copy(self.current_objects)
-
-
-class Loss():
-    def __init__(self, configuration):
-        self.configuration = None
-        self.battle_field_size = np.array([0.0, 0.0])
-        self.set_congiguration(configuration)
-
-        self.min_x = np.float(0.0)
-        self.min_y = np.float(0.0)
-        self.norm_min_distance = np.float(0.0)
-        self.a = np.float(0.0)
-
-        #Loss value functions
-        self.loss_distance = np.float(0.0)
-        self.loss_distance_enemy = np.float(0.0)
-        self.loss_distance_comrade = np.float(0.0)
-        self.loss_amount_in_teams = np.float(0.0)
-
-    def set_congiguration(self, configuration):
-        self.configuration = configuration
-        if configuration:
-            for key in configuration:
-                for item in configuration[key]:
-                    if key == ObjectType.FieldSize:
-                        self.battle_field_size[0], self.battle_field_size[1] = item[0], item[1]
-
-    def calc_loss_of_distance(self, object):
-        if object[ObjectProp.Xcoord] <= np.fabs(self.battle_field_size[0] - object[ObjectProp.Xcoord]):
-            self.min_x = object[ObjectProp.Xcoord]
-        else:
-            self.min_x = np.fabs(self.battle_field_size[0] - object[ObjectProp.Xcoord])
-        if object[ObjectProp.Ycoord] <= np.fabs(self.battle_field_size[1] - object[ObjectProp.Ycoord]):
-            self.min_y = object[ObjectProp.Ycoord]
-        else:
-            self.min_y = np.fabs(self.battle_field_size[1] - object[ObjectProp.Ycoord])
-
-        if self.min_x <= self.min_y:
-            self.norm_min_distance = self.min_x / self.battle_field_size[0] #normalize distance to field size
-        else:
-            self.norm_min_distance = self.min_y / self.battle_field_size[1]
-
-        self.loss_distance = -1/(self.norm_min_distance + 1)**3 if (self.norm_min_distance < 0.15 and self.norm_min_distance != 0) \
-                            else 0 #loss is zero in center square of field
-        #print(self.loss_distance)
-
-    def calc_loss_of_enemy_distance(self, is_inside_cone):
-        self.loss_distance_enemy = 1 if is_inside_cone else 0
-        #print(self.loss_distance_enemy)
-        pass
-
-    def calc_loss_of_comrade_distance(self, object, comrade):
-
-        #self.loss_distance_comrade = None
-        pass
-
-    def calc_loss_amount_teams(self, radiant, dire):
-        self.loss_amount_in_teams = 2*(radiant - dire)/(radiant + dire)
-        #print(self.loss_amount_in_teams)
-        pass
-
-    def calc_loss_all(self):
-
-        self.loss_all = None
-        pass
 
 
 class Objects:
