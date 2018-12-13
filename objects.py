@@ -161,6 +161,7 @@ class Objects:
         #self.team1_survives = np.int32(0)
         #self.team2_survives = np.int32(0)
         self.x1, self.x2, self.y1, self.y2 = np.float(0.0), np.float(0.0), np.float(0.0), np.float(0.0)
+        self.radius = np.float(0.0)
         self.a_vec, self.b_vec = None, None
         self.vec1 = np.array([0.0, 0.0])
         self.vec2 = np.array([0.0, 0.0])
@@ -278,7 +279,8 @@ class Objects:
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                     self.x1, self.y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
-                    if self.x1 > self.battle_field_width or self.y1 > self.battle_field_height or self.x1 < 0 or self.y1 < 0:
+                    self.radius = objects[index][ObjectProp.R_size]
+                    if self.x1 > self.battle_field_width - self.radius or self.y1 > self.battle_field_height - self.radius or self.x1 < self.radius or self.y1 < self.radius:
                         self.delete_object(index, objects)
                         if Teams.team_by_id(index) == Teams.Team1:
                             self.radiant -= 1
@@ -295,7 +297,7 @@ class Objects:
                             self.vec2 = np.array([np.cos(np.radians(self.dir2)), np.sin(np.radians(self.dir2))])
                             self.diff_vector[0], self.diff_vector[1] = self.x2 - self.x1, self.y2 - self.y1
                             self.distance = np.linalg.norm(self.diff_vector)
-                            if self.distance <= objects[index][ObjectProp.R_size] + objects[jndex][ObjectProp.R_size]:
+                            if self.distance <= self.radius + objects[jndex][ObjectProp.R_size]:
                                 self.delete_object(index, objects)
                                 self.delete_object(jndex, objects)
                                 self.radiant -= 1
