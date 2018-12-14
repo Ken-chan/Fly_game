@@ -148,17 +148,17 @@ class Objects:
     def restart(self):
         if self.history_mode:
             return
-        if self.tries is None or self.restart_counter+1 > self.tries:
-            self.messenger.game_quit()
-        else:
+        if not self.train_mode or (self.tries is not None and self.restart_counter + 1 < self.tries):
             self.objects.generate_empty_objects()
             self.objects.set_objects_settings(self.configuration)
-            #print(self.objects.get_objects(link_only=True))
+            # print(self.objects.get_objects(link_only=True))
             self.objects_state = ObjectsState.Run
             self.restart_counter += 1
             self.playtime = 0
             self.radiant = self.radiant_start
             self.dire = self.dire_start
+        else:
+            self.messenger.game_quit()
 
     def run_history(self):
         self.objects_state = ObjectsState.RunFromFile
