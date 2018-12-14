@@ -17,7 +17,7 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=5):
         gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
@@ -34,6 +34,8 @@ class Game:
             now_time = datetime.datetime.now()
             #self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
             self.history_path = 'delete_me_pls.txt'
+            if prefix:
+                self.history_path = '{}_{}'.format(prefix, self.history_path)
             self.clear_file(self.history_path)
             self.is_it_move_from_history = False
         else:
@@ -54,7 +56,7 @@ class Game:
         if self.train_mode:
             self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
-                                   messenger=self.messenger, ai_controls=self.ai_controls)
+                                   messenger=self.messenger, ai_controls=self.ai_controls, tries=tries)
         else:
             self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
@@ -166,14 +168,19 @@ class Game:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("-f", "--file", type=str, required=False,
+    ap.add_argument("-f", "--history_path", type=str, required=False,
                     help="path to history file")
-    ap.add_argument("-t", "--train", required=False, action='store_false',
+    ap.add_argument("-t", "--train_mode", required=False, action='store_true',
                     help="training mode")
+    ap.add_argument("-p", '--prefix', type=str, required=False,
+                    help='prefix for history file')
+    ap.add_argument("-m", '--tries', type=int, required=False,
+                    help='number of total retries in one session')
     args = vars(ap.parse_args())
-    args_for_game = [1000, 1000]
-    proc_arr = []
-    Game(*args_for_game)
+    args["screen_width"] = 1000
+    args["screen_height"] = 1000
+    print("{}".format(args))
+    Game(**args)
     #for index in range(0, 1):
     #    proc_arr.append(Process(target=Game, args=args_for_game))
     #    proc_arr[index].start()

@@ -62,12 +62,14 @@ class ObjectArray:
 
 
 class Objects:
-    def __init__(self, configuration, radiant, dire, history_path, messenger=None, ai_controls=None):
+    def __init__(self, configuration, radiant, dire, history_path, messenger=None, ai_controls=None, tries=None):
         self.objects_state = ObjectsState.Run
         self.train_mode = True
         if ai_controls == None:
             self.train_mode = False
         self.in_game = True
+        self.tries = tries
+        self.current_try = 1
         self.messenger = messenger
         self.radiant_start = radiant
         self.dire_start = dire
@@ -146,14 +148,17 @@ class Objects:
     def restart(self):
         if self.history_mode:
             return
-        self.objects.generate_empty_objects()
-        self.objects.set_objects_settings(self.configuration)
-        #print(self.objects.get_objects(link_only=True))
-        self.objects_state = ObjectsState.Run
-        self.restart_counter += 1
-        self.playtime = 0
-        self.radiant = self.radiant_start
-        self.dire = self.dire_start
+        if self.tries is None or self.restart_counter+1 > self.tries:
+            self.messenger.game_quit()
+        else:
+            self.objects.generate_empty_objects()
+            self.objects.set_objects_settings(self.configuration)
+            #print(self.objects.get_objects(link_only=True))
+            self.objects_state = ObjectsState.Run
+            self.restart_counter += 1
+            self.playtime = 0
+            self.radiant = self.radiant_start
+            self.dire = self.dire_start
 
     def run_history(self):
         self.objects_state = ObjectsState.RunFromFile
@@ -258,6 +263,7 @@ class Objects:
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1:
                 self.messenger.end_of_game()
+                self.objects_state = ObjectsState.Pause
                 if self.train_mode:
                     self.restart()
 
@@ -310,6 +316,7 @@ class Objects:
             self.playtime += 1
             if self.playtime >= self.maxplaytime:
                 self.messenger.end_of_game()
+                self.objects_state = ObjectsState.Pause
                 if self.train_mode:
                     self.restart()
 

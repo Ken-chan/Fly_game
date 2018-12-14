@@ -48,7 +48,7 @@ class Loss():
 
         self.loss_distance = -1/(self.norm_min_distance + self.a) + self.b if (self.norm_min_distance < self.danger_distance_norm and
                                                                                self.norm_min_distance != 0) else 0.0
-        print(self.loss_distance, '<- loss function of distance to walls')
+        #print(self.loss_distance, '<- loss function of distance to walls')
 
     def calc_loss_of_enemy_distance(self):
         self.loss_distance_enemy = None
