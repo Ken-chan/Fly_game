@@ -10,13 +10,19 @@ class Loss():
         self.min_x = np.float(0.0)
         self.min_y = np.float(0.0)
         self.norm_min_distance = np.float(0.0)
-        self.danger_distance_norm = np.float(0.2) #critical distance to danger objects(normalize)
+        self.danger_distance_norm = np.float(0.1) #critical distance to danger objects(normalize)
 
         #coefs to distance func
         self.a = 0.5*(-self.danger_distance_norm + np.sqrt(self.danger_distance_norm**2 + 4*self.danger_distance_norm))
         self.b = (1-self.a)/self.a
         #coefs to distance func
-
+        #parametrs for cube
+        self.radiuses_array = np.linspace(0, 2000)
+        self.phi_array = np.linspace(0, 180)
+        self.ksy_array = np.linspace(0, 180)
+        #print(self.radiuses_array, self.phi_array, self.ksy_array)
+        #self.cube_of_loos = np.array(self.radiuses_array, self.phi_array, self.ksy_array)
+        #parametrs for cube
         #Loss value functions
         self.loss_distance = np.float(0.0)
         self.loss_distance_enemy = np.float(0.0)
@@ -69,3 +75,12 @@ class Loss():
 
         self.loss_all = None
         pass
+
+    def make_4D_square(self):
+        #self.r
+        pass
+
+
+    def calc_point_in_squad(self, cube):
+        pass
+

@@ -24,16 +24,16 @@ class Game:
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 6
-        self.dire_bots = 6
+        self.radiant_bots = 0
+        self.dire_bots = 0
         self.is_player1_play = 1
         self.is_player2_play = 1
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
         if history_path is None:
             now_time = datetime.datetime.now()
-            #self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
-            self.history_path = 'delete_me_pls.txt'
+            self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
+            #self.history_path = 'delete_me_pls.txt'
             if prefix:
                 self.history_path = '{}_{}'.format(prefix, self.history_path)
             self.clear_file(self.history_path)
@@ -41,7 +41,7 @@ class Game:
         else:
             self.history_path = history_path
             self.is_it_move_from_history = True
-        #self.fps_display = pyglet.clock.ClockDisplay()
+        # self.fps_display = pyglet.clock.ClockDisplay()
         self.playtime = 0
         self.framerate = 60
         self.configuration = {ObjectType.FieldSize: [],
@@ -132,7 +132,7 @@ class Game:
             pyglet.clock.schedule_interval(self.read_messages, 1.0 / 2)
             pyglet.app.run()
             return 0
-        self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
+        self.game_window = pyglet.window.Window(self.screen_width+500, self.screen_height)
         pyglet.gl.glClearColor(0.3, 0.3, 0.3, 0)
         self.game_window.set_location(200, 50)
         self.game_state = GameState.ActiveGame
