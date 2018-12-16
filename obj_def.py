@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Teams:
     Team1 = np.int32(0)
     Team2 = np.int32(1)
@@ -32,6 +33,7 @@ class Teams:
             return cls.Team2
         elif team == cls.Team2:
             return cls.Team1
+
 
 class ObjectType:
     Absent = np.int32(0)
@@ -79,6 +81,7 @@ class ObjectType:
             value = "Bot2"
         return value
 
+
 class ObjectSubtype:
     Plane = np.int32(0)
     Helicopter = np.int32(1)
@@ -102,6 +105,7 @@ class ObjectProp:
     R_size = np.int32(12)
     VehicleType = np.int32(13)
     Total = np.int32(14)
+
 
 class Constants:
     DefaultObjectRadius = np.int32(15)

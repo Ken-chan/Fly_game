@@ -2,8 +2,10 @@ import pyglet
 import messages
 from obj_def import *
 
+
 class AIcontrolsState:
     Start, Run, Exit = range(3)
+
 
 class AItype:
     Dummy, DumbAi = range(2)
@@ -18,13 +20,13 @@ class AItype:
 
 class AIcontrols:
     def __init__(self, configuration, messenger=None, train_mode=False):
-        #super(AIcontrols, self).__init__()
         self.ai_state = AIcontrolsState.Start
         self.train_mode = train_mode
         self.messenger = messenger
         self.battle_field_size = np.array([0.0, 0.0])
         self.objects_copy = None
         self.configuration = None
+        self.result = None
         self.ai_objs = []
         for index in range(0, ObjectType.ObjArrayTotal):
             self.ai_objs.append(Dummy(index))
@@ -34,10 +36,9 @@ class AIcontrols:
                           messages.AIcontrols.UpdateObjects: self.update_objects,
                           messages.AIcontrols.Run: self.start_ai_controls,
                           messages.AIcontrols.UpdateAiSettings: self.update_ai_settings}
-        if(self.train_mode == False):
+        if not self.train_mode:
             pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
             pyglet.clock.schedule_interval(self.recalc, 1.0 / self.framerate)
-
 
     def read_mes(self, dt):
         if self.ai_state != AIcontrolsState.Exit:
@@ -79,7 +80,7 @@ class AIcontrols:
 
     def recalc(self, dt, objects_for_train=None):
         self.result = []
-        if (objects_for_train is not None):
+        if objects_for_train is not None:
             self.train_mode = True
             self.objects_copy = objects_for_train
         if self.ai_state == AIcontrolsState.Run and (self.objects_copy is not None or self.train_mode):
@@ -90,13 +91,14 @@ class AIcontrols:
                 if result is None:
                     continue
                 turn_ctrl, vel_ctrl = result
-                if (self.train_mode):
+                if self.train_mode:
                     self.result.append([index, vel_ctrl, turn_ctrl])
                     continue
                 self.messenger.objects_set_control_signal(index, ObjectProp.VelControl, vel_ctrl)
                 self.messenger.objects_set_control_signal(index, ObjectProp.TurnControl, turn_ctrl)
-            if (self.train_mode):
+            if self.train_mode:
                 return self.result
+
 
 class Dummy:
     def __init__(self, index):
@@ -154,9 +156,6 @@ class DumbAI(Dummy):
         self.angle_objs = np.float(0.0)
         self.rotation_side_objs = np.float(0.0)
 
-
-
-
     def calc_nearest_dir(self, vec1, vec2):
         self.vec1, self.vec2 = vec1 / np.linalg.norm(vec1), vec2 / np.linalg.norm(vec2)
         self.rotation_matrix[0][0], self.rotation_matrix[0][1], self.rotation_matrix[1][0], self.rotation_matrix[1][1]= vec1[0], vec1[1], -vec1[1], vec1[0]
@@ -166,7 +165,6 @@ class DumbAI(Dummy):
         return self.angle_min, self.rotation_side
 
     def calc_nearest_obj_and_enemy(self, objects_state):
-
         self.nearest_enemy_id = None
         enemy_distance = None
         for ind in self.enemy_ids:
