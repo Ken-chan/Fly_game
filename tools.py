@@ -84,3 +84,53 @@ class Loss():
     def calc_point_in_squad(self, cube):
         pass
 
+class QState:
+    def __init__(self):
+        self.range_phi = (0, 360)
+        self.range_psi = (0, 360)
+        self.range_r = (0, 1500)
+        self.n_cuts = 10
+        self.n_nearest = 30
+        self.r_wide, self.psi_wide, self.phi_wide = self.range_r[1] // self.n_cuts, self.range_psi[1] // self.n_cuts, self.range_phi[1] // self.n_cuts
+        self.data_arr = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
+        self.given_state_vectors = [] #   [ (r, phi, psi)_1, ... ]
+        self.give_state_q = [] # [ Q1, ... ]
+
+    def get_index_by_values(self, r, phi, psi):
+        r_ind = r // (self.range_r[1] // self.n_cuts)
+        phi_ind = phi // (self.range_phi[1] // self.n_cuts)
+        psi_ind = psi // (self.range_psi[1] // self.n_cuts)
+        return r_ind, phi_ind, psi_ind
+
+    def get_cell_val_by_index(self, r_ind, phi_ind, psi_ind):
+        r_cell = self.r_wide // 2 + self.r_wide * r_ind
+        phi_cell = self.phi_wide // 2 + self.phi_wide * phi_ind
+        psi_wide = self.psi_wide // 2 + self.psi_wide * psi_ind
+        return r_cell, phi_cell, psi_wide
+
+    def feed_data(self, state_vector, q_value):
+        self.given_state_vectors.append(state_vector)
+        self.give_state_q.append(q_value)
+
+    def get_nearest(self, r, phi, psi):
+        disted = []
+        for point, q in zip(self.given_state_vectors, self.give_state_q):
+            dist = np.linalg.norm(np.array(point) - np.array((r,phi, psi)))
+            disted.append((dist, point, q))
+        interest_points = sorted(disted, key=lambda x: x[0])[:self.n_nearest]
+        data_out = []
+        func_out = []
+        for rawpoint in interest_points:
+            data_out.append(rawpoint[1])
+            func_out.append(rawpoint[2])
+        return np.array(data_out), np.array(func_out)
+
+    def fill_data_arr(self):
+        for r_i in range(0, self.n_cuts):
+            for phi_i in range(0, self.n_cuts):
+                for psi_i in range(0, self.n_cuts):
+                    nearest_coords = self.get_cell_val_by_index(r_i, phi_i, psi_i)
+                    nearest_points, nearest_vals = self.get_nearest(*nearest_coords)
+                    coefs = np.linalg.lstsq(nearest_coords, nearest_vals)[0]
+                    val = np.dot(coefs, nearest_coords)
+                    self.data_arr[r_i, phi_i, psi_i] = val
