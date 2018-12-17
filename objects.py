@@ -313,7 +313,7 @@ class Objects:
             self.save_history_file(self.hist_file_name, objects)
             self.objects.current_objects = objects
             self.check_kill_and_end_of_game()
-            self.calc_polar_grid(objects, self.battle_field_width, self.battle_field_height)
+            #self.calc_polar_grid(objects, self.battle_field_width, self.battle_field_height)
             if not self.train_mode:
                 self.messenger.game_update_objects(self.objects.get_objects())
                 self.messenger.ai_update_objects(self.objects.get_objects())

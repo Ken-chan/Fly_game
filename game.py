@@ -24,10 +24,10 @@ class Game:
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 0
-        self.dire_bots = 0
-        self.is_player1_play = 1
-        self.is_player2_play = 1
+        self.radiant_bots = 2
+        self.dire_bots = 2
+        self.is_player1_play = 0
+        self.is_player2_play = 0
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
         if history_path is None:
@@ -62,7 +62,7 @@ class Game:
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger)
         self.gui_controls = GUIcontrols(self.messenger)
-        self.renderer = Renderer(self.screen_width, self.screen_height)
+        self.renderer = Renderer(self.screen_width, self.screen_height, self.battle_field_size)
         self.game_window = None
         self.objects = None
         self.history_list = []
@@ -73,25 +73,27 @@ class Game:
         self.run_game()
 
     def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
-        pos1 = sizeX / (bot1 + player1 + 1)
+        pos1 = sizeX / (bot1 + player1 +1)
 
-        pos2 = sizeX / (bot2 + player2 + 1)
+        pos2 = sizeX / (bot2 + player2 +1)
         if player1:
-            self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-15, 15), 50 + np.random.randint(30),
+            self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-50, 50), 50 + np.random.randint(50),
                                                        90, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
         if player2:
-            self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-15, 15), sizeY - 50 - np.random.randint(30),
+            self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
                                                        270, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
 
         for i in range(1, bot1 + 1):
+            print(pos1 * (i + player1))
             self.configuration[ObjectType.Bot1].append(
-                (pos1 * (i + player1) + np.random.randint(-15, 15), 50 + np.random.randint(30),
+                (pos1 * (i + player1) + np.random.randint(-50, 50), 50 + np.random.randint(50),
                 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
-                (pos2 * (i + player2) + np.random.randint(-15, 15), sizeY - 50 - np.random.randint(30),
+                (pos2 * (i + player2) + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
                  270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+
 
     def clear_file(self, file_path):
         with open(file_path, "w") as file:  # just to open with argument which clean file
@@ -132,11 +134,10 @@ class Game:
             pyglet.clock.schedule_interval(self.read_messages, 1.0 / 2)
             pyglet.app.run()
             return 0
-        self.game_window = pyglet.window.Window(self.screen_width+500, self.screen_height)
-        pyglet.gl.glClearColor(0.3, 0.3, 0.3, 0)
+        self.game_window = pyglet.window.Window(self.screen_width, self.screen_height)
+        pyglet.gl.glClearColor(0.9, 0.9, 0.9, 0)
         self.game_window.set_location(200, 50)
         self.game_state = GameState.ActiveGame
-        self.renderer.set_battle_field_size(self.battle_field_size[0], self.battle_field_size[1])
         if self.is_it_move_from_history:
             self.messenger.objects_run_from_file_simulation()
         else:

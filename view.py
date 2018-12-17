@@ -5,13 +5,13 @@ class RendererState:
     Start, Pause, Game, Menu, Exit = range(5)
 
 class Renderer:
-    def __init__(self, screen_width, screen_height):
+    def __init__(self, screen_width, screen_height, battle_field_size):
         self.renderer_state = RendererState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.objects_copy = None
-        self.battle_field_width = np.int32(0)
-        self.battle_field_height = np.int32(0)
+        self.battle_field_width = battle_field_size[0]
+        self.battle_field_height = battle_field_size[1]
         self.scaling_factor = np.float(0.0)
 
         self.objects_sprites = None
@@ -33,7 +33,7 @@ class Renderer:
         self.objects_sprites = []
         self.cone_sprites = []
         self.rev_cone_sprites = []
-        self.scaling_factor = self.screen_width / 800
+        self.scaling_factor = self.screen_width / self.battle_field_width
 
         for index in range(0, ObjectType.ObjArrayTotal):
             self.objects_type = ObjectType.type_by_id(index)
@@ -53,10 +53,6 @@ class Renderer:
             self.rev_cone_sprites.append(self.rev_cone)
             self.cone_sprites.append(self.cone)
 
-    def set_battle_field_size(self, x, y):
-        self.battle_field_width = x
-        self.battle_field_height = y
-
     def update_objects(self, objects):
         self.objects_copy = objects
 
@@ -69,8 +65,8 @@ class Renderer:
                     self.rev_cone_sprites[index].visible = False
                 else:
                     self.objects_sprites[index].visible = True
-                    self.cone_sprites[index].visible = True
-                    self.rev_cone_sprites[index].visible = True
+                    self.cone_sprites[index].visible = False
+                    self.rev_cone_sprites[index].visible = False
                     self.current_object = self.objects_copy[index]
                     self.size_proportion_width = self.screen_width / self.battle_field_width
                     self.size_proportion_height = self.screen_height / self.battle_field_height
