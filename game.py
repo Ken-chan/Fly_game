@@ -26,7 +26,7 @@ class Game:
         self.battle_field_size = (1000, 1000)
         self.radiant_bots = 2
         self.dire_bots = 2
-        self.is_player1_play = 0
+        self.is_player1_play = 1
         self.is_player2_play = 0
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
@@ -73,18 +73,17 @@ class Game:
         self.run_game()
 
     def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
-        pos1 = sizeX / (bot1 + player1 +1)
+        pos1 = sizeX / (bot1 + player1 + 1)
 
-        pos2 = sizeX / (bot2 + player2 +1)
+        pos2 = sizeX / (bot2 + player2 + 1)
         if player1:
             self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-50, 50), 50 + np.random.randint(50),
-                                                       90, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
+                                                       90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
         if player2:
             self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
-                                                       270, ObjectSubtype.Helicopter, Constants.DefaultObjectRadius))
+                                                       270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
 
         for i in range(1, bot1 + 1):
-            print(pos1 * (i + player1))
             self.configuration[ObjectType.Bot1].append(
                 (pos1 * (i + player1) + np.random.randint(-50, 50), 50 + np.random.randint(50),
                 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
