@@ -12,6 +12,7 @@ class Loss():
         self.min_y = np.float(0.0)
         self.norm_min_distance = np.float(0.0)
         self.danger_distance_norm = np.float(0.1) #critical distance to danger objects(normalize)
+        self.max_speed_of_objects = 400
 
         #coefs to distance func
         self.a = 0.5*(-self.danger_distance_norm + np.sqrt(self.danger_distance_norm**2 + 4*self.danger_distance_norm))
@@ -26,9 +27,9 @@ class Loss():
         #parametrs for cube
         #Loss value functions
         self.loss_distance = np.float(0.0)
-        self.loss_distance_enemy = np.float(0.0)
-        self.loss_distance_comrade = np.float(0.0)
+        self.loss_objects_interaction = np.float(0.0)
         self.loss_amount_in_teams = np.float(0.0)
+        self.loss_of_velocity = np.float(0.0)
 
     def set_congiguration(self, configuration):
         self.configuration = configuration
@@ -61,9 +62,14 @@ class Loss():
         self.loss_amount_in_teams = 2*(radiant - dire)/(radiant + dire)
         #print(self.loss_amount_in_teams)
 
+    def calc_loss_of_velocity(self, velocity):
+        self.loss_of_velocity = velocity / self.max_speed_of_objects
+        #print(self.loss_of_velocity)
+
     def calc_qstate(self, radius, phi_betw_r, psi_betw_enem):
         r_i, phi_i, psi_i = self.qstate.get_index_by_values(radius, phi_betw_r, psi_betw_enem)
-        return self.qstate.data_arr[int(r_i), int(phi_i), int(psi_i)]
+        self.loss_objects_interaction = self.qstate.data_arr[int(r_i), int(phi_i), int(psi_i)]
+        #print(self.loss_objects_interaction)
 
 
 class QState:
@@ -71,9 +77,9 @@ class QState:
         self.range_phi = (0, 360)
         self.range_psi = (0, 360)
         self.range_r = (0, 1500)
-        self.R_obj = Constants.DefaultObjectRadius
-        self.Attack_range = Constants.AttackRange
-        self.n_cuts = 6
+        self.r_obj = Constants.DefaultObjectRadius
+        self.attack_range = Constants.AttackRange
+        self.n_cuts = 10
         self.n_nearest = 30
         self.r_wide, self.psi_wide, self.phi_wide = self.range_r[1] // self.n_cuts, self.range_psi[1] // self.n_cuts, \
                                                     self.range_phi[1] // self.n_cuts
@@ -81,9 +87,8 @@ class QState:
         self.given_state_vectors = []  # [ (r, phi, psi)_1, ... ]
         self.give_state_q = []  # [ Q1, ... ]
 
-        self.fill_by_experiment()
-        #print(self.given_state_vectors, self.give_state_q)
-        self.fill_data_arr()
+        #self.fill_by_experiment()
+        #self.fill_data_arr()
 
 
     def get_index_by_values(self, r, phi, psi):
@@ -115,7 +120,7 @@ class QState:
             func_out.append(rawpoint[2])
         return np.array(data_out), np.array(func_out)
 
-    def is_near(self, obj, value, accurate = 10):
+    def is_near_angle(self, obj, value, accurate=10):
         return ((obj < (value + accurate)) or (obj > (value - accurate)))
 
     def fill_by_experiment(self):
@@ -123,35 +128,59 @@ class QState:
             for phi_i in range(0, self.n_cuts):
                 for psi_i in range(0, self.n_cuts):
                     coords = self.get_cell_val_by_index(r_i, phi_i, psi_i)
-                    # r, phi, psi = coords[0], coords[1], coords[2]
-                    #for Radius experiments
-                    if coords[0] < 2*self.R_obj:
-                        self.feed_data(coords, -1)
-                    elif coords[0] < 4 * self.R_obj:
+                    #print(coords)
+                    if coords[0] > self.range_r[1]:
                         self.feed_data(coords, 0)
-                    elif coords[0] < 7 * self.R_obj and self.is_near(coords[1], 0, 40):
-                        self.feed_data(coords, 1)
-                    elif coords[0] < self.Attack_range:
-                        self.feed_data(coords, 0.5)
-                    elif coords[0] > 1300: ##uslovno
-                        self.feed_data(coords, 0)
-
-                    # For Phi (angle between object and Radius) Experimence
-                    elif self.is_near(coords[1], 0, 30) and self.is_near(coords[2], 45, 15):
-                        self.feed_data(coords, 0.5)
-                    elif self.is_near(coords[1], 180, 15):
-                        if self.is_near(coords[2], 0):
-                            self.feed_data(coords, -0.5)
-                        elif self.is_near(coords[2], 180, 15):
-                            self.feed_data(coords, 0)
-                    elif self.is_near(coords[1], 90, 20):
-                        self.feed_data(coords, 0)
-                    elif self.is_near(coords[1], 135, 20) and self.is_near(coords[2], 45, 15):
+                    elif coords[0] < self.r_obj:
                         self.feed_data(coords, -0.5)
-                    elif self.is_near(coords[1], coords[2]):
-                        self.feed_data(coords, 0.2)
-
-                    # For Psi (Difference between our and enemy directions) Experimence
+                    elif self.is_near_angle(coords[2], 180):
+                        self.feed_data(coords, -0.1)
+                    #There is best position(object in bottom cone but in different R)
+                    elif self.is_near_angle(coords[1], 0, 20) and self.is_near_angle(coords[2], 0, 20):
+                        if coords[0] < self.attack_range:
+                            self.feed_data(coords, 1)
+                        elif coords[0] < 4*self.attack_range:
+                            self.feed_data(coords, 0.5)
+                        elif coords[0] < 8*self.attack_range:
+                            self.feed_data(coords, 0.2)
+                        else:
+                            self.feed_data(coords, 0)
+                    #There is good position
+                    elif self.is_near_angle(coords[1], 45, 15) and self.is_near_angle(coords[2], 45, 15):
+                        if coords[0] < self.attack_range:
+                            self.feed_data(coords, 0.7)
+                        elif coords[0] < 4*self.attack_range:
+                            self.feed_data(coords, 0.3)
+                        elif coords[0] < 8*self.attack_range:
+                            self.feed_data(coords, 0.05)
+                        else:
+                            self.feed_data(coords, 0)
+                    #There is neutral position
+                    elif self.is_near_angle(coords[1], 90, 20):
+                        if self.is_near_angle(coords[2], 90, 20):
+                            self.feed_data(coords, 0)
+                        elif self.is_near_angle(coords[2], 45, 20):
+                            self.feed_data(coords, 0.2)
+                        elif self.is_near_angle(coords[2], 135, 20):
+                            self.feed_data(coords, -0.2)
+                    #There is bad position
+                    elif self.is_near_angle(coords[1], 135, 20):
+                        if self.is_near_angle(coords[2], 90, 20):
+                            self.feed_data(coords, 0)
+                        elif self.is_near_angle(coords[2], 45, 20):
+                            self.feed_data(coords, -0.3)
+                        elif self.is_near_angle(coords[2], 135, 20):
+                            self.feed_data(coords, 0.3)
+                    #There is worst position
+                    elif self.is_near_angle(coords[1], 180, 15):
+                        if self.is_near_angle(coords[2], 0, 15):
+                            self.feed_data(coords, -1)
+                        elif self.is_near_angle(coords[2], 45, 20):
+                            self.feed_data(coords, -0.5)
+                        elif self.is_near_angle(coords[2], 90, 20):
+                            self.feed_data(coords, -0.3)
+                        elif self.is_near_angle(coords[2], 135, 20):
+                            self.feed_data(coords, -0.1)
 
     def fill_data_arr(self):
         for r_i in range(0, self.n_cuts):
@@ -159,9 +188,9 @@ class QState:
                 for psi_i in range(0, self.n_cuts):
                     nearest_coords = self.get_cell_val_by_index(r_i, phi_i, psi_i)
                     nearest_points, nearest_vals = self.get_nearest(*nearest_coords)
-                    coefs = np.linalg.lstsq(nearest_points, nearest_vals)[0]
+                    coefs = np.linalg.lstsq(nearest_points, nearest_vals, rcond=None)[0]
                     val = np.dot(coefs, nearest_coords)
-                    print(val, (r_i*100+phi_i*10+psi_i)/10, '% completed fill cube')
+                    #print(val, (r_i*100+phi_i*10+psi_i)/10, '% completed fill cube')
                     self.data_arr[r_i, phi_i, psi_i] = val
 
 
