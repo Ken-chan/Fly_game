@@ -2,7 +2,7 @@ from multiprocessing import Queue
 import time
 
 class Game:
-    Quit, UpdateField, UpdateObjects, RunNewGame, Pause, ActiveGame, RestartGame = range(7)
+    Quit, Polar_grid, UpdateObjects, RunNewGame, Pause, ActiveGame, RestartGame = range(7)
 class GuiControls:
     StopGui, StartGame, UpdateField, UpdateObjects, HandleMouse, HandleKey = range(6)
 class GuiScreen:
@@ -106,6 +106,7 @@ class Messenger:
 
     def show_polar_grid(self):
         self.send_message(self.objects_queue, Objects.Polar_grid)
+        self.send_message(self.game_queue, Game.Polar_grid)
 
     def ai_update_objects(self, objects_copy):
         self.send_message(self.ai_controls_queue, AIcontrols.UpdateObjects, {'objects_copy': objects_copy})
