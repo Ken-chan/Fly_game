@@ -24,8 +24,8 @@ class Game:
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 2
-        self.dire_bots = 5
+        self.radiant_bots = 0
+        self.dire_bots = 0
         self.is_player1_play = 1
         self.is_player2_play = 1
         self.radiant = self.radiant_bots + self.is_player1_play

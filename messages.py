@@ -9,7 +9,7 @@ class GuiScreen:
     TerminateScreen, StartNewGame, UpdateRenderedSurface = range(3)
 class Objects:
     Quit, UpdateField, AddObject, SetControlSignal, KingChangeItem, Pause, Run, Restart,\
-    UpdateGameSettings, TrainUnit, BuyItem, UseItem, UpdateObjects, RunFromFile = range(14)
+    UpdateGameSettings, TrainUnit, Polar_grid, UseItem, UpdateObjects, RunFromFile = range(14)
 class AIcontrols:
     Quit, Pause, Run, UpdateObjects, UpdateAiSettings = range(5)
 
@@ -103,6 +103,9 @@ class Messenger:
 
     def ai_start_game(self):
         self.send_message(self.ai_controls_queue, AIcontrols.Run)
+
+    def show_polar_grid(self):
+        self.send_message(self.objects_queue, Objects.Polar_grid)
 
     def ai_update_objects(self, objects_copy):
         self.send_message(self.ai_controls_queue, AIcontrols.UpdateObjects, {'objects_copy': objects_copy})

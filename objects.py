@@ -2,6 +2,7 @@ import pyglet
 import messages
 from obj_def import *
 from tools import Loss
+from tools import calc_polar_grid
 import numpy as np
 import sys
 
@@ -69,6 +70,7 @@ class Objects:
         self.train_mode = True
         if ai_controls == None:
             self.train_mode = False
+        self._polar_grid = False                    ### changeable
         self.in_game = True
         self.tries = tries
         self.current_try = 1
@@ -97,6 +99,8 @@ class Objects:
         self.maxplaytime = 60 * self.framerate
 
         self.Loss = Loss(self.configuration) #loss take config from objects(not from game)
+        self.angle_between_objects = np.float(0.0)
+        self.angle_between_radius = np.float(0.0)
         #initialization starts
         #self.team1_survives = np.int32(0)
         #self.team2_survives = np.int32(0)
@@ -128,10 +132,9 @@ class Objects:
                           messages.Objects.Run: self.run_simulation,
                           messages.Objects.RunFromFile: self.run_history,
                           messages.Objects.Restart: self.restart,
+                          messages.Objects.Polar_grid: self.show_polar_grid,
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
         #self.objects_state = ObjectsState.Pause
-
-
         if self.train_mode:
             self._index, self._vel_ctrl, self._turn_ctrl = 0, 0, 0
             self.ai_controls.start_ai_controls()
@@ -142,6 +145,9 @@ class Objects:
 
     def quit(self):
         self.objects_state = ObjectsState.Exit
+
+    def show_polar_grid(self):
+        self._polar_grid = False if self._polar_grid else True
 
     def pause_simulation(self):
         self.objects_state = ObjectsState.Pause
@@ -263,12 +269,16 @@ class Objects:
                                 elif Teams.team_by_id(jndex) == Teams.Team2:
                                     self.dire -= 1
 
-                            ## TRY LOSS
+                            # TRY LOSS
                             self.Loss.calc_loss_of_distance(objects[jndex])
                             if Teams.team_by_id(jndex) == Teams.Team1:
-                                self.Loss.calc_loss_amount_teams(self.radiant, self.dire)
+                               self.Loss.calc_loss_amount_teams(self.radiant, self.dire)
                             elif Teams.team_by_id(jndex) == Teams.Team2:
-                                self.Loss.calc_loss_amount_teams(self.dire, self.radiant)
+                               self.Loss.calc_loss_amount_teams(self.dire, self.radiant)
+                            #print(np.degrees(np.arctan(self.diff_vector[1]/self.diff_vector[0])))
+                            self.angle_between_objects =  (objects[jndex][ObjectProp.Dir] - np.degrees(np.arctan(self.diff_vector[1]/self.diff_vector[0])))%360
+                            self.angle_between_radius = np.fabs(objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir])
+                            #print(self.Loss.calc_qstate(self.distance,self.angle_between_objects,self.angle_between_radius))
 
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1:
@@ -315,7 +325,8 @@ class Objects:
             self.save_history_file(self.hist_file_name, objects)
             self.objects.current_objects = objects
             self.check_kill_and_end_of_game()
-            self.calc_polar_grid(objects, self.battle_field_width, self.battle_field_height)
+            if(self._polar_grid):
+                calc_polar_grid(self, objects, self.battle_field_width, self.battle_field_height)
             if not self.train_mode:
                 self.messenger.game_update_objects(self.objects.get_objects())
                 self.messenger.ai_update_objects(self.objects.get_objects())
@@ -345,91 +356,6 @@ class Objects:
             self.messenger.ai_update_objects(self.objects.get_objects())
 
 
-    def calc_polar_grid(self, objects, width, height, step_number=16, player_number=0, max_range=600):
-        self.polar_grid = np.zeros((step_number, step_number + 1))  # fi , range
-        self.player = objects[player_number]
-        self.max_range = max_range
-
-        for _step in range(0, step_number):
-            self.current_angle = _step * 360 / step_number*np.pi/180 # проходим по уголу
-            if self.current_angle*180/np.pi >= 0 and self.current_angle*180/np.pi <= 90:
-                self.h = height - self.player[ObjectProp.Ycoord], width - self.player[ObjectProp.Xcoord]
-            elif self.current_angle *180/np.pi >= 90 and self.current_angle *180/np.pi <= 180:
-                self.h = height - self.player[ObjectProp.Ycoord], self.player[ObjectProp.Xcoord]
-            elif self.current_angle*180/np.pi >= 180 and self.current_angle*180/np.pi <= 270:
-                self.h = self.player[ObjectProp.Ycoord], self.player[ObjectProp.Xcoord]
-            elif self.current_angle*180/np.pi >= 270 and self.current_angle*180/np.pi <= 360:
-                self.h = self.player[ObjectProp.Ycoord], width - self.player[ObjectProp.Xcoord]
-            self.current_range_to_wall = min(
-                self.h[0] / abs(np.sin(self.current_angle)+self.epsilon),
-                self.h[1] / abs(np.cos(self.current_angle)+self.epsilon))
-
-            #print("self.current_range_to_wall = ",self.current_range_to_wall, " _step = ", _step)
-            #print(self.current_angle*180/np.pi,"   ",self.h)
-
-            self.next_angle = 0 if _step == step_number - 1 else (_step + 1) * 360 / step_number * np.pi / 180  # проходим по уголу
-            if self.next_angle * 180 / np.pi >= 0 and self.next_angle * 180 / np.pi <= 90:
-                self.h = height - self.player[ObjectProp.Ycoord], width - self.player[ObjectProp.Xcoord]
-            elif self.next_angle * 180 / np.pi >= 90 and self.next_angle * 180 / np.pi <= 180:
-                self.h = height - self.player[ObjectProp.Ycoord], self.player[ObjectProp.Xcoord]
-            elif self.next_angle * 180 / np.pi >= 180 and self.next_angle * 180 / np.pi <= 270:
-                self.h = self.player[ObjectProp.Ycoord], self.player[ObjectProp.Xcoord]
-            elif self.next_angle * 180 / np.pi >= 270 and self.next_angle * 180 / np.pi <= 360:
-                self.h = self.player[ObjectProp.Ycoord], width - self.player[ObjectProp.Xcoord]
-            self.next_range_to_wall = min(
-                self.h[0] / abs(np.sin(self.next_angle) + self.epsilon),
-                self.h[1] / abs(np.cos(self.next_angle) + self.epsilon))
-
-            self.current_range_to_wall = min(self.current_range_to_wall , self.next_range_to_wall)
-            self.current_discrete_range_to_wall = int(self.current_range_to_wall * step_number / max_range)
-            if self.current_discrete_range_to_wall > step_number:
-                self.current_discrete_range_to_wall = step_number
-            for r in range(self.current_discrete_range_to_wall, step_number+1):
-                self.polar_grid[_step][r] = -1
-            #print(self.player[ObjectProp.Xcoord], self.player[ObjectProp.Ycoord], self.current_range_to_wall, "  ",_step)
-
-        for index in range(0, ObjectType.ObjArrayTotal):
-            if objects[index][ObjectProp.ObjType] != ObjectType.Absent and index != player_number:
-                self.another_x = objects[index][ObjectProp.Xcoord] - self.player[ObjectProp.Xcoord]
-                self.another_y = objects[index][ObjectProp.Ycoord] - self.player[ObjectProp.Ycoord]
-                self.fi = np.arctan2(self.another_y, self.another_x) * 180 / np.pi
-                self.fi_discrete = int(self.fi*step_number/360) if self.fi >= 0 else step_number - 1 + int(self.fi*step_number/360)
-                self.range_discrete = int(np.sqrt(self.another_x**2+self.another_y**2)*step_number/self.max_range)
-                if self.range_discrete > step_number - 1:
-                    self.range_discrete = step_number
-
-                self.polar_grid[self.fi_discrete][self.range_discrete] = objects[index][ObjectProp.ObjType] \
-                    if self.polar_grid[self.fi_discrete][self.range_discrete] == -1 else\
-                        self.polar_grid[self.fi_discrete][self.range_discrete]*10 +\
-                        objects[index][ObjectProp.ObjType]
-        print(self.polar_grid)
-        x0 = 1000
-        y0 = 990
-        dx = 29
-        dy = 25
-        for i in range(0,step_number):
-            for j in range(0, step_number+1):
-                color = [255, 255, 255, 255] * 4
-                points = (x0 + j * dx, y0 - i * dy - dy,
-                          x0 + j * dx, y0 - i * dy,
-                          x0 + j * dx + dx, y0 - i * dy,
-                          x0 + j * dx + dx, y0 - i * dy - dy)
-                if self.polar_grid[i][j] == -1:
-                    color = [0, 0, 0, 255] * 4
-                if self.polar_grid[i][j] == 5:
-                    color = [0, 0, 255, 255] * 4
-                if self.polar_grid[i][j] == 3:
-                    color = [255, 0, 255, 255] * 4
-                if self.polar_grid[i][j] == 2:
-                    color = [255, 0, 0, 255] * 4
-
-                pyglet.graphics.draw(4, pyglet.gl.GL_QUADS,
-                                     ('v2i', points),
-                                     ('c4B', color))
-
-
-
-
     def read_mes(self, dt):
         if self.objects_state != ObjectsState.Exit:
             while True:
@@ -437,6 +363,4 @@ class Objects:
                 if data is None:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
-
-
 
