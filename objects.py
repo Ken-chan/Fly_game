@@ -97,6 +97,8 @@ class Objects:
         self.maxplaytime = 60 * self.framerate
 
         self.Loss = Loss(self.configuration) #loss take config from objects(not from game)
+        self.angle_between_objects = np.float(0.0)
+        self.angle_between_radius = np.float(0.0)
         #initialization starts
         #self.team1_survives = np.int32(0)
         #self.team2_survives = np.int32(0)
@@ -261,12 +263,16 @@ class Objects:
                                 elif Teams.team_by_id(jndex) == Teams.Team2:
                                     self.dire -= 1
 
-                            ## TRY LOSS
+                            # TRY LOSS
                             self.Loss.calc_loss_of_distance(objects[jndex])
                             if Teams.team_by_id(jndex) == Teams.Team1:
-                                self.Loss.calc_loss_amount_teams(self.radiant, self.dire)
+                               self.Loss.calc_loss_amount_teams(self.radiant, self.dire)
                             elif Teams.team_by_id(jndex) == Teams.Team2:
-                                self.Loss.calc_loss_amount_teams(self.dire, self.radiant)
+                               self.Loss.calc_loss_amount_teams(self.dire, self.radiant)
+                            #print(np.degrees(np.arctan(self.diff_vector[1]/self.diff_vector[0])))
+                            self.angle_between_objects =  (objects[jndex][ObjectProp.Dir] - np.degrees(np.arctan(self.diff_vector[1]/self.diff_vector[0])))%360
+                            self.angle_between_radius = np.fabs(objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir])
+                            #print(self.Loss.calc_qstate(self.distance,self.angle_between_objects,self.angle_between_radius))
 
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1:
