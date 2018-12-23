@@ -198,11 +198,10 @@ class QState:
 
 
 def calc_polar_grid(self, objects, width, height, step_number=16, player_number=0, max_range=600):
-    import pyglet
     self.player = objects[player_number]
     if self.player[ObjectProp.ObjType] == ObjectType.Absent:
         return
-    self.polar_grid = np.zeros((step_number, step_number + 1))  # fi , range
+    self.polar_grid = np.zeros((step_number + 1, step_number))  # fi , range
     self.max_range = max_range
     self._dir = self.player[ObjectProp.Dir] - 90 if self.player[ObjectProp.Dir] >= 90 \
                                                 else 270 + self.player[ObjectProp.Dir]
@@ -252,7 +251,7 @@ def calc_polar_grid(self, objects, width, height, step_number=16, player_number=
         if self.current_discrete_range_to_wall > step_number:
             self.current_discrete_range_to_wall = step_number
         for r in range(self.current_discrete_range_to_wall, step_number+1):
-            self.polar_grid[_step][r] = -1
+            self.polar_grid[step_number - r][_step] = -1
         #print(self.player[ObjectProp.Xcoord], self.player[ObjectProp.Ycoord], self.current_range_to_wall, "  ",_step)
 
     for index in range(0, ObjectType.ObjArrayTotal):
@@ -268,9 +267,9 @@ def calc_polar_grid(self, objects, width, height, step_number=16, player_number=
             if self.range_discrete > step_number - 1:
                 self.range_discrete = step_number
 
-            self.polar_grid[self.fi_discrete][self.range_discrete] = objects[index][ObjectProp.ObjType] \
-                if self.polar_grid[self.fi_discrete][self.range_discrete] == -1 else\
-                    self.polar_grid[self.fi_discrete][self.range_discrete]*10 +\
+            self.polar_grid[step_number - self.range_discrete][self.fi_discrete] = objects[index][ObjectProp.ObjType] \
+                if self.polar_grid[step_number - self.range_discrete][self.fi_discrete] == -1 else\
+                    self.polar_grid[step_number - self.range_discrete][self.fi_discrete]*10 +\
                     objects[index][ObjectProp.ObjType]
-    #print(self.polar_grid)
+    print(self.polar_grid)
 

@@ -107,57 +107,57 @@ class Renderer:
                 if self.recalc == 1:
                     self.recalc = 0
                     calc_polar_grid(self, self.objects_copy, self.battle_field_width, self.battle_field_height)
-                    self.x0 = 1000
-                    self.y0 = 990
-                    self.dx = 29
+                    self.x0 = 980
+                    self.y0 = 1000
+                    self.dx = 31
                     self.dy = 25
                     for label in self.labels:
                         label.visible = True
-                    img = Image.new('RGB',(self.dx*(self.step_number+1),self.dy*self.step_number), (255,255,255))
+                    img = Image.new('RGB',(self.dx*self.step_number,self.dy*(self.step_number+1)), (255,255,255))
                     draw = ImageDraw.Draw(img)
-                    for i in range(0, self.step_number):
-                        for j in range(0, self.step_number + 1):
-                            if self.polar_grid[i][j] == -1:
+                    for i in range(0, self.step_number + 1):
+                        for j in range(0, self.step_number):
+                            if self.polar_grid[self.step_number - i][self.step_number - j - 1] == -1:
                                 draw.rectangle([(j * self.dx, i * self.dy),
                                                 (j * self.dx + self.dx, i * self.dy + self.dy)],
                                                fill=(0, 0, 0))
-                            if self.polar_grid[i][j] == 5:
+                            if self.polar_grid[self.step_number - i][self.step_number - j - 1] == 5:
                                 draw.rectangle([(j * self.dx, i * self.dy),
                                                 (j * self.dx + self.dx, i * self.dy + self.dy)],
                                                fill=(0, 0, 255))
-                            if self.polar_grid[i][j] == 3:
+                            if self.polar_grid[self.step_number - i][self.step_number - j - 1] == 3:
                                 draw.rectangle([(j * self.dx, i * self.dy),
                                                 (j * self.dx + self.dx, i * self.dy + self.dy)],
                                                fill=(255, 0, 255))
-                            if self.polar_grid[i][j] == 2:
+                            if self.polar_grid[self.step_number - i][self.step_number - j - 1] == 2:
                                 draw.rectangle([(j * self.dx, i * self.dy),
                                                 (j * self.dx + self.dx, i * self.dy + self.dy)],
                                                fill=(255,0,0))
 
-                            if i == 0 and self.draw:
-                                self._range = str(j) if j < self.step_number else 'inf'
-                                label = pyglet.text.Label(self._range,
-                                                          font_name='Times New Roman',
-                                                          font_size=16,
-                                                          x=self.x0 + self.dx * j + self.dx // 2,
-                                                          y=self.y0 - self.dy * self.step_number - self.dy // 2,
-                                                          anchor_x='center', anchor_y='center', batch=self.batch)
-                                self.labels.append(label)
                         if self.draw:
-                            label = pyglet.text.Label(str(-360 * i / self.step_number + 180),
+                            self._range = str(self.step_number - i) if i != 0 else 'inf'
+                            label = pyglet.text.Label(self._range,
                                                       font_name='Times New Roman',
                                                       font_size=16,
                                                       x=self.x0 - self.dx,
-                                                      y=self.y0 - self.dy * i - self.dy // 2,
-                                                      anchor_x='center', anchor_y='center', batch=self.batch)
+                                                      y=self.y0 - self.dy * i - self.dy // 3,
+                                                      anchor_x='left', anchor_y='top', batch=self.batch)
                             self.labels.append(label)
+                            if i//2 == i/2:
+                                label = pyglet.text.Label(str(int(360*i/self.step_number - 180)),# pi = '\u03C0'
+                                                          font_name='Times New Roman',
+                                                          font_size=16,
+                                                          x=self.x0 + self.dx * i,
+                                                          y=self.y0 - self.dy * self.step_number - 3 * self.dy // 2,
+                                                          anchor_x='center', anchor_y='top', batch=self.batch)
+                                self.labels.append(label)
 
                     raw_image = img.tobytes()
-                    self.pil_img = pyglet.image.ImageData(self.dx*(self.step_number+1),
-                                                          self.dy*self.step_number,
+                    self.pil_img = pyglet.image.ImageData(self.dx*(self.step_number),
+                                                          self.dy*(self.step_number+1),
                                                           'RGB', raw_image)
                     self.pil_img_sprite = pyglet.sprite.Sprite(self.pil_img, batch=self.batch)
-                    self.pil_img_sprite.update(x=self.x0, y=self.y0 - 400)
+                    self.pil_img_sprite.update(x=self.x0, y=self.y0 - 430)
                     self.pil_img_sprite.visible = True
 
                 self.recalc += 1
@@ -167,8 +167,8 @@ class Renderer:
                                               font_size=16,
                                               color=((0, 0, 0, 255)),
                                               x=self.x0,
-                                              y=self.y0 - self.dy * 18,
-                                              anchor_x='left', anchor_y='center', batch=self.batch)
+                                              y=self.y0 - self.dy * 19,
+                                              anchor_x='left', anchor_y='top', batch=self.batch)
                     self.labels.append(label)
                 self.draw = False
             if self._polar_grid == False:
