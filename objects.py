@@ -4,7 +4,6 @@ from obj_def import *
 from tools import Loss
 from tools import calc_polar_grid
 import numpy as np
-import sys
 
 
 class ObjectsState:
@@ -70,7 +69,6 @@ class Objects:
         self.train_mode = True
         if ai_controls == None:
             self.train_mode = False
-        self._polar_grid = False                    ### changeable
         self.in_game = True
         self.tries = tries
         self.current_try = 1
@@ -123,7 +121,6 @@ class Objects:
         self.dv_calc, self.w_calc = np.float(0.0), np.float(0.0)
         self.cur_rad = np.float(0.0)
         #initialization ends
-        self.epsilon = sys.float_info.epsilon
 
         self.functions = {messages.Objects.Quit: self.quit,
                           messages.Objects.AddObject: self.objects.add_object,
@@ -132,7 +129,6 @@ class Objects:
                           messages.Objects.Run: self.run_simulation,
                           messages.Objects.RunFromFile: self.run_history,
                           messages.Objects.Restart: self.restart,
-                          messages.Objects.Polar_grid: self.show_polar_grid,
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
         #self.objects_state = ObjectsState.Pause
         if self.train_mode:
@@ -145,9 +141,6 @@ class Objects:
 
     def quit(self):
         self.objects_state = ObjectsState.Exit
-
-    def show_polar_grid(self):
-        self._polar_grid = False if self._polar_grid else True
 
 
     def pause_simulation(self):
@@ -333,8 +326,6 @@ class Objects:
             self.save_history_file(self.hist_file_name, objects)
             self.objects.current_objects = objects
             self.check_kill_and_end_of_game()
-            if(self._polar_grid):
-                calc_polar_grid(self, objects, self.battle_field_width, self.battle_field_height)
             if not self.train_mode:
                 self.messenger.game_update_objects(self.objects.get_objects())
                 self.messenger.ai_update_objects(self.objects.get_objects())
