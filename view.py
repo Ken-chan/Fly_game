@@ -1,5 +1,7 @@
 import pyglet
 from obj_def import *
+from tools import calc_polar_grid
+from PIL import Image, ImageDraw
 
 class RendererState:
     Start, Pause, Game, Menu, Exit = range(5)
@@ -24,6 +26,14 @@ class Renderer:
         self.size_proportion_width = np.float(0.0)
         self.size_proportion_height = np.float(0.0)
 
+        self.step_number = 16
+        self.polar_grid = np.zeros((self.step_number, self.step_number + 1))
+        self._polar_grid = False                    ### changeable
+        self.recalc = 1
+        self.draw = True
+        self.pil_img = None
+        self.pil_img_sprite = None
+
         self.batch = pyglet.graphics.Batch()
 
         self.init_sprites()
@@ -33,6 +43,7 @@ class Renderer:
         self.objects_sprites = []
         self.cone_sprites = []
         self.rev_cone_sprites = []
+        self.labels = []
         self.scaling_factor = self.screen_width / self.battle_field_width
 
         for index in range(0, ObjectType.ObjArrayTotal):
@@ -52,6 +63,10 @@ class Renderer:
             self.objects_sprites.append(self.new_obj_sprite)
             self.rev_cone_sprites.append(self.rev_cone)
             self.cone_sprites.append(self.cone)
+
+
+    def show_polar_grid(self):
+        self._polar_grid = False if self._polar_grid else True
 
     def update_objects(self, objects):
         self.objects_copy = objects
@@ -87,6 +102,81 @@ class Renderer:
                     self.rev_cone_sprites[index].update(x=self.size_proportion_width * (self.current_object[ObjectProp.Xcoord]),
                                                         y=self.size_proportion_height * (self.current_object[ObjectProp.Ycoord]),
                                                         rotation=-self.current_object[ObjectProp.Dir] + 180)
+
+            if self._polar_grid:
+                if self.recalc == 1:
+                    self.recalc = 0
+                    calc_polar_grid(self, self.objects_copy, self.battle_field_width, self.battle_field_height)
+                    self.x0 = 1000
+                    self.y0 = 990
+                    self.dx = 29
+                    self.dy = 25
+                    for label in self.labels:
+                        label.visible = True
+                    img = Image.new('RGB',(self.dx*(self.step_number+1),self.dy*self.step_number), (255,255,255))
+                    draw = ImageDraw.Draw(img)
+                    for i in range(0, self.step_number):
+                        for j in range(0, self.step_number + 1):
+                            if self.polar_grid[i][j] == -1:
+                                draw.rectangle([(j * self.dx, i * self.dy),
+                                                (j * self.dx + self.dx, i * self.dy + self.dy)],
+                                               fill=(0, 0, 0))
+                            if self.polar_grid[i][j] == 5:
+                                draw.rectangle([(j * self.dx, i * self.dy),
+                                                (j * self.dx + self.dx, i * self.dy + self.dy)],
+                                               fill=(0, 0, 255))
+                            if self.polar_grid[i][j] == 3:
+                                draw.rectangle([(j * self.dx, i * self.dy),
+                                                (j * self.dx + self.dx, i * self.dy + self.dy)],
+                                               fill=(255, 0, 255))
+                            if self.polar_grid[i][j] == 2:
+                                draw.rectangle([(j * self.dx, i * self.dy),
+                                                (j * self.dx + self.dx, i * self.dy + self.dy)],
+                                               fill=(255,0,0))
+
+                            if i == 0 and self.draw:
+                                self._range = str(j) if j < self.step_number else 'inf'
+                                label = pyglet.text.Label(self._range,
+                                                          font_name='Times New Roman',
+                                                          font_size=16,
+                                                          x=self.x0 + self.dx * j + self.dx // 2,
+                                                          y=self.y0 - self.dy * self.step_number - self.dy // 2,
+                                                          anchor_x='center', anchor_y='center', batch=self.batch)
+                                self.labels.append(label)
+                        if self.draw:
+                            label = pyglet.text.Label(str(-360 * i / self.step_number + 180),
+                                                      font_name='Times New Roman',
+                                                      font_size=16,
+                                                      x=self.x0 - self.dx,
+                                                      y=self.y0 - self.dy * i - self.dy // 2,
+                                                      anchor_x='center', anchor_y='center', batch=self.batch)
+                            self.labels.append(label)
+
+                    raw_image = img.tobytes()
+                    self.pil_img = pyglet.image.ImageData(self.dx*(self.step_number+1),
+                                                          self.dy*self.step_number,
+                                                          'RGB', raw_image)
+                    self.pil_img_sprite = pyglet.sprite.Sprite(self.pil_img, batch=self.batch)
+                    self.pil_img_sprite.update(x=self.x0, y=self.y0 - 400)
+                    self.pil_img_sprite.visible = True
+
+                self.recalc += 1
+                if self.draw:
+                    label = pyglet.text.Label("оценка функции полезности: " + str("сюда писать число"),
+                                              font_name='Times New Roman',
+                                              font_size=16,
+                                              color=((0, 0, 0, 255)),
+                                              x=self.x0,
+                                              y=self.y0 - self.dy * 18,
+                                              anchor_x='left', anchor_y='center', batch=self.batch)
+                    self.labels.append(label)
+                self.draw = False
+            if self._polar_grid == False:
+                for index in range(0, len(self.labels)):
+                    self.labels[index].delete()
+                    self.draw = True
+                    if self.pil_img_sprite:
+                        self.pil_img_sprite.visible = False
 
 
 class Sprite(pyglet.sprite.Sprite):

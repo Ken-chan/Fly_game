@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 
 class Teams:
@@ -108,6 +109,7 @@ class ObjectProp:
 
 
 class Constants:
+    epsilon = sys.float_info.epsilon
     DefaultObjectRadius = np.int32(15)
     AttackRange = np.int32(200)
     MinPlaneVel = np.int32(150)

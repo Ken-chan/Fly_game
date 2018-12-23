@@ -69,7 +69,7 @@ class Game:
         self.functions = {messages.Game.Quit: self.quit,
                           messages.Game.UpdateObjects: self.update_objects,
                           messages.Game.Pause: self.game_pause_simulation,
-                          messages.Game.Polar_grid: self.resize_window,
+                          messages.Game.Polar_grid: self.show_polar_grid,
                           messages.Game.ActiveGame: self.game_unpaused}
         self.run_game()
 
@@ -79,10 +79,10 @@ class Game:
         pos2 = sizeX / (bot2 + player2 + 1)
         if player1:
             self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-50, 50), 50 + np.random.randint(50),
-                                                       90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+                                                       90, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
         if player2:
             self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
-                                                       270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
+                                                       270, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
 
         for i in range(1, bot1 + 1):
             self.configuration[ObjectType.Bot1].append(
@@ -110,11 +110,13 @@ class Game:
     def game_unpaused(self):
         self.game_state = GameState.ActiveGame
 
-    def resize_window(self):
+    def show_polar_grid(self):
         if(self.game_window.width ==  self.screen_width):
             self.game_window.set_size(self.screen_width + 500, self.screen_height)
+            self.renderer.show_polar_grid()
         else:
             self.game_window.set_size(self.screen_width, self.screen_height)
+            self.renderer.show_polar_grid()
 
     def read_messages(self, dt):
         while True:
