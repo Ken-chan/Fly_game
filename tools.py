@@ -4,8 +4,8 @@ from obj_def import *
 class Loss():
     def __init__(self, configuration):
         self.configuration = None
-        self.battle_field_size = np.array([0.0, 0.0])
-        self.set_congiguration(configuration)
+        self.battle_field_size = np.array([1000.0, 1000.0])
+        #self.set_congiguration(configuration)
         self.qstate = QState()
         self.q_data = np.zeros((self.qstate.n_cuts, self.qstate.n_cuts, self.qstate.n_cuts))
 
@@ -82,9 +82,10 @@ class Loss():
         return self.loss_objects_interaction
 
     def loss_result(self, object, radius, phi, psi, radiant, dire):
-        self.result = (self.calc_loss_of_distance(object) + self.calc_loss_of_velocity(object[ObjectProp.Velocity]) +
+        self.result = (self.calc_loss_of_distance(object) + #self.calc_loss_of_velocity(object[ObjectProp.Velocity]) +
                 self.calc_qstate(radius, phi, psi) + self.calc_loss_amount_teams(radiant, dire))
-        print(self.result, radius, phi, psi)
+        #print(self.result, radius, phi, psi)
+        return self.result
 
 
 class QState:
@@ -514,5 +515,5 @@ def calc_polar_grid(self, objects, width, height, step_number=16, player_number=
                 if self.polar_grid[step_number - self.range_discrete][self.fi_discrete] == -1 else\
                     self.polar_grid[step_number - self.range_discrete][self.fi_discrete]*10 +\
                     objects[index][ObjectProp.ObjType]
-    print(self.polar_grid)
+    #print(self.polar_grid)
 

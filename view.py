@@ -1,6 +1,6 @@
 import pyglet
 from obj_def import *
-from tools import calc_polar_grid
+from tools import calc_polar_grid, Loss
 from PIL import Image, ImageDraw
 
 class RendererState:
@@ -25,6 +25,11 @@ class Renderer:
         self.current_object = None
         self.size_proportion_width = np.float(0.0)
         self.size_proportion_height = np.float(0.0)
+        self.loss_function = Loss(configuration=None)
+        self.x0 = 980
+        self.y0 = 1000
+        self.dx = 31
+        self.dy = 25
 
         self.step_number = 16
         self.polar_grid = np.zeros((self.step_number, self.step_number + 1))
@@ -35,6 +40,14 @@ class Renderer:
         self.pil_img_sprite = None
 
         self.batch = pyglet.graphics.Batch()
+        self.fl_label = pyglet.text.Label("оценка функции полезности: ",
+                                          font_name='Times New Roman',
+                                          font_size=16,
+                                          color=((0, 0, 0, 255)),
+                                          x=self.x0 + 30,
+                                          y=self.y0 - self.dy * 19,
+                                          anchor_x='left', anchor_y='top', batch=self.batch)
+        self.fl_label.visible = False
 
         self.init_sprites()
         self.renderer_state = RendererState.Game
@@ -107,10 +120,6 @@ class Renderer:
                 if self.recalc == 1:
                     self.recalc = 0
                     calc_polar_grid(self, self.objects_copy, self.battle_field_width, self.battle_field_height)
-                    self.x0 = 980
-                    self.y0 = 1000
-                    self.dx = 31
-                    self.dy = 25
                     for label in self.labels:
                         label.visible = True
                     img = Image.new('RGB',(self.dx*self.step_number,self.dy*(self.step_number+1)), (255,255,255))
@@ -139,6 +148,7 @@ class Renderer:
                             label = pyglet.text.Label(self._range,
                                                       font_name='Times New Roman',
                                                       font_size=16,
+                                                      color=(0, 0, 0, 255),
                                                       x=self.x0 - self.dx,
                                                       y=self.y0 - self.dy * i - self.dy // 3,
                                                       anchor_x='left', anchor_y='top', batch=self.batch)
@@ -148,9 +158,30 @@ class Renderer:
                                                           font_name='Times New Roman',
                                                           font_size=16,
                                                           x=self.x0 + self.dx * i,
+                                                          color=(0, 0, 0, 255),
                                                           y=self.y0 - self.dy * self.step_number - 3 * self.dy // 2,
                                                           anchor_x='center', anchor_y='top', batch=self.batch)
                                 self.labels.append(label)
+
+                    obj, enemy = self.objects_copy[0], self.objects_copy[1]
+                    diff_vector = np.array([enemy[ObjectProp.Xcoord] - obj[ObjectProp.Xcoord], enemy[ObjectProp.Ycoord] - obj[ObjectProp.Ycoord]])
+                    dir2 = enemy[ObjectProp.Dir]
+                    vec2 = np.array([np.cos(np.radians(dir2)), np.sin(np.radians(dir2))])
+                    distance = np.linalg.norm(diff_vector)
+                    arr_dir = np.array([enemy[ObjectProp.Xcoord] - obj[ObjectProp.Xcoord], enemy[ObjectProp.Ycoord] - obj[ObjectProp.Ycoord]])
+                    arr_dir = arr_dir / np.linalg.norm(arr_dir)
+                    obj_dir = np.array([np.cos(np.radians(obj[ObjectProp.Dir])), np.sin(np.radians(obj[ObjectProp.Dir]))])
+                    arr_turned = np.array([arr_dir[0]*obj_dir[0] + arr_dir[1]*obj_dir[1], arr_dir[0]*obj_dir[1] - arr_dir[1]*obj_dir[0]])
+                    #angle_between_radius = 180 - np.degrees(np.arccos((diff_vector[0] * vec2[0] + diff_vector[1] * vec2[1]) / ((np.sqrt(pow(diff_vector[0], 2) + pow(diff_vector[1], 2))) * (np.sqrt(pow(vec2[0], 2) + pow(vec2[1], 2)))))) if (diff_vector[0] != 0 and vec2[0] != 0) else 0
+                    angle_between_radius = np.degrees(np.arccos(arr_turned[0]))
+                    if arr_turned[1] < 0:
+                        angle_between_radius = 360- angle_between_radius
+                    #if (diff_vector[0] * vec2[1] - diff_vector[1] * vec2[0]) > 0:
+                    #    angle_between_radius = 360 - angle_between_radius
+                    angle_between_objects = np.fabs((obj[ObjectProp.Dir] - enemy[ObjectProp.Dir]) % 360)
+                    loss_num = self.loss_function.loss_result(obj, distance, angle_between_radius, angle_between_objects, 1, 1)
+                    self.fl_label.text = 'Оценка функции полезности: {}'.format(loss_num)
+                    self.fl_label.visible = True
 
                     raw_image = img.tobytes()
                     self.pil_img = pyglet.image.ImageData(self.dx*(self.step_number),
@@ -161,19 +192,11 @@ class Renderer:
                     self.pil_img_sprite.visible = True
 
                 self.recalc += 1
-                if self.draw:
-                    label = pyglet.text.Label("оценка функции полезности: " + str("сюда писать число"),
-                                              font_name='Times New Roman',
-                                              font_size=16,
-                                              color=((0, 0, 0, 255)),
-                                              x=self.x0,
-                                              y=self.y0 - self.dy * 19,
-                                              anchor_x='left', anchor_y='top', batch=self.batch)
-                    self.labels.append(label)
                 self.draw = False
             if self._polar_grid == False:
                 for index in range(0, len(self.labels)):
                     self.labels[index].delete()
+                    self.fl_label.visible = False
                     self.draw = True
                     if self.pil_img_sprite:
                         self.pil_img_sprite.visible = False

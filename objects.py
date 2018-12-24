@@ -265,18 +265,18 @@ class Objects:
 
 
                             ##FOR LOSS
-                            self.angle_between_radius = 180 - np.degrees(np.arccos((self.diff_vector[0]*self.vec2[0] + self.diff_vector[1]*self.vec2[1])/
-                                                                                   ((np.sqrt(pow(self.diff_vector[0], 2) + pow(self.diff_vector[1], 2)))*
-                                                                                    (np.sqrt(pow(self.vec2[0], 2) + pow(self.vec2[1], 2)))))) if (self.diff_vector[0] != 0 and self.vec2[0] != 0) else 0
-                            if (self.diff_vector[0]*self.vec2[1] - self.diff_vector[1]*self.vec2[0]) > 0:
-                                self.angle_between_radius = 360 - self.angle_between_radius
-                            self.angle_between_objects = np.fabs(
-                                (objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir]) % 360)
+                            #self.angle_between_radius = 180 - np.degrees(np.arccos((self.diff_vector[0]*self.vec2[0] + self.diff_vector[1]*self.vec2[1])/
+                            #                                                       ((np.sqrt(pow(self.diff_vector[0], 2) + pow(self.diff_vector[1], 2)))*
+                            #                                                        (np.sqrt(pow(self.vec2[0], 2) + pow(self.vec2[1], 2)))))) if (self.diff_vector[0] != 0 and self.vec2[0] != 0) else 0
+                            #if (self.diff_vector[0]*self.vec2[1] - self.diff_vector[1]*self.vec2[0]) > 0:
+                            #    self.angle_between_radius = 360 - self.angle_between_radius
+                            #self.angle_between_objects = np.fabs(
+                            #    (objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir]) % 360)
                             #if Teams.team_by_id(jndex) == Teams.Team1:
                             #    self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.radiant, self.dire)
                             #elif Teams.team_by_id(jndex) == Teams.Team2:
                             #    pass
-                                #print(self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.dire, self.radiant))
+                            #    print(self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.dire, self.radiant))
 
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1:
