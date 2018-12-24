@@ -265,23 +265,11 @@ class Objects:
 
 
                             ##FOR LOSS
-                            '''
-                            if self.diff_vector[0] == 0:
-                                self.angle_between_radius = np.fabs(objects[jndex][ObjectProp.Dir])%360
-                            elif self.diff_vector[0] < 0:
-                                #if self.diff_vector[1] > 0
-                                self.angle_between_radius = np.fabs(objects[jndex][ObjectProp.Dir] - np.degrees(
-                                    np.arctan(self.diff_vector[1] / self.diff_vector[0]))) % 360
-                            else:
-                                self.angle_between_radius = np.fabs(objects[jndex][ObjectProp.Dir] + np.degrees(
-                                    np.arctan(self.diff_vector[1] / self.diff_vector[0]))) % 360
-                            '''
                             self.angle_between_radius = 180 - np.degrees(np.arccos((self.diff_vector[0]*self.vec2[0] + self.diff_vector[1]*self.vec2[1])/
-                                                                  ((np.sqrt(pow(self.diff_vector[0], 2) + pow(self.diff_vector[1], 2)))*
-                                                                  (np.sqrt(pow(self.vec2[0], 2) + pow(self.vec2[1], 2)))))) if (self.diff_vector[0] != 0 and self.vec2[0] != 0) else 0
-                            #if Teams.team_by_id(jndex) == Teams.Team1:
-                            #    print(objects[jndex][ObjectProp.Dir], self.angle_between_radius)
-
+                                                                                   ((np.sqrt(pow(self.diff_vector[0], 2) + pow(self.diff_vector[1], 2)))*
+                                                                                    (np.sqrt(pow(self.vec2[0], 2) + pow(self.vec2[1], 2)))))) if (self.diff_vector[0] != 0 and self.vec2[0] != 0) else 0
+                            if (self.diff_vector[0]*self.vec2[1] - self.diff_vector[1]*self.vec2[0]) > 0:
+                                self.angle_between_radius = 360 - self.angle_between_radius
                             self.angle_between_objects = np.fabs(
                                 (objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir]) % 360)
                             #if Teams.team_by_id(jndex) == Teams.Team1:
