@@ -94,9 +94,9 @@ class Objects:
         self.restart_counter = 0
         self.playtime = 0
         self.framerate = 30
-        self.maxplaytime = 60 * self.framerate
+        self.maxplaytime = 60 #* self.framerate
 
-        self.loss = Loss(self.configuration) #loss take config from objects(not from game)
+        self.loss = Loss(configuration=None) #loss take config from objects(not from game)
         self.angle_between_objects = np.float(0.0)
         self.angle_between_radius = np.float(0.0)
         #initialization starts
@@ -184,7 +184,7 @@ class Objects:
 
     def save_history_file(self, file_name, obj_array):
         pass
-        flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
+        """flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
         obj_str = ''
         for item in flat_obj:
             obj_str += '{},'.format(item)
@@ -192,7 +192,7 @@ class Objects:
         if self.restart_counter != 0:
             file_name = str(self.restart_counter)+'_'+ file_name
         with open(file_name, 'a') as f:
-            f.write(obj_str + '\n')
+            f.write(obj_str + '\n')"""
 
     def update_game_settings(self, configuration):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
@@ -254,6 +254,8 @@ class Objects:
                                 elif Teams.team_by_id(jndex) == Teams.Team2:
                                     self.dire -= 1
                                 break
+
+                            #print(jndex, '<---HERE')
 
                             if Teams.team_by_id(index)!= Teams.team_by_id(jndex) and self.distance < Constants.AttackRange and \
                                     self.is_inside_cone(self.vec1, self.vec2, self.diff_vector, Constants.AttackConeWide):
@@ -331,7 +333,7 @@ class Objects:
                 for key in self.result:
                     self.set_control_signal(key[0], ObjectProp.VelControl, key[1])
                     self.set_control_signal(key[0], ObjectProp.TurnControl, key[2])
-            self.playtime += 1
+            self.playtime += 1/self.framerate
             if self.playtime >= self.maxplaytime:
                 self.messenger.end_of_game()
                 self.objects_state = ObjectsState.Pause

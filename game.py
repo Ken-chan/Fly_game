@@ -17,26 +17,26 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=5):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=11115):
         gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 0
-        self.dire_bots = 0
-        self.is_player1_play = 1
-        self.is_player2_play = 1
+        self.radiant_bots = 1
+        self.dire_bots = 1
+        self.is_player1_play = 0
+        self.is_player2_play = 0
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
         if history_path is None:
             now_time = datetime.datetime.now()
-            self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
-            #self.history_path = 'delete_me_pls.txt'
-            if prefix:
-                self.history_path = '{}_{}'.format(prefix, self.history_path)
-            self.clear_file(self.history_path)
+            #self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
+            self.history_path = 'delete_me_pls.txt'
+            #if prefix:
+                #self.history_path = '{}_{}'.format(prefix, self.history_path)
+            #self.clear_file(self.history_path)
             self.is_it_move_from_history = False
         else:
             self.history_path = history_path
@@ -78,7 +78,7 @@ class Game:
 
         pos2 = sizeX / (bot2 + player2 + 1)
         if player1:
-            self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-50, 50), 50 + np.random.randint(50),
+            self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-50, 50), 350 + np.random.randint(50),
                                                        90, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
         if player2:
             self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
@@ -92,7 +92,7 @@ class Game:
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
                 (pos2 * (i + player2) + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
-                 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+                 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi))
 
 
     def clear_file(self, file_path):
@@ -183,8 +183,8 @@ if __name__ == "__main__":
                     help="training mode")
     ap.add_argument("-p", '--prefix', type=str, required=False,
                     help='prefix for history file')
-    ap.add_argument("-m", '--tries', type=int, required=False,
-                    help='number of total retries in one session')
+    #ap.add_argument("-m", '--tries', type=int, required=False,
+    #                help='number of total retries in one session')
     args = vars(ap.parse_args())
     args["screen_width"] = 1000
     args["screen_height"] = 1000
