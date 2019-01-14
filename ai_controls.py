@@ -2,13 +2,14 @@ import pyglet
 import messages
 from dumb_ai import *
 from q_ai import *
+from greed_ai import *
 
 class AIcontrolsState:
     Start, Run, Exit = range(3)
 
 
 class AItype:
-    Dummy, DumbAi, QAi = range(3)
+    Dummy, DumbAi, QAi, GreedAi = range(4)
 
     @classmethod
     def contruct_ai(cls, aitype, index, battle_field_size):
@@ -18,6 +19,8 @@ class AItype:
             return Dummy(index)
         elif aitype == cls.QAi:
             return QAi(index, battle_field_size)
+        elif aitype == cls.GreedAi:
+            return GreedAi(index, battle_field_size)
 
 
 class AIcontrols:

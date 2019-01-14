@@ -24,9 +24,9 @@ class Game:
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 1
+        self.radiant_bots = 0
         self.dire_bots = 1
-        self.is_player1_play = 0
+        self.is_player1_play = 1
         self.is_player2_play = 0
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
@@ -92,7 +92,7 @@ class Game:
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
                 (pos2 * (i + player2) + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
-                 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi))
+                 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))
 
 
     def clear_file(self, file_path):

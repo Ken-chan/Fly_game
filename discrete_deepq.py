@@ -73,11 +73,13 @@ class DiscreteDeepQ(object):
 
     def create_variables(self):
         self.target_q_network    = self.q_network.copy(scope="target_network")
+        #print(self.target_q_network.variables)
 
         # FOR REGULAR ACTION SCORE COMPUTATION
         with tf.name_scope("taking_action"):
             self.observation        = tf.placeholder(tf.float32, self.observation_batch_shape(None), name="observation")
             self.action_scores      = tf.identity(self.q_network(self.observation), name="action_scores")
+            print(self.action_scores)
             #tf.histogram_summary("action_scores", self.action_scores)
             self.predicted_actions  = tf.argmax(self.action_scores, dimension=1, name="predicted_actions")
 
@@ -124,8 +126,7 @@ class DiscreteDeepQ(object):
         self.summarize = tf.summary.merge_all()
         self.no_op1    = tf.no_op()
 
-
-    def action(self, observation):
+    def action(self, observation, predicted_action):
         #assert observation.shape == self.observation_shape, \
          #       "Action is performed based on single observation."
 
@@ -138,9 +139,12 @@ class DiscreteDeepQ(object):
         if random.random() < exploration_p:
             return random.randint(0, self.num_actions - 1)
         else:
+            self.predicted_actions = tf.argmax(predicted_action, dimension=1, name="predicted_actions")
             #print("neuro_net give prediction")
             with tf.device("/gpu:0"):
-                return self.s.run(self.predicted_actions, {self.observation: observation[np.newaxis,:]})[0]
+                print(self.predicted_actions)
+                res = self.s.run(self.predicted_actions, {self.observation: observation[np.newaxis,:]})
+                return res[0]
 
     def exploration_completed(self):
         return min(float(self.actions_executed_so_far) / self.exploration_period, 1.0)
@@ -217,7 +221,7 @@ class DiscreteDeepQ(object):
 
             if self.number_of_times_train_called % 100 == 0:
                 self.save("q_first_model")
-                print(self.q_network.input_layer.Ws[0].eval())
+                #print(self.q_network.input_layer.Ws[0].eval())
             if calculate_summaries:
                 self.summary_writer.add_summary(summary_str, self.iteration)
 

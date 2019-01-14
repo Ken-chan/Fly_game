@@ -441,7 +441,7 @@ class QState:
             f.write(q_str + '\n')
 
 
-def calc_polar_grid(self, objects, width, height, step_number=16, player_number=0, max_range=600):
+def calc_polar_grid(self, objects, width, height, step_number=16, player_number=13, max_range=600):
     self.player = objects[player_number]
     if self.player[ObjectProp.ObjType] == ObjectType.Absent:
         return

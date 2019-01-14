@@ -28,10 +28,11 @@ class QAi:
         self.last_observation = None
         self.last_action = None
         self.simulation_started_time = time.time()
+        self.acts = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         with tf.device("/gpu:0"):
             tf.reset_default_graph()
             self.session = tf.InteractiveSession()
-            brain = MLP([self.observation_size, ], [100, 100, self.num_actions],
+            brain = MLP([self.observation_size, ], [20, 20, self.num_actions],
                         [tf.tanh, tf.tanh, tf.identity])
 
             optimizer = tf.train.RMSPropOptimizer(learning_rate=0.01, decay=0.9)
@@ -42,8 +43,8 @@ class QAi:
                                                     max_experience=1000,
                                                     store_every_nth=4, train_every_nth=3)
 
-            #self.session.run(tf.global_variables_initializer())
-            self.current_controller.restore("./q_first_model")
+            self.session.run(tf.global_variables_initializer())
+            #self.current_controller.restore("./q_first_model")
             #print(self.current_controller.q_network.input_layer.Ws[0].eval())
             self.session.run(self.current_controller.target_network_update)
 
@@ -56,18 +57,59 @@ class QAi:
                 self.observation[i] = 1
             elif self.tmp_polar_grid[i] != 0:  ## доделать различение противников от союзников, пока что все враги
                 self.observation[i + self.tmp_polar_grid.size] = 1
-
-
+        #print(self.observation)
         return self.observation
 
-    def distance_to_walls(self, unit):
-        x = unit[ObjectProp.Xcoord]
-        y = unit[ObjectProp.Ycoord]
-        if x > self.battle_field_size/2:
-            x = self.battle_field_size - x
-        if y > self.battle_field_size/2:
-            y = self.battle_field_size - y
-        return min(x/self.battle_field_size , y/self.battle_field_size)
+
+    def set_control_signal(self, objects_copy, obj_index, sig_type, sig_val):
+        if  -1 <= sig_val <= 1 and sig_type in (ObjectProp.TurnControl, ObjectProp.VelControl):
+            objects = objects_copy
+            objects[obj_index][sig_type] = sig_val
+            return objects
+
+    def calc_v_diff(self, object_state):
+        self.min_v_add = 0
+        if object_state[ObjectProp.VehicleType] == ObjectSubtype.Plane:
+            self.min_v_add = Constants.MinVelAccCoef * np.abs(object_state[ObjectProp.Velocity] - Constants.MinPlaneVel) if object_state[ObjectProp.Velocity] < Constants.MinPlaneVel else 0
+        self.dv_calc = Constants.VelAccCoef * (object_state[ObjectProp.VelControl]) - Constants.TurnDissipationCoef * np.abs(object_state[ObjectProp.AngleVel]) * \
+             object_state[ObjectProp.Velocity] - Constants.AirResistanceCoef * object_state[ObjectProp.Velocity] + self.min_v_add
+        self.w_calc = Constants.TurnAccCoef * object_state[ObjectProp.TurnControl]
+        return self.dv_calc, self.w_calc
+
+    def test_update_units(self, obj, act):
+        dt = 1.0 / 8
+        self.tmp_objects = np.copy(obj)
+        self.set_control_signal(self.tmp_objects, self.index, ObjectProp.TurnControl, act[0])
+        self.set_control_signal(self.tmp_objects, self.index, ObjectProp.VelControl, act[1])
+        for index in range(0, ObjectType.ObjArrayTotal):
+            if self.tmp_objects[index][ObjectProp.ObjType] != ObjectType.Absent:
+                self.tmp_objects[index][ObjectProp.PrevVelocity] = self.tmp_objects[index][ObjectProp.Velocity]
+                self.tmp_objects[index][ObjectProp.PrevAngleVel] = self.tmp_objects[index][ObjectProp.AngleVel]
+                self.dv, self.w = self.calc_v_diff(self.tmp_objects[index])
+                self.tmp_objects[index][ObjectProp.Velocity] = self.dv * dt + self.tmp_objects[index][ObjectProp.PrevVelocity]
+                self.tmp_objects[index][ObjectProp.AngleVel] = self.w
+                self.tmp_objects[index][ObjectProp.Dir] += self.tmp_objects[index][ObjectProp.AngleVel] * dt
+                self.tmp_objects[index][ObjectProp.Dir] = self.tmp_objects[index][ObjectProp.Dir] % 360
+                self.cur_rad = np.radians(self.tmp_objects[index][ObjectProp.Dir])
+                self.tmp_objects[index][ObjectProp.Xcoord] += \
+                    self.tmp_objects[index][ObjectProp.Velocity] * np.cos(self.cur_rad) * dt
+                self.tmp_objects[index][ObjectProp.Ycoord] += \
+                    self.tmp_objects[index][ObjectProp.Velocity] * np.sin(self.cur_rad) * dt
+        return self.tmp_objects
+
+    def get_gready_action(self, objects_copy):
+        self.max_revard = -2
+        self.max_revard_action = (0, 0)
+        print(objects_copy[self.index])
+        for act in self.acts:
+            self.tmp_obj = self.test_update_units(objects_copy, act)
+            self.tmp_revard = self.collect_reward(self.tmp_obj)
+            print("action = ", act, "revard = ", self.tmp_revard)
+            print(self.tmp_obj[self.index])
+            if self.tmp_revard > self.max_revard:
+                self.max_revard = self.tmp_revard
+                self.max_revard_action = act
+        return self.max_revard_action
 
     def collect_reward(self, objects_state):
         wall_reward = 0#np.exp(self.distance_to_walls(unit))-1.5
@@ -120,13 +162,16 @@ class QAi:
         self.rot_side, self.vel_ctrl = (0,0)
         self.obj = objects_copy[self.index]
         self.new_observation = self.observe(objects_copy)
+        #print(self.new_observation)
         self.reward = self.collect_reward(objects_copy)
         #print(self.reward)
         with tf.device("/gpu:0"):
             if self.last_observation is not None:
                 self.current_controller.store(self.last_observation, self.last_action, self.reward,
                                               self.new_observation)
-            new_action = self.current_controller.action(self.new_observation)
+            action = self.get_gready_action(objects_copy)
+            action = self.acts.index(action, 0, 3)
+            new_action = self.current_controller.action(self.new_observation, action)
             print(new_action)
             if new_action == 0:
                 self.rot_side = -1
