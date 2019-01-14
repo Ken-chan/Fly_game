@@ -97,6 +97,8 @@ class Objects:
         self.maxplaytime = 60 * self.framerate
 
         self.loss = Loss(self.configuration) #loss take config from objects(not from game)
+        self.loss_from_one = np.float(0.0)
+        self.loss_from_all = np.float(0.0)
         self.angle_between_objects = np.float(0.0)
         self.angle_between_radius = np.float(0.0)
         #initialization starts
@@ -220,8 +222,8 @@ class Objects:
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             objects = self.objects.get_objects(link_only=True)
             #print(objects, "   curr obj")
-
             for index in range(0, ObjectType.ObjArrayTotal):
+                self.loss_from_all = 0.0
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                     self.x1, self.y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
                     self.radius = objects[index][ObjectProp.R_size]
@@ -263,20 +265,25 @@ class Objects:
                                 elif Teams.team_by_id(jndex) == Teams.Team2:
                                     self.dire -= 1
 
-
+                            '''
+                            #print(index, jndex)
                             ##FOR LOSS
-                            #self.angle_between_radius = 180 - np.degrees(np.arccos((self.diff_vector[0]*self.vec2[0] + self.diff_vector[1]*self.vec2[1])/
-                            #                                                       ((np.sqrt(pow(self.diff_vector[0], 2) + pow(self.diff_vector[1], 2)))*
-                            #                                                        (np.sqrt(pow(self.vec2[0], 2) + pow(self.vec2[1], 2)))))) if (self.diff_vector[0] != 0 and self.vec2[0] != 0) else 0
-                            #if (self.diff_vector[0]*self.vec2[1] - self.diff_vector[1]*self.vec2[0]) > 0:
-                            #    self.angle_between_radius = 360 - self.angle_between_radius
-                            #self.angle_between_objects = np.fabs(
-                            #    (objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir]) % 360)
-                            #if Teams.team_by_id(jndex) == Teams.Team1:
-                            #    self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.radiant, self.dire)
-                            #elif Teams.team_by_id(jndex) == Teams.Team2:
-                            #    pass
-                            #    print(self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.dire, self.radiant))
+                            self.angle_between_radius = 180 - np.degrees(np.arccos((self.diff_vector[0]*self.vec2[0] + self.diff_vector[1]*self.vec2[1])/
+                                                                                   ((np.sqrt(pow(self.diff_vector[0], 2) + pow(self.diff_vector[1], 2)))*
+                                                                                    (np.sqrt(pow(self.vec2[0], 2) + pow(self.vec2[1], 2)))))) if (self.diff_vector[0] != 0 and self.vec2[0] != 0) else 0
+                            if (self.diff_vector[0]*self.vec2[1] - self.diff_vector[1]*self.vec2[0]) > 0:
+                                self.angle_between_radius = 360 - self.angle_between_radius
+                            self.angle_between_objects = np.fabs(
+                                (objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir]) % 360)
+
+                            if Teams.team_by_id(jndex) == Teams.Team1:
+                                self.loss_from_one = self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.dire, self.radiant)
+                                self.loss_from_all += self.loss_from_one
+                                print(self.loss_from_one)
+                            '''
+                #if Teams.team_by_id(index) == Teams.Team2:
+                #    print(self.loss_from_all)
+                    #print(self.loss.loss_result_from_all(objects[index], self.loss_from_all, self.dire))
 
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1:
