@@ -97,7 +97,7 @@ class QState:
         self.range_r = (0, 1500)
         self.r_obj = Constants.DefaultObjectRadius
         self.attack_range = Constants.AttackRange
-        self.n_cuts = 15
+        self.n_cuts = 20
         self.n_nearest = 30
         self.r_wide, self.psi_wide, self.phi_wide = self.range_r[1] // self.n_cuts, self.range_psi[1] // self.n_cuts, \
                                                     self.range_phi[1] // self.n_cuts
@@ -153,31 +153,34 @@ class QState:
             for phi_i in range(0, self.n_cuts):
                 for psi_i in range(0, self.n_cuts):
                     self.coords = self.get_cell_val_by_index(r_i, phi_i, psi_i)
-                    if self.coords[0] > 5*self.attack_range:
+                    if self.coords[0] > 4*self.attack_range:
                         self.feed_data(self.coords, 0)
                 #There is best position(object in bottom cone but in different R)
-                    elif self.is_near_angle(self.coords[1], 0) or  self.is_near_angle(self.coords[1], 360):
-                        if self.is_near_angle(self.coords[2], 0) or self.is_near_angle(self.coords[2], 360):
+                    elif self.is_near_angle(self.coords[1], 0) or self.is_near_angle(self.coords[1], 360): #за спиной
+                        if self.is_near_angle(self.coords[2], 0) or self.is_near_angle(self.coords[2], 360): #сонаправлены
                             if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, 1)
-                            elif self.coords[0] < 4*self.attack_range:
-                                self.feed_data(self.coords, 0.5)
+                            elif self.coords[0] < 3*self.attack_range:
+                                self.feed_data(self.coords, 0.7)
                             else:
                                 self.feed_data(self.coords, 0.3)
                         elif self.is_near_angle(self.coords[2], 45) or self.is_near_angle(self.coords[2], 315):
                             if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, 0.7)
-                            elif self.coords[0] < 4*self.attack_range:
+                            elif self.coords[0] < 3*self.attack_range:
                                 self.feed_data(self.coords, 0.5)
                             else:
                                 self.feed_data(self.coords, 0.3)
                         elif self.is_near_angle(self.coords[2], 90) or self.is_near_angle(self.coords[2], 270):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0.2)
+                                self.feed_data(self.coords, 0.4)
                             else:
                                 self.feed_data(self.coords, 0.2)
                         elif self.is_near_angle(self.coords[2], 135) or self.is_near_angle(self.coords[2], 225):
-                            self.feed_data(self.coords, 0.1)
+                            if self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, 0.3)
+                            else:
+                                self.feed_data(self.coords, 0.2)
                         elif self.is_near_angle(self.coords[2], 180):
                             self.feed_data(self.coords, 0)
                         # Complete
@@ -190,19 +193,19 @@ class QState:
                                 self.feed_data(self.coords, 0.4)
                         elif self.is_near_angle(self.coords[2], 45):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0.4)
+                                self.feed_data(self.coords, 0.8) #0.4
                             else:
-                                self.feed_data(self.coords, 0.2)
-                        elif self.is_near_angle(self.coords[2], 90):
+                                self.feed_data(self.coords, 0.5)
+                        elif self.is_near_angle(self.coords[2], 90): #same as 0
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0.3)
+                                self.feed_data(self.coords, 0.6) #0.3
                             else:
-                                self.feed_data(self.coords, 0.1)
+                                self.feed_data(self.coords, 0.4) #0.1
                         elif self.is_near_angle(self.coords[2], 135):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.2)
+                                self.feed_data(self.coords, 0.4) #-0.2
                             else:
-                                self.feed_data(self.coords, -0.1)
+                                self.feed_data(self.coords, 0.2) #-0.1
                         elif self.is_near_angle(self.coords[2], 180):
                             self.feed_data(self.coords, 0)
                         elif self.is_near_angle(self.coords[2], 225):
@@ -211,62 +214,62 @@ class QState:
                             else:
                                 self.feed_data(self.coords, 0.1)
                         elif self.is_near_angle(self.coords[2], 270):
+                            #if self.coords[0] < 2*self.attack_range:
+                            self.feed_data(self.coords, 0)
+                            #else:
+                            #    self.feed_data(self.coords, 0)
+                        elif self.is_near_angle(self.coords[2], 315):
                             if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, 0.5)
                             else:
                                 self.feed_data(self.coords, 0.3)
-                        elif self.is_near_angle(self.coords[2], 315):
-                            if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0.6)
-                            else:
-                                self.feed_data(self.coords, 0.4)
                 # Neutral
                     elif self.is_near_angle(self.coords[1], 90):
                         if self.is_near_angle(self.coords[2], 0) or self.is_near_angle(self.coords[2], 360):
                             self.feed_data(self.coords, 0)
                         elif self.is_near_angle(self.coords[2], 45):
-                                self.feed_data(self.coords, -0.1)
+                                self.feed_data(self.coords, 0.1)
                         elif self.is_near_angle(self.coords[2], 90):
-                            if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.3)
-                            else:
-                                self.feed_data(self.coords, -0.2)
-                        elif self.is_near_angle(self.coords[2], 135):
-                            if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.5)
-                            else:
-                                self.feed_data(self.coords, -0.3)
-                        elif self.is_near_angle(self.coords[2], 180):
-                            self.feed_data(self.coords, 0)
-                        elif self.is_near_angle(self.coords[2], 225):
                             if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, 0.2)
                             else:
                                 self.feed_data(self.coords, 0.1)
+                        elif self.is_near_angle(self.coords[2], 135):
+                            if self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, 0.1)
+                            else:
+                                self.feed_data(self.coords, 0.08)
+                        elif self.is_near_angle(self.coords[2], 180):
+                            self.feed_data(self.coords, 0)
+                        elif self.is_near_angle(self.coords[2], 225):
+                            if self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, -0.1)
+                            else:
+                                self.feed_data(self.coords, -0.08)
                         elif self.is_near_angle(self.coords[2], 270):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0.3)
+                                self.feed_data(self.coords, -0.2)
                             else:
-                                self.feed_data(self.coords, 0.2)
+                                self.feed_data(self.coords, -0.1)
                         elif self.is_near_angle(self.coords[2], 315):
-                            self.feed_data(self.coords, 0.1)
+                            self.feed_data(self.coords, -0.1)
                 # Bad
                     elif self.is_near_angle(self.coords[1], 135):
                         if self.is_near_angle(self.coords[2], 0) or self.is_near_angle(self.coords[2], 360):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.4)
-                            else:
-                                self.feed_data(self.coords, -0.2)
-                        elif self.is_near_angle(self.coords[2], 45):
-                            if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, -0.6)
                             else:
                                 self.feed_data(self.coords, -0.4)
-                        elif self.is_near_angle(self.coords[2], 90):
+                        elif self.is_near_angle(self.coords[2], 45):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.3)
+                                self.feed_data(self.coords, -0.4)
                             else:
                                 self.feed_data(self.coords, -0.2)
+                        elif self.is_near_angle(self.coords[2], 90):
+                            #if self.coords[0] < 2*self.attack_range:
+                            self.feed_data(self.coords, 0)
+                            #else:
+                            #    self.feed_data(self.coords, -0.2)
                         elif self.is_near_angle(self.coords[2], 135):
                             if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, 0.1)
@@ -274,19 +277,26 @@ class QState:
                             self.feed_data(self.coords, 0)
                         elif self.is_near_angle(self.coords[2], 225):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0.1)
+                                self.feed_data(self.coords, -0.1)
                         elif self.is_near_angle(self.coords[2], 270):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0)
+                                self.feed_data(self.coords, -0.6)
+                            else:
+                                self.feed_data(self.coords, -0.3)
                         elif self.is_near_angle(self.coords[2], 315):
-                            self.feed_data(self.coords, -0.1)
+                            if self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, -0.7)
+                            elif self.coords[0] < 3*self.attack_range:
+                                self.feed_data(self.coords, -0.5)
+                            else:
+                                self.feed_data(self.coords, -0.3)
                 # Worst
                     elif self.is_near_angle(self.coords[1], 180):
                         if self.is_near_angle(self.coords[2], 0) or self.is_near_angle(self.coords[2], 360):
                             if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, -1)
-                            elif self.coords[0] < 4*self.attack_range:
-                                self.feed_data(self.coords, -0.5)
+                            elif self.coords[0] < 3*self.attack_range:
+                                self.feed_data(self.coords, -0.7)
                             else:
                                 self.feed_data(self.coords, -0.3)
                         elif self.is_near_angle(self.coords[2], 45) or self.is_near_angle(self.coords[2], 315):
@@ -298,7 +308,7 @@ class QState:
                                 self.feed_data(self.coords, -0.3)
                         elif self.is_near_angle(self.coords[2], 90) or self.is_near_angle(self.coords[2], 270):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.2)
+                                self.feed_data(self.coords, -0.4)
                             else:
                                 self.feed_data(self.coords, -0.2)
                         elif self.is_near_angle(self.coords[2], 135) or self.is_near_angle(self.coords[2], 225):
@@ -310,19 +320,19 @@ class QState:
                     elif self.is_near_angle(self.coords[1], 225):
                         if self.is_near_angle(self.coords[2], 0) or self.is_near_angle(self.coords[2], 360):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.4)
-                            else:
-                                self.feed_data(self.coords, -0.2)
-                        elif self.is_near_angle(self.coords[2], 315):
-                            if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, -0.6)
                             else:
                                 self.feed_data(self.coords, -0.4)
-                        elif self.is_near_angle(self.coords[2], 270):
+                        elif self.is_near_angle(self.coords[2], 315):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.3)
+                                self.feed_data(self.coords, -0.4)
                             else:
                                 self.feed_data(self.coords, -0.2)
+                        elif self.is_near_angle(self.coords[2], 270):
+                            #if self.coords[0] < 2*self.attack_range:
+                            self.feed_data(self.coords, 0)
+                            #else:
+                            #    self.feed_data(self.coords, -0.2)
                         elif self.is_near_angle(self.coords[2], 225):
                             if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, 0.1)
@@ -330,43 +340,49 @@ class QState:
                             self.feed_data(self.coords, 0)
                         elif self.is_near_angle(self.coords[2], 135):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0.1)
+                                self.feed_data(self.coords, -0.1)
                         elif self.is_near_angle(self.coords[2], 90):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0)
+                                self.feed_data(self.coords, -0.6)
+                            else:
+                                self.feed_data(self.coords, -0.3)
                         elif self.is_near_angle(self.coords[2], 45):
-                            self.feed_data(self.coords, -0.1)
-                        pass
+                            if self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, -0.7)
+                            elif self.coords[0] < 3*self.attack_range:
+                                self.feed_data(self.coords, -0.5)
+                            else:
+                                self.feed_data(self.coords, -0.3)
                 #neutral reverse
                     elif self.is_near_angle(self.coords[1], 270):
                         if self.is_near_angle(self.coords[2], 0) or self.is_near_angle(self.coords[2], 360):
                             self.feed_data(self.coords, 0)
                         elif self.is_near_angle(self.coords[2], 315):
-                                self.feed_data(self.coords, -0.1)
+                                self.feed_data(self.coords, 0.1)
                         elif self.is_near_angle(self.coords[2], 270):
-                            if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.3)
-                            else:
-                                self.feed_data(self.coords, -0.2)
-                        elif self.is_near_angle(self.coords[2], 225):
-                            if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.5)
-                            else:
-                                self.feed_data(self.coords, -0.3)
-                        elif self.is_near_angle(self.coords[2], 180):
-                            self.feed_data(self.coords, 0)
-                        elif self.is_near_angle(self.coords[2], 135):
                             if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, 0.2)
                             else:
                                 self.feed_data(self.coords, 0.1)
+                        elif self.is_near_angle(self.coords[2], 225):
+                            if self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, 0.1)
+                            else:
+                                self.feed_data(self.coords, 0.08)
+                        elif self.is_near_angle(self.coords[2], 180):
+                            self.feed_data(self.coords, 0)
+                        elif self.is_near_angle(self.coords[2], 135):
+                            if self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, -0.1)
+                            else:
+                                self.feed_data(self.coords, -0.08)
                         elif self.is_near_angle(self.coords[2], 90):
                             if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0.3)
+                                self.feed_data(self.coords, -0.2)
                             else:
-                                self.feed_data(self.coords, 0.2)
+                                self.feed_data(self.coords, -0.1)
                         elif self.is_near_angle(self.coords[2], 45):
-                            self.feed_data(self.coords, 0.1)
+                            self.feed_data(self.coords, -0.1)
                 #good reverse
                     elif self.is_near_angle(self.coords[1], 315):
                         if self.is_near_angle(self.coords[2], 0) or self.is_near_angle(self.coords[2], 360):
@@ -376,19 +392,19 @@ class QState:
                                 self.feed_data(self.coords, 0.4)
                         elif self.is_near_angle(self.coords[2], 315):
                             if self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, 0.8)
+                            else:
+                                self.feed_data(self.coords, 0.5)
+                        elif self.is_near_angle(self.coords[2], 270):
+                            if self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, 0.6)
+                            else:
+                                self.feed_data(self.coords, 0.4)
+                        elif self.is_near_angle(self.coords[2], 225):
+                            if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, 0.4)
                             else:
                                 self.feed_data(self.coords, 0.2)
-                        elif self.is_near_angle(self.coords[2], 270):
-                            if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0.3)
-                            else:
-                                self.feed_data(self.coords, 0.1)
-                        elif self.is_near_angle(self.coords[2], 225):
-                            if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, -0.2)
-                            else:
-                                self.feed_data(self.coords, -0.1)
                         elif self.is_near_angle(self.coords[2], 180):
                             self.feed_data(self.coords, 0)
                         elif self.is_near_angle(self.coords[2], 135):
@@ -397,15 +413,15 @@ class QState:
                             else:
                                 self.feed_data(self.coords, 0.1)
                         elif self.is_near_angle(self.coords[2], 90):
+                            #if self.coords[0] < 2*self.attack_range:
+                            self.feed_data(self.coords, 0)
+                            #else:
+                            #    self.feed_data(self.coords, 0.3)
+                        elif self.is_near_angle(self.coords[2], 45):
                             if self.coords[0] < 2*self.attack_range:
                                 self.feed_data(self.coords, 0.5)
                             else:
                                 self.feed_data(self.coords, 0.3)
-                        elif self.is_near_angle(self.coords[2], 45):
-                            if self.coords[0] < 2*self.attack_range:
-                                self.feed_data(self.coords, 0.6)
-                            else:
-                                self.feed_data(self.coords, 0.4)
 
     def fill_data_arr(self):
         for r_i in range(0, self.n_cuts):

@@ -92,7 +92,7 @@ class Game:
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
                 (pos2 * (i + player2) + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
-                 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))
+                 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi))
 
 
     def clear_file(self, file_path):

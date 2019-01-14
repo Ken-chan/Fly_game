@@ -274,6 +274,7 @@ class Objects:
                             #    self.angle_between_radius = 360 - self.angle_between_radius
                             #self.angle_between_objects = np.fabs(
                             #    (objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir]) % 360)
+                            #print(self.angle_between_objects)
                             #if Teams.team_by_id(jndex) == Teams.Team1:
                             #    self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.radiant, self.dire)
                             #elif Teams.team_by_id(jndex) == Teams.Team2:

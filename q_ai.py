@@ -8,7 +8,7 @@ import time
 class QAi:
     def __init__(self, index, battle_field_size):
         #print("hello its me")
-        self.nearest_enemy_id = 2
+        self.nearest_enemy_id = 0
         self.num_actions = 4
         self.index  = index
         self.battle_field_size = battle_field_size
@@ -77,7 +77,7 @@ class QAi:
         return self.dv_calc, self.w_calc
 
     def test_update_units(self, obj, act):
-        dt = 1.0 / 8
+        dt = 1.0 / 30
         self.tmp_objects = np.copy(obj)
         self.set_control_signal(self.tmp_objects, self.index, ObjectProp.TurnControl, act[0])
         self.set_control_signal(self.tmp_objects, self.index, ObjectProp.VelControl, act[1])
