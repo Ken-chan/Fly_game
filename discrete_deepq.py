@@ -1,35 +1,30 @@
 import numpy as np
 import random
 import tensorflow as tf
-import os
-import pickle
-import time
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.models import load_model
+import keras
 
 from collections import deque
 
 class DiscreteDeepQ(object):
     def __init__(self, observation_shape,
-                       num_actions,
-                       observation_to_actions,
-                       optimizer,
-                       session,
+                       num_actions, acts,
                        random_action_probability=0.05,
-                       exploration_period=500,
+                       exploration_period=1000,
                        store_every_nth=4,
                        train_every_nth=4,
                        minibatch_size=100,
                        discount_rate=0.95,
                        max_experience=30000,
-                       target_network_update_rate=0.01,
-                       summary_writer=None):
+                       target_network_update_rate=500,
+                       learning_rate=0.01, decay=0.9):
 
         # memorize arguments
-        self.observation_shape         = observation_shape
+        self.acts = acts
+        self.observation_size         = observation_shape
         self.num_actions               = num_actions
-
-        self.q_network                 = observation_to_actions
-        self.optimizer                 = optimizer
-        self.s                         = session
 
         self.random_action_probability = random_action_probability
         self.exploration_period        = exploration_period
@@ -38,27 +33,30 @@ class DiscreteDeepQ(object):
         self.minibatch_size            = minibatch_size
         self.discount_rate             = tf.constant(discount_rate)
         self.max_experience            = max_experience
-        self.target_network_update_rate = \
-                tf.constant(target_network_update_rate)
+        self.learning_rate = learning_rate
+        self.gamma = decay
+        self.update_target_network_every = target_network_update_rate
 
         # deepq state
         self.actions_executed_so_far = 0
         self.experience = deque()
 
         self.iteration = 0
-        self.summary_writer = summary_writer
-
         self.number_of_times_store_called = 0
         self.number_of_times_train_called = 0
 
-        self.create_variables()
+        self.opt = keras.optimizers.RMSprop(lr=self.learning_rate, rho=0.9, epsilon=None, decay=self.gamma)
+        self.model = Sequential()
+        self.model.add(Dense(128, input_dim=(self.observation_size+self.num_actions), activation='relu'))
+        self.model.add(Dense(512, activation="relu"))
+        self.model.add(Dense(1, activation='linear'))
 
-        self.s.run(tf.initialize_all_variables())
-        self.s.run(self.target_network_update)
+        #self.model.summary()
+        self.model.compile(loss="mean_squared_error", optimizer=self.opt)
 
-        self.saver = tf.train.Saver()
-
-        self.file = open("nodes.txt", "a")
+        self.target_model = keras.models.clone_model(self.model)
+        self.target_model.set_weights(self.model.get_weights())
+        self.target_model.compile(loss="mean_squared_error", optimizer=self.opt)
 
     def linear_annealing(self, n, total, p_initial, p_final):
         """Linear annealing between p_initial and p_final
@@ -68,86 +66,36 @@ class DiscreteDeepQ(object):
         else:
             return p_initial - (n * (p_initial - p_final)) / (total)
 
-    def observation_batch_shape(self, batch_size):
-        return tuple([batch_size] + list(self.observation_shape))
 
-    def create_variables(self):
-        self.target_q_network    = self.q_network.copy(scope="target_network")
-        #print(self.target_q_network.variables)
-
-        # FOR REGULAR ACTION SCORE COMPUTATION
-        with tf.name_scope("taking_action"):
-            self.observation        = tf.placeholder(tf.float32, self.observation_batch_shape(None), name="observation")
-            self.action_scores      = tf.identity(self.q_network(self.observation), name="action_scores")
-            print(self.action_scores)
-            #tf.histogram_summary("action_scores", self.action_scores)
-            self.predicted_actions  = tf.argmax(self.action_scores, dimension=1, name="predicted_actions")
-
-        with tf.name_scope("estimating_future_rewards"):
-            # FOR PREDICTING TARGET FUTURE REWARDS
-            self.next_observation          = tf.placeholder(tf.float32, self.observation_batch_shape(None), name="next_observation")
-            self.next_observation_mask     = tf.placeholder(tf.float32, (None,), name="next_observation_mask")
-            self.next_action_scores        = tf.stop_gradient(self.target_q_network(self.next_observation))
-            #tf.histogram_summary("target_action_scores", self.next_action_scores)
-            self.rewards                   = tf.placeholder(tf.float32, (None,), name="rewards")
-            target_values                  = tf.reduce_max(self.next_action_scores, reduction_indices=[1,]) * self.next_observation_mask
-            self.future_rewards            = self.rewards + self.discount_rate * target_values
-
-        with tf.name_scope("q_value_precition"):
-            # FOR PREDICTION ERROR
-            self.action_mask                = tf.placeholder(tf.float32, (None, self.num_actions), name="action_mask")
-            self.masked_action_scores       = tf.reduce_sum(self.action_scores * self.action_mask, reduction_indices=[1,])
-            temp_diff                       = self.masked_action_scores - self.future_rewards
-            self.prediction_error           = tf.reduce_mean(tf.square(temp_diff))
-            gradients                       = self.optimizer.compute_gradients(self.prediction_error)
-            for i, (grad, var) in enumerate(gradients):
-                if grad is not None:
-                    gradients[i] = (tf.clip_by_norm(grad, 5), var)
-            # Add histograms for gradients.
-            """for grad, var in gradients:
-                tf.histogram_summary(var.name, var)
-                if grad is not None:
-                    tf.histogram_summary(var.name + '/gradients', grad)"""
-            self.train_op                   = self.optimizer.apply_gradients(gradients)
-
-        # UPDATE TARGET NETWORK
-        with tf.name_scope("target_network_update"):
-            self.target_network_update = []
-            for v_source, v_target in zip(self.q_network.variables(), self.target_q_network.variables()):
-                # this is equivalent to target = (1-alpha) * target + alpha * source
-                update_op = v_target.assign_sub(self.target_network_update_rate * (v_target - v_source))
-                self.target_network_update.append(update_op)
-                #print("mass =  ", v_source)
-            self.target_network_update = tf.group(*self.target_network_update)
-
-        # summaries
-        tf.summary.scalar("prediction_error", self.prediction_error)
-
-        self.summarize = tf.summary.merge_all()
-        self.no_op1    = tf.no_op()
-
-    def action(self, observation, predicted_action):
-        #assert observation.shape == self.observation_shape, \
-         #       "Action is performed based on single observation."
-
+    def action(self, new_observation):
         self.actions_executed_so_far += 1
         exploration_p = self.linear_annealing(self.actions_executed_so_far,
                                               self.exploration_period,
                                               1.0,
                                               self.random_action_probability)
-
         if random.random() < exploration_p:
             return random.randint(0, self.num_actions - 1)
         else:
-            self.predicted_actions = tf.argmax(predicted_action, dimension=1, name="predicted_actions")
             #print("neuro_net give prediction")
-            with tf.device("/gpu:0"):
-                print(self.predicted_actions)
-                res = self.s.run(self.predicted_actions, {self.observation: observation[np.newaxis,:]})
-                return res[0]
+            self.i = 0
+            self._action = 0
+            self.q = -1000000
+            for act in self.acts:
+                X = np.array(np.concatenate((new_observation, act), axis=None)).reshape(1, 548)
+                #print("odin ",X.shape)
+                self.predicted_q = self.model.predict(X)
+                print(self.predicted_q)
+                if self.predicted_q > self.q:
+                    self._action = self.i
+                    self.q = self.predicted_q
+                self.i += 1
+            print(self._action)
+            return self._action
+
 
     def exploration_completed(self):
         return min(float(self.actions_executed_so_far) / self.exploration_period, 1.0)
+
 
     def store(self, observation, action, reward, newobservation):
         """Store experience, where starting with observation and
@@ -175,93 +123,47 @@ class DiscreteDeepQ(object):
             samples   = random.sample(range(len(self.experience)), self.minibatch_size)
             samples   = [self.experience[i] for i in samples]
 
-            # bach states
-            states         = np.empty(shape=self.observation_batch_shape(len(samples)))
-            newstates      = np.empty(self.observation_batch_shape(len(samples)))
-            action_mask    = np.zeros((len(samples), self.num_actions))
 
-            newstates_mask = np.empty((len(samples),))
-            rewards        = np.empty((len(samples),))
-
+            self.X = np.zeros((self.minibatch_size, self.observation_size + self.num_actions))
+            self.Y = np.zeros((self.minibatch_size, 1))
             for i, (state, action, reward, newstate) in enumerate(samples):
-                states[i] = state
-                action_mask[i] = 0
-                action_mask[i][action] = 1
-                rewards[i] = reward
-                if newstate is not None:
-                    newstates[i] = newstate
-                    newstates_mask[i] = 1
-                else:
-                    newstates[i] = 0
-                    newstates_mask[i] = 0
+                self.X[i] = np.array(np.concatenate((state, action)))
+                #print("dwa ", self.X[i].shape)
+                self.Q_active = self.model.predict(self.X[i].reshape(1,548))
+                self.j = 0
+                self.q = -1000000
+                for act in self.acts:
+                    X = np.concatenate((newstate, act)).reshape(1, 548)
+                    self.predicted_q = self.target_model.predict(X)
+                    if self.predicted_q > self.q:
+                        self.q = self.predicted_q
+                    self.j += 1
+                self.Q_target = self.q
+                self.Y[i] = self.Q_active + self.learning_rate * \
+                            (reward + self.gamma * self.Q_target - self.Q_active)
 
-
-            calculate_summaries = self.iteration % 100 == 0 and \
-                    self.summary_writer is not None
-
-            with tf.device("/gpu:0"):
-                cost, _, summary_str = self.s.run([
-                    self.prediction_error,
-                    self.train_op,
-                    self.summarize if calculate_summaries else self.no_op1, ],
-                    {
-                    self.observation:            states,
-                    self.next_observation:       newstates,
-                    self.next_observation_mask:  newstates_mask,
-                    self.action_mask:            action_mask,
-                    self.rewards:                rewards,
-                })
-                self.s.run(self.target_network_update)
-
-            self.nodes = ''
-            for node in self.q_network.input_layer.Ws[0].eval():
-                self.nodes += (str(node)) + "  "
-            self.nodes += "\n\n"
-            self.file.write(self.nodes)
+            self.model.fit(self.X, self.Y, epochs=1, batch_size=self.minibatch_size, verbose=2)
 
             if self.number_of_times_train_called % 100 == 0:
                 self.save("q_first_model")
                 #print(self.q_network.input_layer.Ws[0].eval())
-            if calculate_summaries:
-                self.summary_writer.add_summary(summary_str, self.iteration)
 
             self.iteration += 1
 
         self.number_of_times_train_called += 1
 
-    def save(self, save_dir, debug=False):
-        STATE_FILE      = os.path.join(save_dir, 'deepq_state')
-        MODEL_FILE      = os.path.join(save_dir, 'model_q')
+        if self.number_of_times_train_called % self.update_target_network_every == 0:
+            self.target_model = keras.models.clone_model(self.model)
+            self.target_model.set_weights(self.model.get_weights())
+            self.target_model.compile(loss="mean_squared_error", optimizer=self.opt)
 
-        # deepq state
-        state = {
-            'actions_executed_so_far':      self.actions_executed_so_far,
-            'iteration':                    self.iteration,
-            'number_of_times_store_called': self.number_of_times_store_called,
-            'number_of_times_train_called': self.number_of_times_train_called,
-        }
+    def save(self, save_dir):
+        self.model.save(save_dir)  # creates a HDF5 file
+        #del self.model  # deletes the existing model
 
-        if debug:
-            print ('Saving model... ')
 
-        saving_started = time.time()
-
-        self.saver.save(self.s, MODEL_FILE)
-        with open(STATE_FILE, "wb") as f:
-            pickle.dump(state, f)
-
-        print('done in {} s'.format(time.time() - saving_started))
-
-    def restore(self, save_dir, debug=False):
-        # deepq state
-        STATE_FILE      = os.path.join(save_dir, 'deepq_state')
-        MODEL_FILE      = os.path.join(save_dir, 'model_q')
-
-        with open(STATE_FILE, "rb") as f:
-            state = pickle.load(f)
-        self.saver.restore(self.s, MODEL_FILE)
-
-        self.actions_executed_so_far      = state['actions_executed_so_far']
-        self.iteration                    = state['iteration']
-        self.number_of_times_store_called = state['number_of_times_store_called']
-        self.number_of_times_train_called = state['number_of_times_train_called']
+    def restore(self, save_dir):
+        self.model = load_model(save_dir)
+        self.target_model = keras.models.clone_model(self.model)
+        self.target_model.set_weights(self.model.get_weights())
+        self.target_model.compile(loss="mean_squared_error", optimizer=self.opt)
