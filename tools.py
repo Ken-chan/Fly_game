@@ -15,12 +15,20 @@ class Loss():
         self.min_y = np.float(0.0)
         self.norm_min_distance = np.float(0.0)
         self.danger_distance_norm = np.float(0.2) #critical distance to danger objects(normalize)
+        self.danger_distance_alies = np.float(0.0)
+        self.norm_danger_distance_alies = np.float(0.5) #value is piece of attack range
         self.max_speed_of_objects = 400
 
         #coefs to distance func
         self.a = 0.5*(-self.danger_distance_norm + np.sqrt(self.danger_distance_norm**2 + 4*self.danger_distance_norm))
         self.b = (1-self.a)/self.a
         #coefs to distance func
+
+        #coefs to alies func
+        self.c = 0.5*(-self.norm_danger_distance_alies + np.sqrt(self.norm_danger_distance_alies**2 + 4*self.norm_danger_distance_alies))
+        self.d = (1-self.c)/self.c
+        #coefs to alies func
+
         #parametrs for cube
         self.radiuses_array = np.linspace(0, 2000)
         self.phi_array = np.linspace(0, 180)
@@ -30,6 +38,7 @@ class Loss():
         #parametrs for cube
         #Loss value functions
         self.loss_distance = np.float(0.0)
+        self.loss_alies = np.float(0.0)
         self.loss_objects_interaction = np.float(0.0)
         self.loss_amount_in_teams = np.float(0.0)
         self.loss_of_velocity = np.float(0.0)
@@ -74,6 +83,13 @@ class Loss():
         self.loss_of_velocity = velocity / self.max_speed_of_objects
         #print(self.loss_of_velocity)
         return self.loss_of_velocity
+
+
+    def calc_loss_of_alies_collision(self, distance):
+        self.danger_distance_alies = (distance - 2*Constants.DefaultObjectRadius) / Constants.AttackRange
+        self.loss_alies = -1/(self.danger_distance_alies + self.c) + self.d if (self.danger_distance_alies < self.norm_danger_distance_alies and
+                                                                                self.danger_distance_alies != 0) else 0.0
+        return self.loss_alies
 
     def calc_qstate(self, radius, phi_betw_r, psi_betw_enem):
         self.r_i, self.phi_i, self.psi_i = self.qstate.get_index_by_values(radius, phi_betw_r, psi_betw_enem)

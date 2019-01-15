@@ -265,8 +265,9 @@ class Objects:
                                 elif Teams.team_by_id(jndex) == Teams.Team2:
                                     self.dire -= 1
 
+
+
                             '''
-                            #print(index, jndex)
                             ##FOR LOSS
                             self.angle_between_radius = 180 - np.degrees(np.arccos((self.diff_vector[0]*self.vec2[0] + self.diff_vector[1]*self.vec2[1])/
                                                                                    ((np.sqrt(pow(self.diff_vector[0], 2) + pow(self.diff_vector[1], 2)))*
@@ -280,10 +281,11 @@ class Objects:
                                 self.loss_from_one = self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.dire, self.radiant)
                                 self.loss_from_all += self.loss_from_one
                                 print(self.loss_from_one)
+                            
+                            #Loss of alies    
+                            #if Teams.team_by_id(index) == Teams.team_by_id(jndex):
+                                #print(self.loss.calc_loss_of_alies_collision(self.distance))    
                             '''
-                #if Teams.team_by_id(index) == Teams.Team2:
-                #    print(self.loss_from_all)
-                    #print(self.loss.loss_result_from_all(objects[index], self.loss_from_all, self.dire))
 
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1:
