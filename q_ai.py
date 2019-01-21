@@ -1,16 +1,20 @@
-import tensorflow as tf
 from obj_def import *
-from model import MLP
 from discrete_deepq import DiscreteDeepQ
-from tools import calc_polar_grid, Loss
+from tools import calc_polar_grid
+from tools import Loss
 import time
 
 class QAi:
-    def __init__(self, index, battle_field_size):
+    def __init__(self, index, battle_field_size, controller=None):
         #print("hello its me")
-        self.nearest_enemy_id = 0
+        if index == 13:
+            self.nearest_enemy_id = 2
+            save_path = 'q_first_model'
+        else:
+            self.nearest_enemy_id = 13
+            save_path = 'q_second_model'
         self.num_actions = 4
-        self.index  = index
+        self.index = index
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
         self.obj = np.zeros(ObjectProp.Total)
@@ -26,19 +30,25 @@ class QAi:
                                 self.step_number * (self.step_number + 1)
         self.observation = np.zeros(self.observation_size)
         self.last_observation = np.zeros(self.observation_size)
-        self.last_last_observation = np.zeros(self.observation_size)
-        self.last_action = None
+        self.last_last_observation = None
+        self.last_last_last_observation = None
+        self.last_action = (0, 0, 0, 0)
         self.simulation_started_time = time.time()
         self.acts = [(0, 0, 0, 1), (0, 0, 1, 0), (0, 1, 0, 0), (1, 0, 0, 0)]
+        if controller == None:
+            self.current_controller = DiscreteDeepQ(3*self.observation_size,
+                                                    self.num_actions, self.acts,
+                                                    discount_rate=0.9, exploration_period=0,
+                                                    max_experience=5000,
+                                                    store_every_nth=7, train_every_nth=100,
+                                                    learning_rate=0.001, decay=0.95,
+                                                    target_network_update_rate=10000,
+                                                    save_path=save_path)
 
-        self.current_controller = DiscreteDeepQ(self.observation_size,
-                                                self.num_actions, self.acts,
-                                                discount_rate=0.99, exploration_period=1000,
-                                                max_experience=200000,
-                                                store_every_nth=6, train_every_nth=100,
-                                                learning_rate=0.01, decay=0.9)
+            #self.current_controller.restore(save_path)
+        else:
+            self.current_controller = controller
 
-        self.current_controller.restore('q_first_model')
 
     def observe(self, objects_copy):
         #Return observation vector.
@@ -49,7 +59,6 @@ class QAi:
                 self.observation[i] = 1
             elif self.tmp_polar_grid[i] != 0:  ## доделать различение противников от союзников, пока что все враги
                 self.observation[i + self.tmp_polar_grid.size] = 1
-        #print(self.observation)
         return self.observation
 
 
@@ -79,16 +88,28 @@ class QAi:
 
 
     def calc_behaviour(self, objects_copy):
-        self.rot_side, self.vel_ctrl = (0,0)
+        self.rot_side, self.vel_ctrl = (0, 0)
         self.obj = objects_copy[self.index]
+        #print(self.obj)
         self.new_observation = self.observe(objects_copy)
+        if self.last_last_observation is None:
+            self.last_observation = self.new_observation
+            self.last_last_observation = self.new_observation
+            self.last_last_last_observation = self.new_observation
         #print(self.new_observation)
         self.reward = self.collect_reward(objects_copy)
         #print(self.reward)
         if self.last_observation is not None:
-            self.current_controller.store(self.last_observation, self.last_action, self.reward,
-                                          self.new_observation)
-        new_action = self.current_controller.action(self.new_observation)
+            self.current_controller.store(np.array(np.concatenate((self.last_last_last_observation,
+                                                                   self.last_last_observation,
+                                                                   self.last_observation), axis=None)),
+                                          self.last_action, self.reward,
+                                          np.array(np.concatenate((self.last_last_observation,
+                                                                   self.last_observation,
+                                                                   self.new_observation), axis=None)))
+        new_action = self.current_controller.action(np.array(np.concatenate((self.last_last_observation,
+                                                                             self.last_observation,
+                                                                             self.new_observation), axis=None)))
         if new_action == 0:
             self.rot_side = -1
             self.vel_ctrl = 0
@@ -103,12 +124,12 @@ class QAi:
             self.vel_ctrl = 1
         new_action = self.acts[new_action]
         self.current_controller.training_step()
+        self.last_last_last_observation = self.last_last_observation
         self.last_last_observation = self.last_observation
         self.last_action = new_action
         self.last_observation = self.new_observation
 
         #print(self.rot_side, self.vel_ctrl)
-        #print(self.reward)
         return self.rot_side, self.vel_ctrl
 
 

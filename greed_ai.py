@@ -19,7 +19,10 @@ class GreedAi:
         self.polar_grid = np.zeros((self.step_number + 1, self.step_number))
         # self.number_of_dynamic_steps = 1 # it changes not here, default = 2
         self.number_of_object_typs = 2
-        self.acts = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        self.acts = []
+        for step_v in range(0, 11):
+            for step_d in range(0, 11):
+                self.acts.append((-1 + 0.2 * step_v, -1 + 0.2 * step_d))
 
     def collect_reward(self, objects_state):
         wall_reward = 0  # np.exp(self.distance_to_walls(unit))-1.5
@@ -104,15 +107,16 @@ class GreedAi:
     def get_gready_action(self, objects_copy):
         self.max_revard = -2
         self.max_revard_action = (0, 0)
-        print(objects_copy[self.index])
+        #print(objects_copy[self.index])
         for act in self.acts:
             self.tmp_obj = self.test_update_units(objects_copy, act)
             self.tmp_revard = self.collect_reward(self.tmp_obj)
-            print("action = ", act, "revard = ", self.tmp_revard)
-            print(self.tmp_obj[self.index])
+            #print("action = ", act, "revard = ", self.tmp_revard)
+            #print(self.tmp_obj[self.index])
             if self.tmp_revard > self.max_revard:
                 self.max_revard = self.tmp_revard
                 self.max_revard_action = act
+        #print("max_revard: {}".format(self.max_revard_action))
         return self.max_revard_action
 
 

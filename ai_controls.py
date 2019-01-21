@@ -1,8 +1,9 @@
 import pyglet
 import messages
-from dumb_ai import *
-from q_ai import *
-from greed_ai import *
+from dumb_ai import DumbAI, Dummy
+from q_ai import QAi
+from greed_ai import GreedAi
+from obj_def import *
 
 class AIcontrolsState:
     Start, Run, Exit = range(3)
@@ -12,13 +13,14 @@ class AItype:
     Dummy, DumbAi, QAi, GreedAi = range(4)
 
     @classmethod
-    def contruct_ai(cls, aitype, index, battle_field_size):
+    def contruct_ai(cls, aitype, index, battle_field_size, configuration, controller=None):
         if aitype == cls.DumbAi:
-            return DumbAI(index, battle_field_size)
+            return DumbAI(index, battle_field_size, configuration)
         elif aitype == cls.Dummy:
             return Dummy(index)
         elif aitype == cls.QAi:
-            return QAi(index, battle_field_size)
+            q_ai = QAi(index, battle_field_size, controller)
+            return q_ai
         elif aitype == cls.GreedAi:
             return GreedAi(index, battle_field_size)
 
@@ -32,6 +34,7 @@ class AIcontrols:
         self.objects_copy = None
         self.configuration = None
         self.result = None
+        self.controller = None
         self.ai_objs = []
         for index in range(0, ObjectType.ObjArrayTotal):
             self.ai_objs.append(Dummy(index))
@@ -81,7 +84,8 @@ class AIcontrols:
                             off_counter = offset_counter[key]
                             obj_offset, _ = ObjectType.offset(key)
                             obj_ind = obj_offset + off_counter
-                            self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size)
+                            self.controller = self.ai_objs[obj_ind].current_controller
+                            self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size, self.controller)
 
     def recalc(self, dt, objects_for_train=None):
         self.result = []
@@ -103,5 +107,4 @@ class AIcontrols:
                 self.messenger.objects_set_control_signal(index, ObjectProp.TurnControl, turn_ctrl)
             if self.train_mode:
                 return self.result
-
 

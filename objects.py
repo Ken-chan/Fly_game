@@ -2,7 +2,7 @@ import pyglet
 import messages
 from obj_def import *
 from tools import Loss
-from tools import calc_polar_grid
+from ai_controls import AItype
 import numpy as np
 
 
@@ -64,7 +64,8 @@ class ObjectArray:
 
 
 class Objects:
-    def __init__(self, configuration, radiant, dire, history_path, messenger=None, ai_controls=None, tries=None):
+    def __init__(self, configuration, radiant, dire, history_path, messenger=None, ai_controls=None, tries=None,
+                 bot1=None, bot2=None, player1=None, player2=None, sizeX=None, sizeY=None):
         self.objects_state = ObjectsState.Run
         self.train_mode = True
         if ai_controls == None:
@@ -120,6 +121,8 @@ class Objects:
         self.dv, self.w = np.float(0.0), np.float(0.0)
         self.dv_calc, self.w_calc = np.float(0.0), np.float(0.0)
         self.cur_rad = np.float(0.0)
+        self.restart_wait_cycles = 0
+        self.restart_countdown = self.restart_wait_cycles
         #initialization ends
 
         self.functions = {messages.Objects.Quit: self.quit,
@@ -135,6 +138,16 @@ class Objects:
             self._index, self._vel_ctrl, self._turn_ctrl = 0, 0, 0
             self.ai_controls.start_ai_controls()
             pyglet.clock.schedule(self.update_units)
+
+            #for time ###################
+            self.bot1 = bot1
+            self.bot2 = bot2
+            self.player1 = player1
+            self.player2 = player2
+            self.sizeX = sizeX
+            self.sizeY = sizeY
+            ######################
+
         else:
             pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
             pyglet.clock.schedule_interval(self.update_units, 1.0 / self.framerate)
@@ -153,6 +166,10 @@ class Objects:
         if self.history_mode:
             return
         if not self.train_mode or (self.tries is not None and self.restart_counter + 1 < self.tries):
+            if self.train_mode:
+                self.prepare_config(self.bot1, self.bot2, self.player1, self.player2, self.sizeX, self.sizeY)
+                self.ai_controls.update_ai_settings(self.configuration)
+            self.restart_countdown = self.restart_wait_cycles
             self.objects.generate_empty_objects()
             self.objects.set_objects_settings(self.configuration)
             # print(self.objects.get_objects(link_only=True))
@@ -282,11 +299,48 @@ class Objects:
                             #    print(self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.dire, self.radiant))
 
             # END_OF_GAME_TRIGGERED
-            if self.radiant < 1 or self.dire < 1:
+            if self.radiant < 1 or self.dire < 1: #self.radiant < 1 or
+                if self.restart_countdown > 0:
+                    self.restart_countdown -= 1
+                    return
                 self.messenger.end_of_game()
                 self.objects_state = ObjectsState.Pause
                 if self.train_mode:
                     self.restart()
+
+
+    def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
+
+        self.configuration = {ObjectType.FieldSize: [],
+                              ObjectType.Bot1: [],
+                              ObjectType.Player1: [],
+                              ObjectType.Bot2: [],
+                              ObjectType.Player2: []}
+
+        self.configuration[ObjectType.FieldSize].append((sizeX,sizeY))
+        pos1 = sizeX // 2
+        pos2 = sizeY // 2
+        if player1:
+            self.configuration[ObjectType.Player1].append(
+                (pos1 + np.random.randint(-50, 50), 350 + np.random.randint(50),
+                 90, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
+        if player2:
+            self.configuration[ObjectType.Player2].append(
+                (pos2 + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
+                 270, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
+
+        for i in range(1, bot1 + 1):
+            self.configuration[ObjectType.Bot1].append(
+                (pos1 + np.random.randint(-sizeX // 2 + 50, sizeX // 2 - 50),
+                 pos2 + np.random.randint(-sizeY // 2 + 50, sizeY // 2 - 50),
+                 np.random.randint(0, 360), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))
+
+        for i in range(1, bot2 + 1):
+            self.configuration[ObjectType.Bot2].append(
+                (pos1 + np.random.randint(-sizeX // 2 + 50, sizeX // 2 - 50),
+                 pos2 + np.random.randint(-sizeY // 2 + 50, sizeY // 2 - 50),
+                 np.random.randint(0, 360), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi))
+
 
     def delete_object(self, jndex, objects):
         print('Killed unit number: {:2} team: {:2} with type {:2}' \
@@ -310,6 +364,7 @@ class Objects:
         if self.train_mode:
             dt = 1.0 / self.framerate
         objects = self.objects.get_objects(link_only=True)
+
         if self.objects_state == ObjectsState.Run:
             for index in range(0, ObjectType.ObjArrayTotal):
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
@@ -325,6 +380,7 @@ class Objects:
                     objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(self.cur_rad) * dt
             self.save_history_file(self.hist_file_name, objects)
             self.objects.current_objects = objects
+
             self.check_kill_and_end_of_game()
             if not self.train_mode:
                 self.messenger.game_update_objects(self.objects.get_objects())
@@ -362,4 +418,3 @@ class Objects:
                 if data is None:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
-

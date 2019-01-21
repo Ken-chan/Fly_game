@@ -4,13 +4,14 @@ from obj_def import *
 class Dummy:
     def __init__(self, index):
         self.index = index
+        self.current_controller = None
 
     def calc_behaviour(self, objects_state):
         return None
 
 
 class DumbAI(Dummy):
-    def __init__(self, index, battle_field_size):
+    def __init__(self, index, battle_field_size, configuration):
         super(DumbAI, self).__init__(index)
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2

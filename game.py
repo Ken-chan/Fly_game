@@ -1,6 +1,4 @@
 import pyglet
-from multiprocessing import Pool
-from multiprocessing import Process
 from view import Renderer
 from messages import Messenger
 from gui_controls import GUIcontrols
@@ -17,8 +15,8 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=11115):
-        gc.disable()
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=111115):
+        #gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -26,7 +24,7 @@ class Game:
         self.battle_field_size = (1000, 1000)
         self.radiant_bots = 0
         self.dire_bots = 1
-        self.is_player1_play = 1
+        self.is_player1_play = 0
         self.is_player2_play = 0
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
@@ -44,19 +42,15 @@ class Game:
         # self.fps_display = pyglet.clock.ClockDisplay()
         self.playtime = 0
         self.framerate = 60
-        self.configuration = {ObjectType.FieldSize: [],
-                              ObjectType.Bot1: [],
-                              ObjectType.Player1: [],
-                              ObjectType.Bot2: [],
-                              ObjectType.Player2: []}
-        self.configuration[ObjectType.FieldSize].append(self.battle_field_size)
         self.prepare_config(self.radiant_bots, self.dire_bots, self.is_player1_play, self.is_player2_play,
                             self.battle_field_size[0], self.battle_field_size[1])
         self.messenger = Messenger()
         if self.train_mode:
             self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True)
-            self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
-                                   messenger=self.messenger, ai_controls=self.ai_controls, tries=tries)
+            self.Objects = Objects(self.configuration, self.radiant, self.dire,  history_path=self.history_path,
+                                   messenger=self.messenger, ai_controls=self.ai_controls, tries=tries,
+                                   bot1=self.radiant_bots, bot2=self.dire_bots, player1=self.is_player1_play,
+                                   player2=self.is_player2_play, sizeX=self.battle_field_size[0], sizeY=self.battle_field_size[1])
         else:
             self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
@@ -74,26 +68,34 @@ class Game:
         self.run_game()
 
     def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
-        pos1 = sizeX / (bot1 + player1 + 1)
-
-        pos2 = sizeX / (bot2 + player2 + 1)
+        self.configuration = {ObjectType.FieldSize: [],
+                              ObjectType.Bot1: [],
+                              ObjectType.Player1: [],
+                              ObjectType.Bot2: [],
+                              ObjectType.Player2: []}
+        self.configuration[ObjectType.FieldSize].append(self.battle_field_size)
+        pos1 = sizeX // 2
+        pos2 = sizeY // 2
         if player1:
-            self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-50, 50), 350 + np.random.randint(50),
-                                                       90, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
+            self.configuration[ObjectType.Player1].append(
+                (pos1 + np.random.randint(-50, 50), 350 + np.random.randint(50),
+                 90, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
         if player2:
-            self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
-                                                       270, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
+            self.configuration[ObjectType.Player2].append(
+                (pos2 + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
+                 270, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
 
         for i in range(1, bot1 + 1):
             self.configuration[ObjectType.Bot1].append(
-                (pos1 * (i + player1) + np.random.randint(-50, 50), 50 + np.random.randint(50),
-                90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+                (pos1 + np.random.randint(-sizeX // 2 + 50, sizeX // 2 - 50),
+                 pos2 + np.random.randint(-sizeY // 2 + 50, sizeY // 2 - 50),
+                 np.random.randint(0, 360), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))
 
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
-                (pos2 * (i + player2) + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
-                 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi))
-
+                (pos1 + np.random.randint(-sizeX // 2 + 50, sizeX // 2 - 50),
+                 pos2 + np.random.randint(-sizeY // 2 + 50, sizeY // 2 - 50),
+                 np.random.randint(0, 360), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi))
 
     def clear_file(self, file_path):
         with open(file_path, "w") as file:  # just to open with argument which clean file

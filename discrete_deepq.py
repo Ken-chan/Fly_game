@@ -15,16 +15,17 @@ class DiscreteDeepQ(object):
                        exploration_period=1000,
                        store_every_nth=4,
                        train_every_nth=4,
-                       minibatch_size=100,
+                       minibatch_size=32,
                        discount_rate=0.95,
                        max_experience=30000,
-                       target_network_update_rate=500,
-                       learning_rate=0.01, decay=0.9):
+                       target_network_update_rate=10000,
+                       learning_rate=0.001, decay=0.95, save_path=None):
 
         # memorize arguments
         self.acts = acts
         self.observation_size         = observation_shape
         self.num_actions               = num_actions
+        self.save_path = save_path
 
         self.random_action_probability = random_action_probability
         self.exploration_period        = exploration_period
@@ -45,10 +46,10 @@ class DiscreteDeepQ(object):
         self.number_of_times_store_called = 0
         self.number_of_times_train_called = 0
 
-        self.opt = keras.optimizers.RMSprop(lr=self.learning_rate, rho=0.9, epsilon=None, decay=self.gamma)
+        self.opt = keras.optimizers.RMSprop(lr=self.learning_rate, rho=0.9, decay=self.gamma)
         self.model = Sequential()
-        self.model.add(Dense(128, input_dim=(self.observation_size+self.num_actions), activation='relu'))
-        self.model.add(Dense(512, activation="relu"))
+        self.model.add(Dense(32, input_dim=(self.observation_size+self.num_actions), activation='relu'))
+        self.model.add(Dense(32, activation="relu"))
         self.model.add(Dense(1, activation='linear'))
 
         #self.model.summary()
@@ -74,22 +75,23 @@ class DiscreteDeepQ(object):
                                               1.0,
                                               self.random_action_probability)
         if random.random() < exploration_p:
-            return random.randint(0, self.num_actions - 1)
+            self._action = random.randint(0, self.num_actions - 1)
+            return self._action
         else:
             #print("neuro_net give prediction")
             self.i = 0
             self._action = 0
             self.q = -1000000
             for act in self.acts:
-                X = np.array(np.concatenate((new_observation, act), axis=None)).reshape(1, 548)
+                X = np.array(np.concatenate((new_observation, act), axis=None)).reshape(1, self.observation_size+self.num_actions)
                 #print("odin ",X.shape)
                 self.predicted_q = self.model.predict(X)
-                print(self.predicted_q)
+                #print(self.predicted_q)
                 if self.predicted_q > self.q:
                     self._action = self.i
                     self.q = self.predicted_q
                 self.i += 1
-            print(self._action)
+            #print(self._action)
             return self._action
 
 
@@ -118,7 +120,6 @@ class DiscreteDeepQ(object):
             if len(self.experience) < self.minibatch_size:
                 return
 
-            #print(len(self.experience))
             # sample experience.
             samples   = random.sample(range(len(self.experience)), self.minibatch_size)
             samples   = [self.experience[i] for i in samples]
@@ -129,11 +130,11 @@ class DiscreteDeepQ(object):
             for i, (state, action, reward, newstate) in enumerate(samples):
                 self.X[i] = np.array(np.concatenate((state, action)))
                 #print("dwa ", self.X[i].shape)
-                self.Q_active = self.model.predict(self.X[i].reshape(1,548))
+                self.Q_active = self.model.predict(self.X[i].reshape(1, self.observation_size+self.num_actions))
                 self.j = 0
                 self.q = -1000000
                 for act in self.acts:
-                    X = np.concatenate((newstate, act)).reshape(1, 548)
+                    X = np.concatenate((newstate, act)).reshape(1, self.observation_size+self.num_actions)
                     self.predicted_q = self.target_model.predict(X)
                     if self.predicted_q > self.q:
                         self.q = self.predicted_q
@@ -145,7 +146,8 @@ class DiscreteDeepQ(object):
             self.model.fit(self.X, self.Y, epochs=1, batch_size=self.minibatch_size, verbose=2)
 
             if self.number_of_times_train_called % 100 == 0:
-                self.save("q_first_model")
+                self.save(self.save_path)
+
                 #print(self.q_network.input_layer.Ws[0].eval())
 
             self.iteration += 1
@@ -159,11 +161,10 @@ class DiscreteDeepQ(object):
 
     def save(self, save_dir):
         self.model.save(save_dir)  # creates a HDF5 file
+        self.target_model.save('target_model')
         #del self.model  # deletes the existing model
 
 
     def restore(self, save_dir):
         self.model = load_model(save_dir)
-        self.target_model = keras.models.clone_model(self.model)
-        self.target_model.set_weights(self.model.get_weights())
-        self.target_model.compile(loss="mean_squared_error", optimizer=self.opt)
+        self.target_model = load_model('target_model')
