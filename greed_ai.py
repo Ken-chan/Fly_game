@@ -6,19 +6,16 @@ import time
 class GreedAi:
     def __init__(self, index, battle_field_size):
         # print("hello its me")
-        self.nearest_enemy_id = 2
+        self.current_controller = None
+        self.nearest_enemy_id = 13
         self.num_actions = 4
         self.index = index
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
         self.obj = np.zeros(ObjectProp.Total)
 
-        self.loss = Loss(configuration=None)
+        self.loss = Loss(whoami=1)
 
-        self.step_number = 16
-        self.polar_grid = np.zeros((self.step_number + 1, self.step_number))
-        # self.number_of_dynamic_steps = 1 # it changes not here, default = 2
-        self.number_of_object_typs = 2
         self.acts = []
         for step_v in range(0, 11):
             for step_d in range(0, 11):
@@ -123,7 +120,7 @@ class GreedAi:
     def calc_behaviour(self, objects_copy):
         self.rot_side, self.vel_ctrl = (0, 0)
         self.obj = objects_copy[self.index]
-        new_action = self.get_gready_action(objects_copy)
+        new_action = (0, -1)    #self.get_gready_action(objects_copy)
         #print(new_action)
 
         self.rot_side, self.vel_ctrl = new_action

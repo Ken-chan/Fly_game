@@ -1,6 +1,6 @@
 import pyglet
 from obj_def import *
-from tools import calc_polar_grid, Loss
+from tools import calc_polar_grid
 from PIL import Image, ImageDraw
 
 class RendererState:
@@ -25,7 +25,7 @@ class Renderer:
         self.current_object = None
         self.size_proportion_width = np.float(0.0)
         self.size_proportion_height = np.float(0.0)
-        self.loss_function = Loss(configuration=None)
+        #self.loss_function = Loss()
         self.x0 = 980
         self.y0 = 1000
         self.dx = 31
@@ -79,7 +79,8 @@ class Renderer:
 
 
     def show_polar_grid(self):
-        self._polar_grid = False if self._polar_grid else True
+        pass
+        #self._polar_grid = False if self._polar_grid else True
 
     def update_objects(self, objects):
         self.objects_copy = objects
@@ -179,7 +180,7 @@ class Renderer:
                     #if (diff_vector[0] * vec2[1] - diff_vector[1] * vec2[0]) > 0:
                     #    angle_between_radius = 360 - angle_between_radius
                     angle_between_objects = np.fabs((obj[ObjectProp.Dir] - enemy[ObjectProp.Dir]) % 360)
-                    loss_num = self.loss_function.loss_result(obj, distance, angle_between_radius, angle_between_objects, 1, 1)
+                    """loss_num = self.loss_function.loss_result(obj, distance, angle_between_radius, angle_between_objects, 1, 1)
                     self.fl_label.text = 'Оценка функции полезности: {}'.format(loss_num)
                     self.fl_label.visible = True
 
@@ -189,7 +190,7 @@ class Renderer:
                                                           'RGB', raw_image)
                     self.pil_img_sprite = pyglet.sprite.Sprite(self.pil_img, batch=self.batch)
                     self.pil_img_sprite.update(x=self.x0, y=self.y0 - 430)
-                    self.pil_img_sprite.visible = True
+                    self.pil_img_sprite.visible = True"""
 
                 self.recalc += 1
                 self.draw = False
@@ -212,7 +213,7 @@ class Sprite(pyglet.sprite.Sprite):
 
 class Bot_sprite1(Sprite):
     def __init__(self, batch, scaling_factor):
-        self.img = pyglet.image.load("images/bot1.png")
+        self.img = pyglet.image.load("C:\\Users\\user\\Documents\\Fly_game\\images\\bot1.png")
         self.img.anchor_x = self.img.width // 2
         self.img.anchor_y = self.img.height // 2
         super(Bot_sprite1, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
@@ -221,7 +222,7 @@ class Bot_sprite1(Sprite):
 
 class Bot_sprite2(Sprite):
     def __init__(self, batch, scaling_factor):
-        self.img = pyglet.image.load("images/bot2.png")
+        self.img = pyglet.image.load("C:\\Users\\user\\Documents\\Fly_game\\images\\bot2.png")
         self.img.anchor_x = self.img.width // 2
         self.img.anchor_y = self.img.height // 2
         super(Bot_sprite2, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
@@ -230,7 +231,7 @@ class Bot_sprite2(Sprite):
 
 class Player_sprite1(Sprite):
     def __init__(self, batch, scaling_factor):
-        self.img = pyglet.image.load("images/player1.png")
+        self.img = pyglet.image.load("C:\\Users\\user\\Documents\\Fly_game\\images\\player1.png")
         self.img.anchor_x = self.img.width // 2
         self.img.anchor_y = self.img.height // 2
         super(Player_sprite1, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
@@ -239,7 +240,7 @@ class Player_sprite1(Sprite):
 
 class Player_sprite2(Sprite):
     def __init__(self, batch, scaling_factor):
-        self.img = pyglet.image.load("images/player2.png")
+        self.img = pyglet.image.load("C:\\Users\\user\\Documents\\Fly_game\\images\\player2.png")
         self.img.anchor_x = self.img.width // 2
         self.img.anchor_y = self.img.height // 2
         super(Player_sprite2, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
@@ -248,7 +249,7 @@ class Player_sprite2(Sprite):
 
 class Cone_sprite(Sprite):
     def __init__(self, batch, scaling_factor):
-        self.img = pyglet.image.load("images/coneRot.png")
+        self.img = pyglet.image.load("C:\\Users\\user\\Documents\\Fly_game\\images\\coneRot.png")
         self.img.anchor_x = self.img.width - 15
         self.img.anchor_y = self.img.height // 2
         super(Cone_sprite, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=1)

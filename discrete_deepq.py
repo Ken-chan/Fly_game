@@ -10,8 +10,8 @@ from collections import deque
 
 class DiscreteDeepQ(object):
     def __init__(self, observation_shape,
-                       num_actions, acts,
-                       random_action_probability=0.05,
+                       act_size, acts,
+                       random_action_probability=0.15,
                        exploration_period=1000,
                        store_every_nth=4,
                        train_every_nth=4,
@@ -19,12 +19,12 @@ class DiscreteDeepQ(object):
                        discount_rate=0.95,
                        max_experience=30000,
                        target_network_update_rate=10000,
-                       learning_rate=0.001, decay=0.95, save_path=None):
+                       learning_rate=0.01, decay=0.95, save_path=None):
 
         # memorize arguments
         self.acts = acts
         self.observation_size         = observation_shape
-        self.num_actions               = num_actions
+        self.act_size               = act_size
         self.save_path = save_path
 
         self.random_action_probability = random_action_probability
@@ -48,8 +48,8 @@ class DiscreteDeepQ(object):
 
         self.opt = keras.optimizers.RMSprop(lr=self.learning_rate, rho=0.9, decay=self.gamma)
         self.model = Sequential()
-        self.model.add(Dense(32, input_dim=(self.observation_size+self.num_actions), activation='relu'))
-        self.model.add(Dense(32, activation="relu"))
+        self.model.add(Dense(50, input_dim=(self.observation_size+self.act_size), activation='relu'))
+        #self.model.add(Dense(32, activation='relu'))
         self.model.add(Dense(1, activation='linear'))
 
         #self.model.summary()
@@ -68,14 +68,17 @@ class DiscreteDeepQ(object):
             return p_initial - (n * (p_initial - p_final)) / (total)
 
 
+    #def test(self):
+
     def action(self, new_observation):
+        #print(self.actions_executed_so_far)
         self.actions_executed_so_far += 1
         exploration_p = self.linear_annealing(self.actions_executed_so_far,
                                               self.exploration_period,
                                               1.0,
                                               self.random_action_probability)
         if random.random() < exploration_p:
-            self._action = random.randint(0, self.num_actions - 1)
+            self._action = random.randint(0, len(self.acts) - 1)
             return self._action
         else:
             #print("neuro_net give prediction")
@@ -83,15 +86,16 @@ class DiscreteDeepQ(object):
             self._action = 0
             self.q = -1000000
             for act in self.acts:
-                X = np.array(np.concatenate((new_observation, act), axis=None)).reshape(1, self.observation_size+self.num_actions)
+                X = np.array(np.concatenate((new_observation, act), axis=None)).reshape(1, self.observation_size+self.act_size)
                 #print("odin ",X.shape)
                 self.predicted_q = self.model.predict(X)
-                #print(self.predicted_q)
+
+                print(self.predicted_q)
                 if self.predicted_q > self.q:
                     self._action = self.i
                     self.q = self.predicted_q
                 self.i += 1
-            #print(self._action)
+            print(self._action)
             return self._action
 
 
@@ -125,16 +129,16 @@ class DiscreteDeepQ(object):
             samples   = [self.experience[i] for i in samples]
 
 
-            self.X = np.zeros((self.minibatch_size, self.observation_size + self.num_actions))
+            self.X = np.zeros((self.minibatch_size, self.observation_size + self.act_size))
             self.Y = np.zeros((self.minibatch_size, 1))
             for i, (state, action, reward, newstate) in enumerate(samples):
                 self.X[i] = np.array(np.concatenate((state, action)))
                 #print("dwa ", self.X[i].shape)
-                self.Q_active = self.model.predict(self.X[i].reshape(1, self.observation_size+self.num_actions))
+                self.Q_active = self.model.predict(self.X[i].reshape(1, self.observation_size+self.act_size))
                 self.j = 0
                 self.q = -1000000
                 for act in self.acts:
-                    X = np.concatenate((newstate, act)).reshape(1, self.observation_size+self.num_actions)
+                    X = np.concatenate((newstate, act)).reshape(1, self.observation_size+self.act_size)
                     self.predicted_q = self.target_model.predict(X)
                     if self.predicted_q > self.q:
                         self.q = self.predicted_q
@@ -143,9 +147,9 @@ class DiscreteDeepQ(object):
                 self.Y[i] = self.Q_active + self.learning_rate * \
                             (reward + self.gamma * self.Q_target - self.Q_active)
 
-            self.model.fit(self.X, self.Y, epochs=1, batch_size=self.minibatch_size, verbose=2)
+            self.model.fit(self.X, self.Y, epochs=1, batch_size=self.minibatch_size, verbose=0)
 
-            if self.number_of_times_train_called % 100 == 0:
+            if self.number_of_times_train_called % 1000 == 0:
                 self.save(self.save_path)
 
                 #print(self.q_network.input_layer.Ws[0].eval())
@@ -158,13 +162,19 @@ class DiscreteDeepQ(object):
             self.target_model = keras.models.clone_model(self.model)
             self.target_model.set_weights(self.model.get_weights())
             self.target_model.compile(loss="mean_squared_error", optimizer=self.opt)
+            print("target model updated")
 
     def save(self, save_dir):
         self.model.save(save_dir)  # creates a HDF5 file
         self.target_model.save('target_model')
+        print("model saved")
         #del self.model  # deletes the existing model
 
 
     def restore(self, save_dir):
         self.model = load_model(save_dir)
         self.target_model = load_model('target_model')
+
+        """self.model.compile(loss="mean_squared_error", optimizer=self.opt)
+
+        self.target_model.compile(loss="mean_squared_error", optimizer=self.opt)"""

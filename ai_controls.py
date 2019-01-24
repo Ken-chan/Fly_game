@@ -14,6 +14,7 @@ class AItype:
 
     @classmethod
     def contruct_ai(cls, aitype, index, battle_field_size, configuration, controller=None):
+
         if aitype == cls.DumbAi:
             return DumbAI(index, battle_field_size, configuration)
         elif aitype == cls.Dummy:
@@ -84,8 +85,7 @@ class AIcontrols:
                             off_counter = offset_counter[key]
                             obj_offset, _ = ObjectType.offset(key)
                             obj_ind = obj_offset + off_counter
-                            self.controller = self.ai_objs[obj_ind].current_controller
-                            self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size, self.controller)
+                            self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size, configuration, controller=self.controller)
 
     def recalc(self, dt, objects_for_train=None):
         self.result = []
@@ -96,6 +96,9 @@ class AIcontrols:
             for index in range(0, ObjectType.ObjArrayTotal):
                 if self.objects_copy[index][ObjectProp.ObjType] == ObjectType.Absent:
                     continue
+                if self.ai_objs[index].current_controller is not None:
+                    self.controller = self.ai_objs[index].current_controller
+                    #print(self.controller.actions_executed_so_far)
                 result = self.ai_objs[index].calc_behaviour(self.objects_copy)
                 if result is None:
                     continue

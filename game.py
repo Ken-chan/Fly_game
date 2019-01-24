@@ -15,14 +15,14 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=111115):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1000000):
         #gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 0
+        self.radiant_bots = 1
         self.dire_bots = 1
         self.is_player1_play = 0
         self.is_player2_play = 0
@@ -78,24 +78,26 @@ class Game:
         pos2 = sizeY // 2
         if player1:
             self.configuration[ObjectType.Player1].append(
-                (pos1 + np.random.randint(-50, 50), 350 + np.random.randint(50),
-                 90, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
+                (pos1 ,
+                 pos2 ,
+                 np.random.randint(0, 1), ObjectSubtype.Drone, Constants.DefaultObjectRadius))
         if player2:
             self.configuration[ObjectType.Player2].append(
-                (pos2 + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
-                 270, ObjectSubtype.Drone, Constants.DefaultObjectRadius))
+                (pos1 ,
+                 pos2 ,
+                 np.random.randint(0, 1), ObjectSubtype.Drone, Constants.DefaultObjectRadius))
 
         for i in range(1, bot1 + 1):
             self.configuration[ObjectType.Bot1].append(
-                (pos1 + np.random.randint(-sizeX // 2 + 50, sizeX // 2 - 50),
-                 pos2 + np.random.randint(-sizeY // 2 + 50, sizeY // 2 - 50),
-                 np.random.randint(0, 360), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))
+                (pos1 ,
+                 pos2 ,
+                 np.random.randint(0, 1), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))# red
 
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
-                (pos1 + np.random.randint(-sizeX // 2 + 50, sizeX // 2 - 50),
-                 pos2 + np.random.randint(-sizeY // 2 + 50, sizeY // 2 - 50),
-                 np.random.randint(0, 360), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi))
+                (260,
+                 500,
+                 np.random.randint(0, 1), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi)) #blue
 
     def clear_file(self, file_path):
         with open(file_path, "w") as file:  # just to open with argument which clean file
@@ -181,7 +183,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--history_path", type=str, required=False,
                     help="path to history file")
-    ap.add_argument("-t", "--train_mode", required=False, action='store_true',
+    ap.add_argument("-t", "--train_mode", required=False, action='store_false',
                     help="training mode")
     ap.add_argument("-p", '--prefix', type=str, required=False,
                     help='prefix for history file')
@@ -198,3 +200,5 @@ if __name__ == "__main__":
 
     #for index in range(0, 1):
     #    proc_arr[index].join()
+
+#C:\ProgramData\Anaconda3\envs\tf_env\python.exe

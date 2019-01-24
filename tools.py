@@ -2,9 +2,9 @@ import numpy as np
 from obj_def import *
 
 class SimpleLoss:
-    def __init__(self, configuration):
+    def __init__(self, battle_field_size):
         #self.configuration = configuration
-        self.x_size, self.y_size = configuration[ObjectType.FieldSize][0]
+        self.x_size, self.y_size = battle_field_size
         print(self.x_size, self.y_size)
 
     def is_inside_cone(self, a, b, diff_vect, dir_wide):
@@ -18,6 +18,7 @@ class SimpleLoss:
 
     def loss_result(self, obj, objects):
         obj_id, obj_x, obj_y, obj_dir = obj[ObjectProp.ObjId], obj[ObjectProp.Xcoord], obj[ObjectProp.Ycoord], obj[ObjectProp.Dir]
+        #print(obj[ObjectProp.Velocity])
         if obj_x <= Constants.DefaultObjectRadius or obj_x >= self.x_size - Constants.DefaultObjectRadius:
             return -1
         if obj_y <= Constants.DefaultObjectRadius or obj_y >= self.y_size - Constants.DefaultObjectRadius:
@@ -39,16 +40,17 @@ class SimpleLoss:
             vec1 = np.array([np.cos(np.radians(obj_dir)), np.sin(np.radians(obj_dir))])
             vec2 = np.array([np.cos(np.radians(enemy_dir)), np.sin(np.radians(enemy_dir))])
             diff_vector = np.array([enemy_x - obj_x, enemy_y - obj_y])
-            if self.is_inside_cone(vec1, vec2, diff_vector, Constants.AttackConeWide):
+            self.distance = np.linalg.norm(diff_vector)
+            if self.is_inside_cone(vec1, vec2, diff_vector, Constants.AttackConeWide) and self.distance < Constants.AttackRange:
                 return 1
-            if self.is_inside_cone(vec2, vec1, -diff_vector, Constants.AttackConeWide):
+            if self.is_inside_cone(vec2, vec1, -diff_vector, Constants.AttackConeWide) and self.distance < Constants.AttackRange:
                 return -1
         return 0
 
 
 class Loss():
-    def __init__(self, configuration):
-        self.configuration = None
+    def __init__(self, whoami=None):
+        self.whoami = whoami
         self.battle_field_size = np.array([1000.0, 1000.0])
         #self.set_congiguration(configuration)
         self.n_cuts = 20
@@ -210,14 +212,16 @@ class Loss():
     def loss_result(self, object, radius, phi, psi, radiant, dire):
         dist, vel, qstate, amount = 8 * self.calc_loss_of_distance(object),  0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]), \
                                     0.4 * self.calc_qstate(radius, phi, psi), self.calc_loss_amount_teams(radiant, dire)
-        self.result =  vel + qstate + amount + dist
+        self.result = vel + qstate + amount + dist
+        if self.whoami is not None:
+            self.result = vel + amount + dist - 2*qstate
         #print("dist: {}, vel: {}, qstate: {}, amount: {}".format(dist, vel, qstate, amount))
         return self.result
 
 
 class QState:
     def __init__(self, n_cuts=20):
-        self.cube_path = 'cubev2(-1).txt'
+        self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
         self.range_psi = (0, 360)
@@ -599,7 +603,8 @@ class QState:
             f.write(q_str + '\n')
 
 
-def calc_polar_grid(self, objects, width, height, step_number=16, player_number=13, max_range=600):
+def calc_polar_grid(self, objects, width, height, step_number=16, player_number=13, max_range=605):
+    self.steps = [25, 35, 45, 65, 85, 105, 155, 205, 255, 305, 355, 405, 455, 505, 555, 605]
     self.player = objects[player_number]
     if self.player[ObjectProp.ObjType] == ObjectType.Absent:
         return
@@ -650,12 +655,20 @@ def calc_polar_grid(self, objects, width, height, step_number=16, player_number=
             self.h[1] / abs(np.cos(self.next_angle) + Constants.epsilon))
         #print(self.current_angle * 180 / np.pi, "   ", self.h)
 
-        self.current_range_to_wall = min(self.current_range_to_wall , self.next_range_to_wall)
-        self.current_discrete_range_to_wall = int(self.current_range_to_wall * step_number / max_range)
+        self.current_range_to_wall = int(min(self.current_range_to_wall, self.next_range_to_wall))
+
+        current_discrete_range_to_wall = step_number
+        for i in range(0, step_number):
+            if self.current_range_to_wall < self.steps[i]:
+                current_discrete_range_to_wall = i
+                break
+
+        #self.current_discrete_range_to_wall = int(self.current_range_to_wall * step_number / self.max_range)
         #print(self.current_range_to_wall, step_number)
-        if self.current_discrete_range_to_wall > step_number:
-            self.current_discrete_range_to_wall = step_number
-        for r in range(self.current_discrete_range_to_wall, step_number+1):
+        #if self.current_discrete_range_to_wall > step_number:
+        #    self.current_discrete_range_to_wall = step_number
+        #print(self.current_range_to_wall, self.current_discrete_range_to_wall)
+        for r in range(current_discrete_range_to_wall, step_number+1):
             #print(step_number , r)
             self.polar_grid[step_number - r][_step] = -1
         #print(self.player[ObjectProp.Xcoord], self.player[ObjectProp.Ycoord], self.current_range_to_wall, "  ",_step)
@@ -669,8 +682,12 @@ def calc_polar_grid(self, objects, width, height, step_number=16, player_number=
             if self.fi > 360:
                 self.fi -= 360
             self.fi_discrete = int(self.fi*step_number/360) if self.fi >= 0 else step_number - 1 + int(self.fi*step_number/360)
-            self.range_discrete = int(np.sqrt(self.another_x**2+self.another_y**2)*step_number/self.max_range)
-            if self.range_discrete > step_number - 1:
+            self.range = int(np.sqrt(self.another_x**2+self.another_y**2))
+            for i in range(0, step_number):
+                if self.range < self.steps[i]:
+                    self.range_discrete = i
+                    break
+            if self.range > self.max_range:
                 self.range_discrete = step_number
 
             self.polar_grid[step_number - self.range_discrete][self.fi_discrete] = objects[index][ObjectProp.ObjType] \

@@ -1,7 +1,7 @@
 from obj_def import *
 from discrete_deepq import DiscreteDeepQ
 from tools import calc_polar_grid
-from tools import Loss
+from tools import Loss, SimpleLoss
 import time
 
 class QAi:
@@ -13,18 +13,18 @@ class QAi:
         else:
             self.nearest_enemy_id = 13
             save_path = 'q_second_model'
-        self.num_actions = 4
+        self.num_actions = 9
         self.index = index
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
         self.obj = np.zeros(ObjectProp.Total)
 
-        self.loss = Loss(configuration=None)
+        self.loss = SimpleLoss(battle_field_size)
 
         self.step_number = 16
         self.polar_grid = np.zeros((self.step_number + 1, self.step_number))
         #self.number_of_dynamic_steps = 1 # it changes not here, default = 1
-        self.number_of_object_typs = 2
+        self.number_of_object_typs = 1
         self.observation_size = self.number_of_object_typs * \
                                 1 * \
                                 self.step_number * (self.step_number + 1)
@@ -32,16 +32,17 @@ class QAi:
         self.last_observation = np.zeros(self.observation_size)
         self.last_last_observation = None
         self.last_last_last_observation = None
-        self.last_action = (0, 0, 0, 0)
+        self.last_action = (0, 0)
         self.simulation_started_time = time.time()
-        self.acts = [(0, 0, 0, 1), (0, 0, 1, 0), (0, 1, 0, 0), (1, 0, 0, 0)]
+        self.acts = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 0), (0, 1), (1, -1), (1, 0), (1, 1)]
         if controller == None:
             self.current_controller = DiscreteDeepQ(3*self.observation_size,
-                                                    self.num_actions, self.acts,
-                                                    discount_rate=0.9, exploration_period=0,
-                                                    max_experience=5000,
-                                                    store_every_nth=7, train_every_nth=100,
-                                                    learning_rate=0.001, decay=0.95,
+                                                    len(self.last_action), self.acts,
+                                                    discount_rate=0.9, exploration_period=10000000,
+                                                    max_experience=100000,
+                                                    store_every_nth=5, train_every_nth=500,
+                                                    minibatch_size=100,
+                                                    learning_rate=0.01, decay=0.8,
                                                     target_network_update_rate=10000,
                                                     save_path=save_path)
 
@@ -52,38 +53,21 @@ class QAi:
 
     def observe(self, objects_copy):
         #Return observation vector.
-        calc_polar_grid(self, objects_copy, self.battle_field_size[0], self.battle_field_size[1])
+        calc_polar_grid(self, objects_copy, self.battle_field_size[0], self.battle_field_size[1], step_number=16)
         self.tmp_polar_grid = np.array(self.polar_grid.ravel())
         for i in range(0, self.tmp_polar_grid.size):
             if self.tmp_polar_grid[i] == -1:
-                self.observation[i] = 1
+                self.observation[i] = -1
             elif self.tmp_polar_grid[i] != 0:  ## доделать различение противников от союзников, пока что все враги
-                self.observation[i + self.tmp_polar_grid.size] = 1
+                self.observation[i] = 1
+                #print("enemy", i + self.tmp_polar_grid.size)
+        #print(self.observation)
         return self.observation
 
 
     def collect_reward(self, objects_state):
         obj = objects_state[self.index]
-        enemy = objects_state[self.nearest_enemy_id]
-        diff_vector = np.array(
-            [enemy[ObjectProp.Xcoord] - obj[ObjectProp.Xcoord], enemy[ObjectProp.Ycoord] - obj[ObjectProp.Ycoord]])
-        dir2 = enemy[ObjectProp.Dir]
-        vec2 = np.array([np.cos(np.radians(dir2)), np.sin(np.radians(dir2))])
-        distance = np.linalg.norm(diff_vector)
-        arr_dir = np.array(
-            [enemy[ObjectProp.Xcoord] - obj[ObjectProp.Xcoord], enemy[ObjectProp.Ycoord] - obj[ObjectProp.Ycoord]])
-        arr_dir = arr_dir / np.linalg.norm(arr_dir)
-        obj_dir = np.array([np.cos(np.radians(obj[ObjectProp.Dir])), np.sin(np.radians(obj[ObjectProp.Dir]))])
-        arr_turned = np.array(
-            [arr_dir[0] * obj_dir[0] + arr_dir[1] * obj_dir[1], arr_dir[0] * obj_dir[1] - arr_dir[1] * obj_dir[0]])
-        # angle_between_radius = 180 - np.degrees(np.arccos((diff_vector[0] * vec2[0] + diff_vector[1] * vec2[1]) / ((np.sqrt(pow(diff_vector[0], 2) + pow(diff_vector[1], 2))) * (np.sqrt(pow(vec2[0], 2) + pow(vec2[1], 2)))))) if (diff_vector[0] != 0 and vec2[0] != 0) else 0
-        angle_between_radius = np.degrees(np.arccos(arr_turned[0]))
-        if arr_turned[1] < 0:
-            angle_between_radius = 360 - angle_between_radius
-        # if (diff_vector[0] * vec2[1] - diff_vector[1] * vec2[0]) > 0:
-        #    angle_between_radius = 360 - angle_between_radius
-        angle_between_objects = np.fabs((obj[ObjectProp.Dir] - enemy[ObjectProp.Dir]) % 360)
-        total_reward = self.loss.loss_result(obj, distance, angle_between_radius, angle_between_objects, 1, 1)
+        total_reward = self.loss.loss_result(obj, objects_state)
         return total_reward
 
 
@@ -91,6 +75,8 @@ class QAi:
         self.rot_side, self.vel_ctrl = (0, 0)
         self.obj = objects_copy[self.index]
         #print(self.obj)
+
+        self.observation = np.zeros(self.observation_size)
         self.new_observation = self.observe(objects_copy)
         if self.last_last_observation is None:
             self.last_observation = self.new_observation
@@ -98,7 +84,9 @@ class QAi:
             self.last_last_last_observation = self.new_observation
         #print(self.new_observation)
         self.reward = self.collect_reward(objects_copy)
-        #print(self.reward)
+        print("reward = ", self.reward)
+        #if self.reward == 1:
+        #    print("111111111111111111111111111111111111111111111111111111111111111111111111111111")
         if self.last_observation is not None:
             self.current_controller.store(np.array(np.concatenate((self.last_last_last_observation,
                                                                    self.last_last_observation,
@@ -110,20 +98,11 @@ class QAi:
         new_action = self.current_controller.action(np.array(np.concatenate((self.last_last_observation,
                                                                              self.last_observation,
                                                                              self.new_observation), axis=None)))
-        if new_action == 0:
-            self.rot_side = -1
-            self.vel_ctrl = 0
-        if new_action == 1:
-            self.rot_side = 1
-            self.vel_ctrl = 0
-        if new_action == 2:
-            self.rot_side = 0
-            self.vel_ctrl = -1
-        if new_action == 3:
-            self.rot_side = 0
-            self.vel_ctrl = 1
+        self.rot_side, self.vel_ctrl = self.acts[new_action]
         new_action = self.acts[new_action]
+
         self.current_controller.training_step()
+
         self.last_last_last_observation = self.last_last_observation
         self.last_last_observation = self.last_observation
         self.last_action = new_action
