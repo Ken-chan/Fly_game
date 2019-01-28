@@ -121,9 +121,7 @@ class Objects:
         self.dv, self.w = np.float(0.0), np.float(0.0)
         self.dv_calc, self.w_calc = np.float(0.0), np.float(0.0)
         self.cur_rad = np.float(0.0)
-        self.restart_wait_cycles = 30
         self.is_game_freezed = False
-        self.restart_countdown = self.restart_wait_cycles
         #initialization ends
 
 
@@ -171,7 +169,6 @@ class Objects:
             if self.train_mode:
                 self.prepare_config(self.bot1, self.bot2, self.player1, self.player2, self.sizeX, self.sizeY)
                 self.ai_controls.update_ai_settings(self.configuration)
-            self.restart_countdown = self.restart_wait_cycles
             self.objects.generate_empty_objects()
             self.objects.set_objects_settings(self.configuration)
             # print(self.objects.get_objects(link_only=True))
@@ -326,12 +323,6 @@ class Objects:
 
 
     def delete_object(self, jndex, objects, second_unit=None):
-        if self.restart_countdown > 0:
-            self.restart_countdown -= 1
-            #print("restart_countdown = ", self.restart_countdown)
-            #print("x = ", objects[jndex][ObjectProp.Xcoord], " y = ", objects[jndex][ObjectProp.Ycoord])
-            return
-
         print('Killed unit number: {:2} team: {:2} with type {:2}' \
               .format(jndex, Teams.team_by_id(jndex), ObjectType.name_of_type_by_id(jndex)))
 
@@ -352,8 +343,6 @@ class Objects:
             elif Teams.team_by_id(second_unit) == Teams.Team2:
                 self.dire -= 1
 
-        self.restart_countdown = self.restart_wait_cycles
-
     def add_object(self, unit_type, x, y, direction, vehicle_type, r):
         self.objects.add_object(unit_type, x, y, direction, vehicle_type, r)
 
@@ -371,29 +360,28 @@ class Objects:
             dt = 1.0 / self.framerate
         objects = self.objects.get_objects(link_only=True)
         if self.objects_state == ObjectsState.Run:
-            if self.restart_countdown == self.restart_wait_cycles:
-                for index in range(0, ObjectType.ObjArrayTotal):
-                    if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
-                        objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
-                        objects[index][ObjectProp.PrevAngleVel] = objects[index][ObjectProp.AngleVel]
-                        self.dv, self.w = self.calc_v_diff(objects[index])
-                        objects[index][ObjectProp.Velocity] = self.dv * dt + objects[index][ObjectProp.PrevVelocity]
-                        objects[index][ObjectProp.AngleVel] = self.w
-                        objects[index][ObjectProp.Dir] += objects[index][ObjectProp.AngleVel] * dt
-                        objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
-                        self.cur_rad = np.radians(objects[index][ObjectProp.Dir])
-                        objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.cos(self.cur_rad) * dt
-                        if objects[index][ObjectProp.Xcoord] >= self.battle_field_width:
-                            objects[index][ObjectProp.Xcoord] = self.battle_field_width - 1
-                        if objects[index][ObjectProp.Xcoord] <= 0:
-                            objects[index][ObjectProp.Xcoord] = 1
-                        objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(self.cur_rad) * dt
-                        if objects[index][ObjectProp.Ycoord] >= self.battle_field_height:
-                            objects[index][ObjectProp.Ycoord] = self.battle_field_height - 1
-                        if objects[index][ObjectProp.Ycoord] <= 0:
-                            objects[index][ObjectProp.Ycoord] = 1
-                self.save_history_file(self.hist_file_name, objects)
-                self.objects.current_objects = objects
+            for index in range(0, ObjectType.ObjArrayTotal):
+                if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
+                    objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
+                    objects[index][ObjectProp.PrevAngleVel] = objects[index][ObjectProp.AngleVel]
+                    self.dv, self.w = self.calc_v_diff(objects[index])
+                    objects[index][ObjectProp.Velocity] = self.dv * dt + objects[index][ObjectProp.PrevVelocity]
+                    objects[index][ObjectProp.AngleVel] = self.w
+                    objects[index][ObjectProp.Dir] += objects[index][ObjectProp.AngleVel] * dt
+                    objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
+                    self.cur_rad = np.radians(objects[index][ObjectProp.Dir])
+                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.cos(self.cur_rad) * dt
+                    if objects[index][ObjectProp.Xcoord] >= self.battle_field_width:
+                        objects[index][ObjectProp.Xcoord] = self.battle_field_width - 1
+                    if objects[index][ObjectProp.Xcoord] <= 0:
+                        objects[index][ObjectProp.Xcoord] = 1
+                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(self.cur_rad) * dt
+                    if objects[index][ObjectProp.Ycoord] >= self.battle_field_height:
+                        objects[index][ObjectProp.Ycoord] = self.battle_field_height - 1
+                    if objects[index][ObjectProp.Ycoord] <= 0:
+                        objects[index][ObjectProp.Ycoord] = 1
+            self.save_history_file(self.hist_file_name, objects)
+            self.objects.current_objects = objects
 
             self.check_kill_and_end_of_game()
             if not self.train_mode:
