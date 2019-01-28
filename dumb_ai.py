@@ -9,7 +9,6 @@ class Dummy:
     def calc_behaviour(self, objects_state):
         return None
 
-
 class DumbAI(Dummy):
     def __init__(self, index, battle_field_size, configuration):
         super(DumbAI, self).__init__(index)
@@ -151,6 +150,3 @@ class DumbAI(Dummy):
 
             self.vel_ctrl = np.float(1) if np.linalg.norm(self.diff_coord) > self.r_crit else np.float(0)
         return self.turn_ctrl, self.vel_ctrl
-
-
-

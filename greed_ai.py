@@ -7,19 +7,19 @@ class GreedAi:
     def __init__(self, index, battle_field_size):
         # print("hello its me")
         self.current_controller = None
-        self.nearest_enemy_id = 13
+        self.nearest_enemy_id = 0
         self.num_actions = 4
         self.index = index
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
         self.obj = np.zeros(ObjectProp.Total)
 
-        self.loss = Loss(whoami=1)
+        self.loss = Loss(whoami=None)
 
         self.acts = []
-        for step_v in range(0, 11):
-            for step_d in range(0, 11):
-                self.acts.append((-1 + 0.2 * step_v, -1 + 0.2 * step_d))
+        for step_v in range(0, 5):
+            for step_d in range(0, 5):
+                self.acts.append((-1 + 0.5 * step_v, -1 + 0.5 * step_d))
 
     def collect_reward(self, objects_state):
         wall_reward = 0  # np.exp(self.distance_to_walls(unit))-1.5
@@ -120,11 +120,11 @@ class GreedAi:
     def calc_behaviour(self, objects_copy):
         self.rot_side, self.vel_ctrl = (0, 0)
         self.obj = objects_copy[self.index]
-        new_action = (0, -1)    #self.get_gready_action(objects_copy)
+        #new_action = (0, -1)
+        new_action = self.get_gready_action(objects_copy)
         #print(new_action)
 
         self.rot_side, self.vel_ctrl = new_action
 
         return self.rot_side, self.vel_ctrl
-
 
