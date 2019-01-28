@@ -2,7 +2,7 @@ import pyglet
 import messages
 from obj_def import *
 from tools import Loss
-from tools import calc_polar_grid
+from ai_controls import AItype
 import numpy as np
 
 
@@ -64,7 +64,8 @@ class ObjectArray:
 
 
 class Objects:
-    def __init__(self, configuration, radiant, dire, history_path, messenger=None, ai_controls=None, tries=None):
+    def __init__(self, configuration, radiant, dire, history_path, messenger=None, ai_controls=None, tries=None,
+                 bot1=None, bot2=None, player1=None, player2=None, sizeX=None, sizeY=None):
         self.objects_state = ObjectsState.Run
         self.train_mode = True
         if ai_controls == None:
@@ -94,11 +95,9 @@ class Objects:
         self.restart_counter = 0
         self.playtime = 0
         self.framerate = 30
-        self.maxplaytime = 60 * self.framerate
+        self.maxplaytime = 15 #* self.framerate
 
-        self.loss = Loss(self.configuration) #loss take config from objects(not from game)
-        self.loss_from_one = np.float(0.0)
-        self.loss_from_all = np.float(0.0)
+        self.loss = Loss() #loss take config from objects(not from game)
         self.angle_between_objects = np.float(0.0)
         self.angle_between_radius = np.float(0.0)
         #initialization starts
@@ -122,7 +121,11 @@ class Objects:
         self.dv, self.w = np.float(0.0), np.float(0.0)
         self.dv_calc, self.w_calc = np.float(0.0), np.float(0.0)
         self.cur_rad = np.float(0.0)
+        self.restart_wait_cycles = 30
+        self.is_game_freezed = False
+        self.restart_countdown = self.restart_wait_cycles
         #initialization ends
+
 
         self.functions = {messages.Objects.Quit: self.quit,
                           messages.Objects.AddObject: self.objects.add_object,
@@ -137,6 +140,16 @@ class Objects:
             self._index, self._vel_ctrl, self._turn_ctrl = 0, 0, 0
             self.ai_controls.start_ai_controls()
             pyglet.clock.schedule(self.update_units)
+
+            #for time ###################
+            self.bot1 = bot1
+            self.bot2 = bot2
+            self.player1 = player1
+            self.player2 = player2
+            self.sizeX = sizeX
+            self.sizeY = sizeY
+            ######################
+
         else:
             pyglet.clock.schedule_interval(self.read_mes, 1.0 / self.framerate)
             pyglet.clock.schedule_interval(self.update_units, 1.0 / self.framerate)
@@ -155,6 +168,10 @@ class Objects:
         if self.history_mode:
             return
         if not self.train_mode or (self.tries is not None and self.restart_counter + 1 < self.tries):
+            if self.train_mode:
+                self.prepare_config(self.bot1, self.bot2, self.player1, self.player2, self.sizeX, self.sizeY)
+                self.ai_controls.update_ai_settings(self.configuration)
+            self.restart_countdown = self.restart_wait_cycles
             self.objects.generate_empty_objects()
             self.objects.set_objects_settings(self.configuration)
             # print(self.objects.get_objects(link_only=True))
@@ -186,7 +203,7 @@ class Objects:
 
     def save_history_file(self, file_name, obj_array):
         pass
-        flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
+        """flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
         obj_str = ''
         for item in flat_obj:
             obj_str += '{},'.format(item)
@@ -194,7 +211,7 @@ class Objects:
         if self.restart_counter != 0:
             file_name = str(self.restart_counter)+'_'+ file_name
         with open(file_name, 'a') as f:
-            f.write(obj_str + '\n')
+            f.write(obj_str + '\n')"""
 
     def update_game_settings(self, configuration):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
@@ -222,17 +239,14 @@ class Objects:
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             objects = self.objects.get_objects(link_only=True)
             #print(objects, "   curr obj")
+
             for index in range(0, ObjectType.ObjArrayTotal):
-                self.loss_from_all = 0.0
                 if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
                     self.x1, self.y1 = objects[index][ObjectProp.Xcoord], objects[index][ObjectProp.Ycoord]
                     self.radius = objects[index][ObjectProp.R_size]
-                    if self.x1 > self.battle_field_width - self.radius or self.y1 > self.battle_field_height - self.radius or self.x1 < self.radius or self.y1 < self.radius:
+                    if self.x1 >= self.battle_field_width - self.radius - 1 or self.y1 >= self.battle_field_height - self.radius - 1 or \
+                            self.x1 <= self.radius + 1 or self.y1 <= self.radius + 1:
                         self.delete_object(index, objects)
-                        if Teams.team_by_id(index) == Teams.Team1:
-                            self.radiant -= 1
-                        elif Teams.team_by_id(index) == Teams.Team2:
-                            self.dire -= 1
                         continue
                     self.dir1 = objects[index][ObjectProp.Dir]
                     self.vec1[0], self.vec1[1] = np.cos(np.radians(self.dir1)), np.sin(np.radians(self.dir1))
@@ -245,60 +259,103 @@ class Objects:
                             self.diff_vector[0], self.diff_vector[1] = self.x2 - self.x1, self.y2 - self.y1
                             self.distance = np.linalg.norm(self.diff_vector)
                             if self.distance <= self.radius + objects[jndex][ObjectProp.R_size]:
-                                self.delete_object(index, objects)
-                                self.delete_object(jndex, objects)
-                                if Teams.team_by_id(index) == Teams.Team1:
-                                    self.radiant -= 1
-                                elif Teams.team_by_id(index) == Teams.Team2:
-                                    self.dire -= 1
-                                if Teams.team_by_id(jndex) == Teams.Team1:
-                                    self.radiant -= 1
-                                elif Teams.team_by_id(jndex) == Teams.Team2:
-                                    self.dire -= 1
+                                self.delete_object(index, objects, second_unit=jndex)
+                                #self.delete_object(jndex, objects)
                                 break
+
+                            #print(jndex, '<---HERE')
 
                             if Teams.team_by_id(index)!= Teams.team_by_id(jndex) and self.distance < Constants.AttackRange and \
                                     self.is_inside_cone(self.vec1, self.vec2, self.diff_vector, Constants.AttackConeWide):
                                 self.delete_object(jndex, objects)
-                                if Teams.team_by_id(jndex) == Teams.Team1:
-                                    self.radiant -= 1
-                                elif Teams.team_by_id(jndex) == Teams.Team2:
-                                    self.dire -= 1
 
 
-
-                            '''
                             ##FOR LOSS
-                            self.angle_between_radius = 180 - np.degrees(np.arccos((self.diff_vector[0]*self.vec2[0] + self.diff_vector[1]*self.vec2[1])/
-                                                                                   ((np.sqrt(pow(self.diff_vector[0], 2) + pow(self.diff_vector[1], 2)))*
-                                                                                    (np.sqrt(pow(self.vec2[0], 2) + pow(self.vec2[1], 2)))))) if (self.diff_vector[0] != 0 and self.vec2[0] != 0) else 0
-                            if (self.diff_vector[0]*self.vec2[1] - self.diff_vector[1]*self.vec2[0]) > 0:
-                                self.angle_between_radius = 360 - self.angle_between_radius
-                            self.angle_between_objects = np.fabs(
-                                (objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir]) % 360)
-
-                            if Teams.team_by_id(jndex) == Teams.Team1:
-                                self.loss_from_one = self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.dire, self.radiant)
-                                self.loss_from_all += self.loss_from_one
-                                print(self.loss_from_one)
-                            
-                            #Loss of alies    
-                            #if Teams.team_by_id(index) == Teams.team_by_id(jndex):
-                                #print(self.loss.calc_loss_of_alies_collision(self.distance))    
-                            '''
+                            #self.angle_between_radius = 180 - np.degrees(np.arccos((self.diff_vector[0]*self.vec2[0] + self.diff_vector[1]*self.vec2[1])/
+                            #                                                       ((np.sqrt(pow(self.diff_vector[0], 2) + pow(self.diff_vector[1], 2)))*
+                            #                                                        (np.sqrt(pow(self.vec2[0], 2) + pow(self.vec2[1], 2)))))) if (self.diff_vector[0] != 0 and self.vec2[0] != 0) else 0
+                            #if (self.diff_vector[0]*self.vec2[1] - self.diff_vector[1]*self.vec2[0]) > 0:
+                            #    self.angle_between_radius = 360 - self.angle_between_radius
+                            #self.angle_between_objects = np.fabs(
+                            #    (objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir]) % 360)
+                            #print(self.angle_between_objects)
+                            #if Teams.team_by_id(jndex) == Teams.Team1:
+                            #    self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.radiant, self.dire)
+                            #elif Teams.team_by_id(jndex) == Teams.Team2:
+                            #    pass
+                            #    print(self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.dire, self.radiant))
 
             # END_OF_GAME_TRIGGERED
-            if self.radiant < 1 or self.dire < 1:
+            if self.radiant < 1 or self.dire < 1: #
                 self.messenger.end_of_game()
                 self.objects_state = ObjectsState.Pause
                 if self.train_mode:
                     self.restart()
 
-    def delete_object(self, jndex, objects):
+
+    def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
+
+        self.configuration = {ObjectType.FieldSize: [],
+                              ObjectType.Bot1: [],
+                              ObjectType.Player1: [],
+                              ObjectType.Bot2: [],
+                              ObjectType.Player2: []}
+
+        self.configuration[ObjectType.FieldSize].append((sizeX,sizeY))
+        pos1 = sizeX // 2
+        pos2 = sizeY // 2
+        if player1:
+            self.configuration[ObjectType.Player1].append(
+                (pos1 ,
+                 pos2 ,
+                 np.random.randint(0, 1), ObjectSubtype.Drone, Constants.DefaultObjectRadius))
+        if player2:
+            self.configuration[ObjectType.Player2].append(
+                (pos1 ,
+                 pos2 ,
+                 np.random.randint(0, 1), ObjectSubtype.Drone, Constants.DefaultObjectRadius))
+
+        for i in range(1, bot1 + 1):
+            self.configuration[ObjectType.Bot1].append(
+                (pos1 ,
+                 pos2 ,
+                 np.random.randint(0, 1), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))# red
+
+        for i in range(1, bot2 + 1):
+            self.configuration[ObjectType.Bot2].append(
+                (260,
+                 500,
+                 np.random.randint(0, 1), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi)) #blue
+
+
+    def delete_object(self, jndex, objects, second_unit=None):
+        if self.restart_countdown > 0:
+            self.restart_countdown -= 1
+            #print("restart_countdown = ", self.restart_countdown)
+            #print("x = ", objects[jndex][ObjectProp.Xcoord], " y = ", objects[jndex][ObjectProp.Ycoord])
+            return
+
         print('Killed unit number: {:2} team: {:2} with type {:2}' \
               .format(jndex, Teams.team_by_id(jndex), ObjectType.name_of_type_by_id(jndex)))
+
         for kndex in range(1, ObjectProp.Total):
             objects[jndex][kndex] = 0
+        if Teams.team_by_id(jndex) == Teams.Team1:
+            self.radiant -= 1
+        elif Teams.team_by_id(jndex) == Teams.Team2:
+            self.dire -= 1
+
+        if second_unit is not None:
+            print('Killed unit number: {:2} team: {:2} with type {:2}' \
+                  .format(second_unit, Teams.team_by_id(second_unit), ObjectType.name_of_type_by_id(second_unit)))
+            for kndex in range(1, ObjectProp.Total):
+                objects[second_unit][kndex] = 0
+            if Teams.team_by_id(second_unit) == Teams.Team1:
+                self.radiant -= 1
+            elif Teams.team_by_id(second_unit) == Teams.Team2:
+                self.dire -= 1
+
+        self.restart_countdown = self.restart_wait_cycles
 
     def add_object(self, unit_type, x, y, direction, vehicle_type, r):
         self.objects.add_object(unit_type, x, y, direction, vehicle_type, r)
@@ -317,30 +374,44 @@ class Objects:
             dt = 1.0 / self.framerate
         objects = self.objects.get_objects(link_only=True)
         if self.objects_state == ObjectsState.Run:
-            for index in range(0, ObjectType.ObjArrayTotal):
-                if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
-                    objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
-                    objects[index][ObjectProp.PrevAngleVel] = objects[index][ObjectProp.AngleVel]
-                    self.dv, self.w = self.calc_v_diff(objects[index])
-                    objects[index][ObjectProp.Velocity] = self.dv * dt + objects[index][ObjectProp.PrevVelocity]
-                    objects[index][ObjectProp.AngleVel] = self.w
-                    objects[index][ObjectProp.Dir] += objects[index][ObjectProp.AngleVel] * dt
-                    objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
-                    self.cur_rad = np.radians(objects[index][ObjectProp.Dir])
-                    objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.cos(self.cur_rad) * dt
-                    objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(self.cur_rad) * dt
-            self.save_history_file(self.hist_file_name, objects)
-            self.objects.current_objects = objects
+            if self.restart_countdown == self.restart_wait_cycles:
+                for index in range(0, ObjectType.ObjArrayTotal):
+                    if objects[index][ObjectProp.ObjType] != ObjectType.Absent:
+                        objects[index][ObjectProp.PrevVelocity] = objects[index][ObjectProp.Velocity]
+                        objects[index][ObjectProp.PrevAngleVel] = objects[index][ObjectProp.AngleVel]
+                        self.dv, self.w = self.calc_v_diff(objects[index])
+                        objects[index][ObjectProp.Velocity] = self.dv * dt + objects[index][ObjectProp.PrevVelocity]
+                        objects[index][ObjectProp.AngleVel] = self.w
+                        objects[index][ObjectProp.Dir] += objects[index][ObjectProp.AngleVel] * dt
+                        objects[index][ObjectProp.Dir] = objects[index][ObjectProp.Dir] % 360
+                        self.cur_rad = np.radians(objects[index][ObjectProp.Dir])
+                        objects[index][ObjectProp.Xcoord] += objects[index][ObjectProp.Velocity] * np.cos(self.cur_rad) * dt
+                        if objects[index][ObjectProp.Xcoord] >= self.battle_field_width:
+                            objects[index][ObjectProp.Xcoord] = self.battle_field_width - 1
+                        if objects[index][ObjectProp.Xcoord] <= 0:
+                            objects[index][ObjectProp.Xcoord] = 1
+                        objects[index][ObjectProp.Ycoord] += objects[index][ObjectProp.Velocity] * np.sin(self.cur_rad) * dt
+                        if objects[index][ObjectProp.Ycoord] >= self.battle_field_height:
+                            objects[index][ObjectProp.Ycoord] = self.battle_field_height - 1
+                        if objects[index][ObjectProp.Ycoord] <= 0:
+                            objects[index][ObjectProp.Ycoord] = 1
+                self.save_history_file(self.hist_file_name, objects)
+                self.objects.current_objects = objects
+
             self.check_kill_and_end_of_game()
             if not self.train_mode:
                 self.messenger.game_update_objects(self.objects.get_objects())
                 self.messenger.ai_update_objects(self.objects.get_objects())
             else:
+                #print("x = ", self.objects.current_objects[2][ObjectProp.Xcoord], " y = ", self.objects.current_objects[2][ObjectProp.Ycoord])
+                #print("x = ", self.objects.current_objects[13][ObjectProp.Xcoord], " y = ",
+                #      self.objects.current_objects[13][ObjectProp.Ycoord])
                 self.result = self.ai_controls.recalc(1/self.framerate, self.objects.current_objects)
                 for key in self.result:
                     self.set_control_signal(key[0], ObjectProp.VelControl, key[1])
                     self.set_control_signal(key[0], ObjectProp.TurnControl, key[2])
-            self.playtime += 1
+            self.playtime += 1/self.framerate
+            #print(self.playtime, " maxplaytime = ", self.maxplaytime)
             if self.playtime >= self.maxplaytime:
                 self.messenger.end_of_game()
                 self.objects_state = ObjectsState.Pause
@@ -368,4 +439,3 @@ class Objects:
                 if data is None:
                     break
                 self.functions[data['func']](**data['args']) if 'args' in data else self.functions[data['func']]()
-

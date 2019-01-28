@@ -25,7 +25,7 @@ class Renderer:
         self.current_object = None
         self.size_proportion_width = np.float(0.0)
         self.size_proportion_height = np.float(0.0)
-        self.loss_function = Loss(configuration=None)
+        self.loss_function = Loss(whoami=None)
         self.x0 = 980
         self.y0 = 1000
         self.dx = 31
