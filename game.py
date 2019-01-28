@@ -17,16 +17,16 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=5):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=10000):
         gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 0
+        self.radiant_bots = 1
         self.dire_bots = 1
-        self.is_player1_play = 1
+        self.is_player1_play = 0
         self.is_player2_play = 0
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
@@ -56,7 +56,9 @@ class Game:
         if self.train_mode:
             self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
-                                   messenger=self.messenger, ai_controls=self.ai_controls, tries=tries)
+                                   messenger=self.messenger, ai_controls=self.ai_controls, tries=tries,
+                                   bot1=self.radiant_bots, bot2=self.dire_bots, player1=self.is_player1_play,
+                                   player2=self.is_player2_play, sizeX=self.battle_field_size[0], sizeY=self.battle_field_size[1])
         else:
             self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
@@ -92,7 +94,7 @@ class Game:
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
                 (pos2 * (i + player2) + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
-                 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))
+                 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
 
     def clear_file(self, file_path):
@@ -179,12 +181,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--history_path", type=str, required=False,
                     help="path to history file")
-    ap.add_argument("-t", "--train_mode", required=False, action='store_true',
+    ap.add_argument("-t", "--train_mode", required=False, action='store_false',
                     help="training mode")
     ap.add_argument("-p", '--prefix', type=str, required=False,
                     help='prefix for history file')
-    ap.add_argument("-m", '--tries', type=int, required=False,
-                    help='number of total retries in one session')
+    #ap.add_argument("-m", '--tries', type=int, required=False,
+    #                help='number of total retries in one session')
     args = vars(ap.parse_args())
     args["screen_width"] = 1000
     args["screen_height"] = 1000

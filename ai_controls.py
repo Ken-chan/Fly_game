@@ -19,9 +19,9 @@ class AItype:
             return DumbAI(index, battle_field_size, configuration)
         elif aitype == cls.Dummy:
             return Dummy(index)
-        elif aitype == cls.QAi:
-            q_ai = QAi(index, battle_field_size, controller)
-            return q_ai
+        #elif aitype == cls.QAi:
+        #    q_ai = QAi(index, battle_field_size, controller)
+        #    return q_ai
         elif aitype == cls.GreedAi:
             return GreedAi(index, battle_field_size)
 

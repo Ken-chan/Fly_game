@@ -7,7 +7,7 @@ class GreedAi:
     def __init__(self, index, battle_field_size):
         # print("hello its me")
         self.current_controller = None
-        self.nearest_enemy_id = 0
+        self.nearest_enemy_id = 13
         self.num_actions = 4
         self.index = index
         self.battle_field_size = battle_field_size

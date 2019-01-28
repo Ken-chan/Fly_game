@@ -95,7 +95,7 @@ class Objects:
         self.restart_counter = 0
         self.playtime = 0
         self.framerate = 30
-        self.maxplaytime = 15 #* self.framerate
+        self.maxplaytime = 45 #* self.framerate
 
         self.loss = Loss() #loss take config from objects(not from game)
         self.angle_between_objects = np.float(0.0)
@@ -136,6 +136,19 @@ class Objects:
                           messages.Objects.Restart: self.restart,
                           messages.Objects.UpdateGameSettings: self.update_game_settings}
         #self.objects_state = ObjectsState.Pause
+
+        self.bot1 = np.int32(0)
+        self.bot2 = np.int32(0)
+        self.player1 = np.int32(0)
+        self.player2 = np.int32(0)
+        self.sizeX = np.int32(self.battle_field_width)
+        self.sizeY = np.int32(self.battle_field_width)
+        self.pos1 = self.sizeX // 2
+        self.pos2 = self.sizeX // 2
+        self.victories = np.int32(0)
+        self.defeats = np.int32(0)
+        self.draws = np.int32(0)
+
         if self.train_mode:
             self._index, self._vel_ctrl, self._turn_ctrl = 0, 0, 0
             self.ai_controls.start_ai_controls()
@@ -282,6 +295,14 @@ class Objects:
                                 print(self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.radiant, self.dire))
                             """
 
+
+            if (self.radiant < 1 and self.dire < 1) or self.playtime >= self.maxplaytime:
+                self.draws += 1
+            elif self.radiant < 1:
+                self.defeats += 1
+            elif self.dire < 1:
+                self.victories += 1
+
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1: #
                 self.messenger.end_of_game()
@@ -291,38 +312,35 @@ class Objects:
 
 
     def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
-
         self.configuration = {ObjectType.FieldSize: [],
                               ObjectType.Bot1: [],
                               ObjectType.Player1: [],
                               ObjectType.Bot2: [],
                               ObjectType.Player2: []}
-
-        self.configuration[ObjectType.FieldSize].append((sizeX,sizeY))
-        pos1 = sizeX // 2
-        pos2 = sizeY // 2
+        print("Win :{}, Loses: {}, Draws: {}".format(self.victories, self.defeats, self.draws))
+        self.configuration[ObjectType.FieldSize].append((sizeX, sizeY))
         if player1:
             self.configuration[ObjectType.Player1].append(
-                (pos1 ,
-                 pos2 ,
+                (self.pos1 ,
+                 self.pos2 ,
                  np.random.randint(0, 1), ObjectSubtype.Drone, Constants.DefaultObjectRadius))
         if player2:
             self.configuration[ObjectType.Player2].append(
-                (pos1 ,
-                 pos2 ,
+                (self.pos1 ,
+                 self.pos2 ,
                  np.random.randint(0, 1), ObjectSubtype.Drone, Constants.DefaultObjectRadius))
 
         for i in range(1, bot1 + 1):
             self.configuration[ObjectType.Bot1].append(
-                (pos1 ,
-                 pos2 ,
-                 np.random.randint(0, 1), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))# red
+                (self.sizeX // 2 + np.random.randint(-100, 100),
+                 np.random.randint(100, 200),
+                 90 + np.random.randint(-20, 20), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))# red
 
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
-                (260,
-                 500,
-                 np.random.randint(0, 1), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi)) #blue
+                (self.sizeX // 2 + np.random.randint(-100, 100),
+                 self.sizeY + np.random.randint(-200, -100),
+                 270 + np.random.randint(-20, 20), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi)) #blue
 
 
     def delete_object(self, jndex, objects, second_unit=None):
@@ -403,10 +421,11 @@ class Objects:
                 #print("x = ", self.objects.current_objects[2][ObjectProp.Xcoord], " y = ", self.objects.current_objects[2][ObjectProp.Ycoord])
                 #print("x = ", self.objects.current_objects[13][ObjectProp.Xcoord], " y = ",
                 #      self.objects.current_objects[13][ObjectProp.Ycoord])
-                self.result = self.ai_controls.recalc(1/self.framerate, self.objects.current_objects)
-                for key in self.result:
-                    self.set_control_signal(key[0], ObjectProp.VelControl, key[1])
-                    self.set_control_signal(key[0], ObjectProp.TurnControl, key[2])
+                #self.result = self.ai_controls.recalc(1/self.framerate, self.objects.current_objects)
+                #for key in self.result:
+                #    self.set_control_signal(key[0], ObjectProp.VelControl, key[1])
+                #    self.set_control_signal(key[0], ObjectProp.TurnControl, key[2])
+                pass
             self.playtime += 1/self.framerate
             #print(self.playtime, " maxplaytime = ", self.maxplaytime)
             if self.playtime >= self.maxplaytime:
