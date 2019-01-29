@@ -4,17 +4,18 @@ import time
 
 
 class GreedAi:
-    def __init__(self, index, battle_field_size):
+    def __init__(self, index, battle_field_size, cube=None):
         # print("hello its me")
         self.current_controller = None
         self.nearest_enemy_id = 13
         self.num_actions = 4
         self.index = index
+        self.cube = cube
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
         self.obj = np.zeros(ObjectProp.Total)
 
-        self.loss = Loss(whoami=None)
+        self.loss = Loss(cube=self.cube)
 
         self.acts = []
         for step_v in range(0, 5):

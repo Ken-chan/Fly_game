@@ -25,7 +25,7 @@ class Renderer:
         self.current_object = None
         self.size_proportion_width = np.float(0.0)
         self.size_proportion_height = np.float(0.0)
-        self.loss_function = Loss(whoami=None)
+        #self.loss_function = Loss()
         self.x0 = 980
         self.y0 = 1000
         self.dx = 31
@@ -40,14 +40,14 @@ class Renderer:
         self.pil_img_sprite = None
 
         self.batch = pyglet.graphics.Batch()
-        self.fl_label = pyglet.text.Label("оценка функции полезности: ",
-                                          font_name='Times New Roman',
-                                          font_size=16,
-                                          color=((0, 0, 0, 255)),
-                                          x=self.x0 + 30,
-                                          y=self.y0 - self.dy * 19,
-                                          anchor_x='left', anchor_y='top', batch=self.batch)
-        self.fl_label.visible = False
+        #self.fl_label = pyglet.text.Label("оценка функции полезности: ",
+        #                                  font_name='Times New Roman',
+        #                                  font_size=16,
+        #                                  color=((0, 0, 0, 255)),
+        #                                  x=self.x0 + 30,
+        #                                  y=self.y0 - self.dy * 19,
+        #                                  anchor_x='left', anchor_y='top', batch=self.batch)
+        #self.fl_label.visible = False
 
         self.init_sprites()
         self.renderer_state = RendererState.Game
@@ -178,10 +178,10 @@ class Renderer:
                         angle_between_radius = 360- angle_between_radius
                     #if (diff_vector[0] * vec2[1] - diff_vector[1] * vec2[0]) > 0:
                     #    angle_between_radius = 360 - angle_between_radius
-                    angle_between_objects = np.fabs((obj[ObjectProp.Dir] - enemy[ObjectProp.Dir]) % 360)
-                    loss_num = self.loss_function.loss_result(obj, distance, angle_between_radius, angle_between_objects, 1, 1)
-                    self.fl_label.text = 'Оценка функции полезности: {}'.format(loss_num)
-                    self.fl_label.visible = True
+                    #angle_between_objects = np.fabs((obj[ObjectProp.Dir] - enemy[ObjectProp.Dir]) % 360)
+                    #loss_num = self.loss_function.loss_result(obj, distance, angle_between_radius, angle_between_objects, 1, 1)
+                    #self.fl_label.text = 'Оценка функции полезности: {}'.format(loss_num)
+                    #self.fl_label.visible = True
 
                     raw_image = img.tobytes()
                     self.pil_img = pyglet.image.ImageData(self.dx*(self.step_number),
@@ -196,7 +196,7 @@ class Renderer:
             if self._polar_grid == False:
                 for index in range(0, len(self.labels)):
                     self.labels[index].delete()
-                    self.fl_label.visible = False
+                    #self.fl_label.visible = False
                     self.draw = True
                     if self.pil_img_sprite:
                         self.pil_img_sprite.visible = False

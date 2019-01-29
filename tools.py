@@ -49,15 +49,20 @@ class SimpleLoss:
 
 
 class Loss():
-    def __init__(self, whoami=None):
-        self.whoami = whoami
+    def __init__(self, cube=None):
+        self.cube = cube
         self.battle_field_size = np.array([1000.0, 1000.0])
         #self.set_congiguration(configuration)
         self.n_cuts = 20
         self.qstate = QState(20)
         self.q_data = np.zeros((self.qstate.n_cuts, self.qstate.n_cuts, self.qstate.n_cuts))
 
-        self.qstate.load_history_file(self.qstate.cube_path, self.q_data)
+        if self.cube is None:
+            print("cube is none")
+            self.qstate.load_cube_file(self.qstate.cube_path, self.q_data)
+        else:
+            print('cube is not none')
+            self.qstate.load_cube(self.cube, self.q_data)
 
         self.min_x = np.float(0.0)
         self.min_y = np.float(0.0)
@@ -188,6 +193,7 @@ class Loss():
 
     def calc_qstate(self, radius, phi_betw_r, psi_betw_enem):
         r_i, phi_i, psi_i = self.qstate.get_index_by_values(radius, phi_betw_r, psi_betw_enem)
+        #print("inner: {}".format(self.qstate.q_data[0:2, 0:2, 0:2]))
         coefs_list, q_list = [], []
         for i in (-1, 0, 1):
             for j in (-1, 0, 1):
@@ -203,6 +209,7 @@ class Loss():
         qarr = np.array(q_list)
         coefs = np.linalg.lstsq(params, qarr, rcond=None)[0]
         val = np.dot(coefs, np.array([radius, phi_betw_r, psi_betw_enem]))
+        #print("value: {}".format(val))
         return val
 
         #self.loss_objects_interaction = self.q_data[int(self.r_i), int(self.phi_i), int(self.psi_i)]
@@ -213,8 +220,6 @@ class Loss():
         dist, vel, qstate, amount = 8 * self.calc_loss_of_distance(object),  0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]), \
                                     0.4 * self.calc_qstate(radius, phi, psi), self.calc_loss_amount_teams(radiant, dire)
         self.result = vel + qstate + amount + dist
-        if self.whoami is not None:
-            self.result = vel + amount + dist - 2*qstate
         #print("dist: {}, vel: {}, qstate: {}, amount: {}".format(dist, vel, qstate, amount))
         return self.result
 
@@ -582,7 +587,8 @@ class QState:
                     self.data_arr[r_i, phi_i, psi_i] = val
 
 
-    def load_history_file(self, file, q_data):
+    def load_cube_file(self, file, q_data):
+        print("loading cube file")
         with open(file, 'r') as fd:
             state_str = fd.readlines()
         strind = 0
@@ -591,6 +597,11 @@ class QState:
             indexes = self.get_index_by_values(int(numsback_str[0]), int(numsback_str[1]), int(numsback_str[2]))
             q_data[indexes[0], indexes[1], indexes[2]] = float(numsback_str[3])
             strind += 1
+
+    def load_cube(self, cube, q_data):
+        print("loading cube")
+        self.q_data = cube.copy()
+        print("after load: {}".format(self.q_data[0:2,0:2,0:2]))
 
     def save_history_file(self, file_name):
         q_str = ''

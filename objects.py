@@ -97,7 +97,7 @@ class Objects:
         self.framerate = 30
         self.maxplaytime = 45 #* self.framerate
 
-        self.loss = Loss() #loss take config from objects(not from game)
+        #self.loss = Loss() #loss take config from objects(not from game)
         self.angle_between_objects = np.float(0.0)
         self.angle_between_radius = np.float(0.0)
         #initialization starts
@@ -181,7 +181,9 @@ class Objects:
         if not self.train_mode or (self.tries is not None and self.restart_counter + 1 < self.tries):
             if self.train_mode:
                 self.prepare_config(self.bot1, self.bot2, self.player1, self.player2, self.sizeX, self.sizeY)
+                print("update ai controls. {}".format(self.ai_controls))
                 self.ai_controls.update_ai_settings(self.configuration)
+            print("after upd {}".format(self.ai_controls))
             self.objects.generate_empty_objects()
             self.objects.set_objects_settings(self.configuration)
             # print(self.objects.get_objects(link_only=True))
@@ -409,11 +411,11 @@ class Objects:
                 #print("x = ", self.objects.current_objects[2][ObjectProp.Xcoord], " y = ", self.objects.current_objects[2][ObjectProp.Ycoord])
                 #print("x = ", self.objects.current_objects[13][ObjectProp.Xcoord], " y = ",
                 #      self.objects.current_objects[13][ObjectProp.Ycoord])
-                #self.result = self.ai_controls.recalc(1/self.framerate, self.objects.current_objects)
-                #for key in self.result:
-                #    self.set_control_signal(key[0], ObjectProp.VelControl, key[1])
-                #    self.set_control_signal(key[0], ObjectProp.TurnControl, key[2])
-                pass
+                self.result = self.ai_controls.recalc(1/self.framerate, self.objects.current_objects)
+                for key in self.result:
+                    self.set_control_signal(key[0], ObjectProp.VelControl, key[1])
+                    self.set_control_signal(key[0], ObjectProp.TurnControl, key[2])
+                #pass
             self.playtime += 1/self.framerate
             #print(self.playtime, " maxplaytime = ", self.maxplaytime)
             if self.playtime >= self.maxplaytime:
