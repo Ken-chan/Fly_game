@@ -78,7 +78,7 @@ class Objects:
         self.dire_start = dire
         self.radiant = self.radiant_start
         self.dire = self.dire_start
-        self.configuration = None
+        self.configuration = configuration
         self.ai_controls = ai_controls
         self.battle_field_width = 0
         self.battle_field_height = 0
@@ -179,15 +179,13 @@ class Objects:
         if self.history_mode:
             return
         if not self.train_mode or (self.tries is not None and self.restart_counter + 1 < self.tries):
+            self.objects_state = ObjectsState.Run
             if self.train_mode:
-                self.prepare_config(self.bot1, self.bot2, self.player1, self.player2, self.sizeX, self.sizeY)
-                print("update ai controls. {}".format(self.ai_controls))
+                self.update_game_settings(self.configuration)
                 self.ai_controls.update_ai_settings(self.configuration)
-            print("after upd {}".format(self.ai_controls))
             self.objects.generate_empty_objects()
             self.objects.set_objects_settings(self.configuration)
-            # print(self.objects.get_objects(link_only=True))
-            self.objects_state = ObjectsState.Run
+
             self.restart_counter += 1
             self.playtime = 0
             self.radiant = self.radiant_start
@@ -308,38 +306,6 @@ class Objects:
                 self.objects_state = ObjectsState.Pause
                 if self.train_mode:
                     self.restart()
-
-
-    def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
-        self.configuration = {ObjectType.FieldSize: [],
-                              ObjectType.Bot1: [],
-                              ObjectType.Player1: [],
-                              ObjectType.Bot2: [],
-                              ObjectType.Player2: []}
-        print("Win :{}, Loses: {}, Draws: {}".format(self.victories, self.defeats, self.draws))
-        self.configuration[ObjectType.FieldSize].append((sizeX, sizeY))
-        if player1:
-            self.configuration[ObjectType.Player1].append(
-                (self.pos1 ,
-                 self.pos2 ,
-                 np.random.randint(0, 1), ObjectSubtype.Drone, Constants.DefaultObjectRadius))
-        if player2:
-            self.configuration[ObjectType.Player2].append(
-                (self.pos1 ,
-                 self.pos2 ,
-                 np.random.randint(0, 1), ObjectSubtype.Drone, Constants.DefaultObjectRadius))
-
-        for i in range(1, bot1 + 1):
-            self.configuration[ObjectType.Bot1].append(
-                (self.sizeX // 2 + np.random.randint(-100, 100),
-                 np.random.randint(100, 200),
-                 90 + np.random.randint(-20, 20), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))# red
-
-        for i in range(1, bot2 + 1):
-            self.configuration[ObjectType.Bot2].append(
-                (self.sizeX // 2 + np.random.randint(-100, 100),
-                 self.sizeY + np.random.randint(-200, -100),
-                 270 + np.random.randint(-20, 20), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi)) #blue
 
 
     def delete_object(self, jndex, objects, second_unit=None):

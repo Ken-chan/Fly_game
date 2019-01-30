@@ -59,13 +59,11 @@ class Loss():
 
 
         if self.cube is None:
-            print("cube is none")
             self.qstate.load_cube_file(self.qstate.cube_path, self.q_data)
             #self.qstate.version_of_shufled_cube += 1
             #print(self.qstate.version_of_shufled_cube)
             #self.qstate.random_shuffle_cube(self.qstate.cube_path, self.qstate.version_of_shufled_cube)
         else:
-            print('cube is not none')
             self.qstate.load_cube(self.cube, self.q_data)
 
         self.min_x = np.float(0.0)
@@ -604,9 +602,7 @@ class QState:
             strind += 1
 
     def load_cube(self, cube, q_data):
-        print("loading cube")
         self.q_data = cube.copy()
-        print("after load: {}".format(self.q_data[0:2,0:2,0:2]))
 
     def save_history_file(self, file_name):
         q_str = ''

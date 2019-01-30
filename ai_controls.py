@@ -87,7 +87,6 @@ class AIcontrols:
                             obj_offset, _ = ObjectType.offset(key)
                             obj_ind = obj_offset + off_counter
                             self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size, configuration, controller=self.controller, cube=self.cube)
-        print("after ai config update: {}".format(self.ai_objs))
 
     def recalc(self, dt, objects_for_train=None):
         self.result = []
