@@ -57,9 +57,13 @@ class Loss():
         self.qstate = QState(20)
         self.q_data = np.zeros((self.qstate.n_cuts, self.qstate.n_cuts, self.qstate.n_cuts))
 
+
         if self.cube is None:
             print("cube is none")
             self.qstate.load_cube_file(self.qstate.cube_path, self.q_data)
+            #self.qstate.version_of_shufled_cube += 1
+            #print(self.qstate.version_of_shufled_cube)
+            #self.qstate.random_shuffle_cube(self.qstate.cube_path, self.qstate.version_of_shufled_cube)
         else:
             print('cube is not none')
             self.qstate.load_cube(self.cube, self.q_data)
@@ -228,6 +232,7 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         self.cube_path = "cubev2(-1).txt"
+        self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
         self.range_psi = (0, 360)
@@ -613,6 +618,21 @@ class QState:
         q_str = q_str[:-1]
         with open(file_name, 'w') as f:
             f.write(q_str + '\n')
+
+
+    def random_shuffle_cube(self, file, ver, delta=0.05):
+        print("loading cube file for shuffle")
+        with open(file, 'r') as fd:
+            state_str = fd.readlines()
+        strind = 0
+        for line in state_str:
+            numsback_str = line.split(',')
+            q_data = float(numsback_str[3]) + delta * np.random.randint(-100, 100) * 0.01
+            q_str = '{0},{1},{2},{3}\n'.format(int(numsback_str[0]), int(numsback_str[1]), int(numsback_str[2]), q_data)
+            #print(q_str)
+            with open('{}{}{}{}'.format('shuffled_', ver, '_', file), 'a') as sh:
+                sh.write(q_str)
+            strind += 1
 
 
 def calc_polar_grid(self, objects, width, height, step_number=16, player_number=13, max_range=605):
