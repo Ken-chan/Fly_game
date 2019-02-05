@@ -20,18 +20,26 @@ class ObjectArray:
         self.start_ind, self.end_ind = None, None
         self.generate_empty_objects()
 
-    def set_objects_settings(self, configuration=None):
+    def set_objects_settings(self, configuration=None, shuffled=False):
         if configuration:
             for key in configuration:
                 for item in configuration[key]:
                     if len(item) == 5:
                         x, y, direction, vehicle_type, r = item
-                        self.add_object(key, x, y, direction, vehicle_type, r)
+                        if shuffled:
+                            x += np.random.randint(-450, 450)
+                            y += np.random.randint(-30, 30)
+                            direction += np.random.randint(-50, 50)
                     elif len(item) == 6:
                         x, y, direction, vehicle_type, r, aitype = item
+                        if shuffled:
+                            x += np.random.randint(-450, 450)
+                            y += np.random.randint(-30, 30)
+                            direction += np.random.randint(-50, 50)
                     else:
                         x, y = item
                         direction, vehicle_type, r = 0, 0, 0
+                    print('{}: x = {}, y = {}, dir = {}'.format('restarted', x, y, direction))
                     self.add_object(key, x, y, direction, vehicle_type, r)
 
     def generate_empty_objects(self):
@@ -181,10 +189,12 @@ class Objects:
         if not self.train_mode or (self.tries is not None and self.restart_counter + 1 < self.tries):
             self.objects_state = ObjectsState.Run
             if self.train_mode:
-                self.update_game_settings(self.configuration)
+                self.objects.generate_empty_objects()
+                self.update_game_settings(self.configuration, shuffled=True)
                 self.ai_controls.update_ai_settings(self.configuration)
-            self.objects.generate_empty_objects()
-            self.objects.set_objects_settings(self.configuration)
+            else:
+                self.objects.generate_empty_objects()
+                self.objects.set_objects_settings(self.configuration)
 
             self.restart_counter += 1
             self.playtime = 0
@@ -212,8 +222,7 @@ class Objects:
         self.history_time_len = time_len
 
     def save_history_file(self, file_name, obj_array):
-        pass
-        """flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
+        flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
         obj_str = ''
         for item in flat_obj:
             obj_str += '{},'.format(item)
@@ -221,12 +230,12 @@ class Objects:
         if self.restart_counter != 0:
             file_name = str(self.restart_counter)+'_'+ file_name
         with open(file_name, 'a') as f:
-            f.write(obj_str + '\n')"""
+            f.write(obj_str + '\n')
 
-    def update_game_settings(self, configuration):
+    def update_game_settings(self, configuration, shuffled=False):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             self.configuration = configuration
-            self.objects.set_objects_settings(configuration)
+            self.objects.set_objects_settings(configuration, shuffled=shuffled)
             self.battle_field_height = self.objects.battle_field_height
             self.battle_field_width = self.objects.battle_field_width
 

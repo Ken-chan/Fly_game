@@ -17,7 +17,7 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=10000, cube=None):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1, cube=None):
         gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
@@ -31,14 +31,15 @@ class Game:
         self.is_player2_play = 0
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
+        self.is_it_move_from_history = False
         if history_path is None:
             now_time = datetime.datetime.now()
             self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
             #self.history_path = 'delete_me_pls.txt'
-            # if prefix:
-            # self.history_path = '{}_{}'.format(prefix, self.history_path)
-            # self.clear_file(self.history_path)
-            self.is_it_move_from_history = False
+            if prefix:
+                self.history_path = '{}_{}'.format(prefix, self.history_path)
+                self.clear_file(self.history_path)
+                self.is_it_move_from_history = False
         else:
             self.history_path = history_path
             self.is_it_move_from_history = True
@@ -182,7 +183,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--history_path", type=str, required=False,
                     help="path to history file")
-    ap.add_argument("-t", "--train_mode", required=False, action='store_false',
+    ap.add_argument("-t", "--train_mode", required=False, action='store_true',
                     help="training mode")
     ap.add_argument("-p", '--prefix', type=str, required=False,
                     help='prefix for history file')

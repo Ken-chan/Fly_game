@@ -64,7 +64,9 @@ class Loss():
             #print(self.qstate.version_of_shufled_cube)
             #self.qstate.random_shuffle_cube(self.qstate.cube_path, self.qstate.version_of_shufled_cube)
         else:
-            self.qstate.load_cube(self.cube, self.q_data)
+            self.qstate.load_cube(self.cube)
+            #self.qstate.save_history_file('shuffled.txt', self.cube)
+            self.q_data = self.qstate.q_data
 
         self.min_x = np.float(0.0)
         self.min_y = np.float(0.0)
@@ -221,7 +223,8 @@ class Loss():
     def loss_result(self, object, radius, phi, psi, radiant, dire):
         dist, vel, qstate, amount = 8 * self.calc_loss_of_distance(object),  0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]), \
                                     0.4 * self.calc_qstate(radius, phi, psi), self.calc_loss_amount_teams(radiant, dire)
-        self.result = vel + qstate + amount + dist
+        #self.result = vel + qstate + amount + dist
+        self.result = qstate
         #print("dist: {}, vel: {}, qstate: {}, amount: {}".format(dist, vel, qstate, amount))
         return self.result
 
@@ -251,7 +254,7 @@ class QState:
 
         #self.fill_by_experiment()
         #self.fill_data_arr()
-        #self.save_history_file(self.cube_path)
+        #self.save_history_file(self.cube_path, self.data_arr)
 
     def get_index_by_values(self, r, phi, psi):
 
@@ -601,16 +604,16 @@ class QState:
             q_data[indexes[0], indexes[1], indexes[2]] = float(numsback_str[3])
             strind += 1
 
-    def load_cube(self, cube, q_data):
+    def load_cube(self, cube):
         self.q_data = cube.copy()
 
-    def save_history_file(self, file_name):
+    def save_history_file(self, file_name, data):
         q_str = ''
         for r_i in range(0, self.n_cuts):
             for phi_i in range(0, self.n_cuts):
                 for psi_i in range(0, self.n_cuts):
                     nearest_coords = self.get_cell_val_by_index(r_i, phi_i, psi_i)
-                    q_str += '{0},{1},{2},{3}\n'.format(int(nearest_coords[0]), int(nearest_coords[1]), int(nearest_coords[2]), self.data_arr[r_i, phi_i, psi_i])
+                    q_str += '{0},{1},{2},{3}\n'.format(int(nearest_coords[0]), int(nearest_coords[1]), int(nearest_coords[2]), data[r_i, phi_i, psi_i])
         q_str = q_str[:-1]
         with open(file_name, 'w') as f:
             f.write(q_str + '\n')
