@@ -32,17 +32,17 @@ class QAi:
         self.last_observation = np.zeros(self.observation_size)
         self.last_last_observation = None
         self.last_last_last_observation = None
-        self.last_action = (0, 0)
+        self.last_action = 0
         self.simulation_started_time = time.time()
         self.acts = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 0), (0, 1), (1, -1), (1, 0), (1, 1)]
         if controller == None:
             self.current_controller = DiscreteDeepQ(3*self.observation_size,
-                                                    len(self.last_action), self.acts,
-                                                    discount_rate=0.9, exploration_period=10000000,
-                                                    max_experience=100000,
-                                                    store_every_nth=5, train_every_nth=500,
-                                                    minibatch_size=100,
-                                                    learning_rate=0.01, decay=0.8,
+                                                    2, self.acts,
+                                                    discount_rate=0.9, exploration_period=5000000,
+                                                    max_experience=10000,
+                                                    store_every_nth=5, train_every_nth=100,
+                                                    minibatch_size=32,
+                                                    learning_rate=0.01, gamma=0.95,
                                                     target_network_update_rate=10000,
                                                     save_path=save_path)
 
@@ -99,7 +99,7 @@ class QAi:
                                                                              self.last_observation,
                                                                              self.new_observation), axis=None)))
         self.rot_side, self.vel_ctrl = self.acts[new_action]
-        new_action = self.acts[new_action]
+        #new_action = self.acts[new_action]
 
         self.current_controller.training_step()
 

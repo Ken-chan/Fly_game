@@ -15,7 +15,7 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1000000):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=100000):
         #gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
@@ -95,8 +95,8 @@ class Game:
 
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
-                (260,
-                 500,
+                (100,
+                 500 + np.random.randint(-200, 200),
                  np.random.randint(0, 1), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi)) #blue
 
     def clear_file(self, file_path):

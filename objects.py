@@ -323,8 +323,8 @@ class Objects:
 
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
-                (260,
-                 500,
+                (200,
+                 500 + np.random.randint(-200, 200),
                  np.random.randint(0, 1), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.QAi)) #blue
 
 
