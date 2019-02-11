@@ -26,10 +26,6 @@ class ObjectArray:
                 for item in configuration[key]:
                     if len(item) == 5:
                         x, y, direction, vehicle_type, r = item
-                        if shuffled:
-                            x += np.random.randint(-450, 450)
-                            y += np.random.randint(-30, 30)
-                            direction += np.random.randint(-50, 50)
                     elif len(item) == 6:
                         x, y, direction, vehicle_type, r, aitype = item
                         if shuffled:
@@ -39,7 +35,7 @@ class ObjectArray:
                     else:
                         x, y = item
                         direction, vehicle_type, r = 0, 0, 0
-                    print('{}: x = {}, y = {}, dir = {}'.format('restarted', x, y, direction))
+                    #print('{}: x = {}, y = {}, dir = {}'.format('restarted', x, y, direction))
                     self.add_object(key, x, y, direction, vehicle_type, r)
 
     def generate_empty_objects(self):
@@ -105,6 +101,7 @@ class Objects:
         self.framerate = 30
         self.maxplaytime = 45 #* self.framerate
 
+
         #self.loss = Loss() #loss take config from objects(not from game)
         self.angle_between_objects = np.float(0.0)
         self.angle_between_radius = np.float(0.0)
@@ -154,6 +151,7 @@ class Objects:
         self.victories = np.int32(0)
         self.defeats = np.int32(0)
         self.draws = np.int32(0)
+        self.success = np.float(0.0)
 
         if self.train_mode:
             self._index, self._vel_ctrl, self._turn_ctrl = 0, 0, 0
@@ -195,7 +193,6 @@ class Objects:
             else:
                 self.objects.generate_empty_objects()
                 self.objects.set_objects_settings(self.configuration)
-
             self.restart_counter += 1
             self.playtime = 0
             self.radiant = self.radiant_start
@@ -282,8 +279,6 @@ class Objects:
                                 #self.delete_object(jndex, objects)
                                 break
 
-                            #print(jndex, '<---HERE')
-
                             if Teams.team_by_id(index)!= Teams.team_by_id(jndex) and self.distance < Constants.AttackRange and \
                                     self.is_inside_cone(self.vec1, self.vec2, self.diff_vector, Constants.AttackConeWide):
                                 self.delete_object(jndex, objects)
@@ -310,10 +305,14 @@ class Objects:
                 self.victories += 1
 
             # END_OF_GAME_TRIGGERED
-            if self.radiant < 1 or self.dire < 1: #
+            if self.radiant < 1 or self.dire < 1 or (self.playtime >= self.maxplaytime):
                 self.messenger.end_of_game()
                 self.objects_state = ObjectsState.Pause
                 if self.train_mode:
+                    print('-> Wins:{}, Loses:{}, Draws:{}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.restart_counter,'_'))
+                    if self.victories+self.defeats+self.draws == self.tries:
+                        self.success = 2*(self.victories-self.defeats)/(self.victories+self.defeats) - self.draws/self.tries
+                        print(">Run new epoch of cube, succesfully:{}".format(self.success))
                     self.restart()
 
 
@@ -393,11 +392,6 @@ class Objects:
                 #pass
             self.playtime += 1/self.framerate
             #print(self.playtime, " maxplaytime = ", self.maxplaytime)
-            if self.playtime >= self.maxplaytime:
-                self.messenger.end_of_game()
-                self.objects_state = ObjectsState.Pause
-                if self.train_mode:
-                    self.restart()
 
         if self.objects_state == ObjectsState.RunFromFile:
             if self.loaded_history is None:

@@ -49,7 +49,7 @@ class SimpleLoss:
 
 
 class Loss():
-    def __init__(self, cube=None):
+    def __init__(self, cube=None, epoch=None):
         self.cube = cube
         self.battle_field_size = np.array([1000.0, 1000.0])
         #self.set_congiguration(configuration)
