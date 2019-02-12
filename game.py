@@ -17,13 +17,14 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1, cube=None):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1, cube=None, queue_res=None):
         gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.cube = cube
+        self.queue_res = queue_res
         self.battle_field_size = (1000, 1000)
         self.radiant_bots = 1
         self.dire_bots = 1
@@ -36,10 +37,10 @@ class Game:
             now_time = datetime.datetime.now()
             self.history_path = now_time.strftime("%Y_%m_%d_%H_%M_%S")+'.txt'
             #self.history_path = 'delete_me_pls.txt'
-            if prefix:
-                self.history_path = '{}_{}'.format(prefix, self.history_path)
-                self.clear_file(self.history_path)
-                self.is_it_move_from_history = False
+            #if prefix:
+            #    self.history_path = '{}_{}'.format(prefix, self.history_path)
+            #    self.clear_file(self.history_path)
+            #    self.is_it_move_from_history = False
         else:
             self.history_path = history_path
             self.is_it_move_from_history = True
@@ -60,7 +61,7 @@ class Game:
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger, ai_controls=self.ai_controls, tries=tries,
                                    bot1=self.radiant_bots, bot2=self.dire_bots, player1=self.is_player1_play,
-                                   player2=self.is_player2_play, sizeX=self.battle_field_size[0], sizeY=self.battle_field_size[1])
+                                   player2=self.is_player2_play, sizeX=self.battle_field_size[0], sizeY=self.battle_field_size[1], queue_res=self.queue_res)
         else:
             self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, cube=self.cube)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
@@ -90,12 +91,12 @@ class Game:
 
         for i in range(1, bot1 + 1):
             self.configuration[ObjectType.Bot1].append(
-                (pos1 * (i + player1) + np.random.randint(-50, 50), 50 + np.random.randint(50),
+                (pos1, 50,
                 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))
 
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
-                (pos2 * (i + player2) + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
+                (pos2, sizeY - 50,
                  270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
 

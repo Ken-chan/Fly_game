@@ -49,7 +49,7 @@ class SimpleLoss:
 
 
 class Loss():
-    def __init__(self, cube=None, epoch=None):
+    def __init__(self, cube=None):
         self.cube = cube
         self.battle_field_size = np.array([1000.0, 1000.0])
         #self.set_congiguration(configuration)
@@ -221,10 +221,10 @@ class Loss():
         #return self.loss_objects_interaction
 
     def loss_result(self, object, radius, phi, psi, radiant, dire):
-        dist, vel, qstate, amount = 8 * self.calc_loss_of_distance(object),  0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]), \
-                                    0.4 * self.calc_qstate(radius, phi, psi), self.calc_loss_amount_teams(radiant, dire)
-        #self.result = vel + qstate + amount + dist
-        self.result = qstate
+        dist, vel, qstate, amount = self.calc_loss_of_distance(object),  0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]), \
+                                    self.calc_qstate(radius, phi, psi), self.calc_loss_amount_teams(radiant, dire)
+        self.result = vel + qstate + dist # + amount
+        #self.result = qstate
         #print("dist: {}, vel: {}, qstate: {}, amount: {}".format(dist, vel, qstate, amount))
         return self.result
 
@@ -232,7 +232,8 @@ class Loss():
 class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
-        self.cube_path = "cubev2(-1).txt"
+        #self.cube_path = "cubev2(-1).txt"
+        self.cube_path = "best_shuffled_cube_4.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
@@ -250,7 +251,7 @@ class QState:
         self.give_state_q = []  # [ Q1, ... ]
 
         self.q_data = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
-
+        self.shuffled = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
 
         #self.fill_by_experiment()
         #self.fill_data_arr()
@@ -607,7 +608,7 @@ class QState:
     def load_cube(self, cube):
         self.q_data = cube.copy()
 
-    def save_history_file(self, file_name, data):
+    def save_history_file(self, file_name, data, num_shuffle=None):
         q_str = ''
         for r_i in range(0, self.n_cuts):
             for phi_i in range(0, self.n_cuts):
@@ -615,6 +616,8 @@ class QState:
                     nearest_coords = self.get_cell_val_by_index(r_i, phi_i, psi_i)
                     q_str += '{0},{1},{2},{3}\n'.format(int(nearest_coords[0]), int(nearest_coords[1]), int(nearest_coords[2]), data[r_i, phi_i, psi_i])
         q_str = q_str[:-1]
+        if num_shuffle:
+            file_name += '_' + str(num_shuffle) + '.txt'
         with open(file_name, 'w') as f:
             f.write(q_str + '\n')
 
@@ -633,6 +636,13 @@ class QState:
                 sh.write(q_str)
             strind += 1
 
+    def get_shuffled_cube(self, cube, delta=0.05):
+        for r_i in range(0, self.n_cuts):
+            for phi_i in range(0, self.n_cuts):
+                for psi_i in range(0, self.n_cuts):
+                    self.shuffled[r_i,phi_i,psi_i] = cube[r_i,phi_i,psi_i] + delta * np.random.randint(-100, 100) * 0.01
+                    print(cube[r_i,phi_i,psi_i], self.shuffled[r_i,phi_i,psi_i], r_i, phi_i, psi_i)
+        return self.shuffled
 
 def calc_polar_grid(self, objects, width, height, step_number=16, player_number=13, max_range=605):
     self.steps = [25, 35, 45, 65, 85, 105, 155, 205, 255, 305, 355, 405, 455, 505, 555, 605]

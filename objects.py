@@ -29,9 +29,9 @@ class ObjectArray:
                     elif len(item) == 6:
                         x, y, direction, vehicle_type, r, aitype = item
                         if shuffled:
-                            x += np.random.randint(-450, 450)
-                            y += np.random.randint(-30, 30)
-                            direction += np.random.randint(-50, 50)
+                            x += np.random.randint(-350, 350)
+                            y += np.random.randint(-20, 20)
+                            direction += np.random.randint(-35, 35)
                     else:
                         x, y = item
                         direction, vehicle_type, r = 0, 0, 0
@@ -69,7 +69,7 @@ class ObjectArray:
 
 class Objects:
     def __init__(self, configuration, radiant, dire, history_path, messenger=None, ai_controls=None, tries=None,
-                 bot1=None, bot2=None, player1=None, player2=None, sizeX=None, sizeY=None):
+                 bot1=None, bot2=None, player1=None, player2=None, sizeX=None, sizeY=None, queue_res=None):
         self.objects_state = ObjectsState.Run
         self.train_mode = True
         if ai_controls == None:
@@ -99,7 +99,7 @@ class Objects:
         self.restart_counter = 0
         self.playtime = 0
         self.framerate = 30
-        self.maxplaytime = 45 #* self.framerate
+        self.maxplaytime = 25 #* self.framerate
 
 
         #self.loss = Loss() #loss take config from objects(not from game)
@@ -127,6 +127,7 @@ class Objects:
         self.dv_calc, self.w_calc = np.float(0.0), np.float(0.0)
         self.cur_rad = np.float(0.0)
         self.is_game_freezed = False
+        self.queue_res = queue_res
         #initialization ends
 
 
@@ -219,6 +220,8 @@ class Objects:
         self.history_time_len = time_len
 
     def save_history_file(self, file_name, obj_array):
+        pass
+        """
         flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
         obj_str = ''
         for item in flat_obj:
@@ -228,6 +231,7 @@ class Objects:
             file_name = str(self.restart_counter)+'_'+ file_name
         with open(file_name, 'a') as f:
             f.write(obj_str + '\n')
+        """
 
     def update_game_settings(self, configuration, shuffled=False):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
@@ -311,8 +315,8 @@ class Objects:
                 if self.train_mode:
                     print('-> Wins:{}, Loses:{}, Draws:{}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.restart_counter,'_'))
                     if self.victories+self.defeats+self.draws == self.tries:
-                        self.success = 2*(self.victories-self.defeats)/(self.victories+self.defeats) - self.draws/self.tries
-                        print(">Run new epoch of cube, succesfully:{}".format(self.success))
+                        self.success = self.victories/(self.victories+self.defeats) * (1 - self.draws/self.tries) if self.victories+self.defeats != 0 else 0
+                        self.queue_res.put(self.success)
                     self.restart()
 
 
