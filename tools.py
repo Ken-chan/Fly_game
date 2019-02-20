@@ -53,19 +53,16 @@ class Loss():
         self.cube = cube
         self.battle_field_size = np.array([1000.0, 1000.0])
         #self.set_congiguration(configuration)
-        self.n_cuts = 20
         self.qstate = QState(20)
+        self.n_cuts = self.qstate.n_cuts
         self.q_data = np.zeros((self.qstate.n_cuts, self.qstate.n_cuts, self.qstate.n_cuts))
 
 
         if self.cube is None:
             self.qstate.load_cube_file(self.qstate.cube_path, self.q_data)
-            #self.qstate.version_of_shufled_cube += 1
-            #print(self.qstate.version_of_shufled_cube)
-            #self.qstate.random_shuffle_cube(self.qstate.cube_path, self.qstate.version_of_shufled_cube)
+            #self.qstate.save_history_file('second_trie.txt', self.q_data)
         else:
             self.qstate.load_cube(self.cube)
-            #self.qstate.save_history_file('shuffled.txt', self.cube)
             self.q_data = self.qstate.q_data
 
         self.min_x = np.float(0.0)
@@ -233,7 +230,7 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "best_shuffled_cube_4.txt"
+        self.cube_path = "firstly.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
@@ -243,8 +240,8 @@ class QState:
         self.attack_range = Constants.AttackRange
         self.n_cuts = n_cuts
         self.n_nearest = 30
-        self.r_wide, self.psi_wide, self.phi_wide = self.range_r[1] / (self.n_cuts-1), self.range_psi[1] / (self.n_cuts-1), \
-                                                    self.range_phi[1] / (self.n_cuts-1)
+        self.r_wide, self.psi_wide, self.phi_wide = self.range_r[1] / (self.n_cuts), self.range_psi[1] / (self.n_cuts), \
+                                                    self.range_phi[1] / (self.n_cuts)
         self.coords = []
         self.data_arr = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
         self.given_state_vectors = []  # [ (r, phi, psi)_1, ...
@@ -257,16 +254,17 @@ class QState:
         #self.fill_data_arr()
         #self.save_history_file(self.cube_path, self.data_arr)
 
-    def get_index_by_values(self, r, phi, psi):
+
+    def get_index_by_values(self, r, phi, psi): ##get nearest cords
 
         r_ind_add = 1 if r % self.r_wide > self.r_wide / 2 else 0
         r_ind = int(r // self.r_wide + r_ind_add)
 
         phi_ind_add = 1 if phi % self.phi_wide > self.phi_wide / 2 else 0
-        phi_ind = int(phi % 360 // self.phi_wide + phi_ind_add)
+        phi_ind = int(phi // self.phi_wide + phi_ind_add)
 
         psi_ind_add = 1 if psi % self.psi_wide > self.psi_wide / 2 else 0
-        psi_ind = int(psi % 360 // self.psi_wide + psi_ind_add)
+        psi_ind = int(psi // self.psi_wide + psi_ind_add)
 
         #print(r, phi % 360, psi % 360 , r_ind, phi_ind, psi_ind)
         return r_ind, phi_ind, psi_ind
@@ -593,17 +591,19 @@ class QState:
                     print(val, (r_i*100+phi_i*10+psi_i)/self.n_cuts, '% completed fill cube')
                     self.data_arr[r_i, phi_i, psi_i] = val
 
-
     def load_cube_file(self, file, q_data):
         print("loading cube file")
         with open(file, 'r') as fd:
             state_str = fd.readlines()
-        strind = 0
         for line in state_str:
-            numsback_str = line.split(',')
-            indexes = self.get_index_by_values(int(numsback_str[0]), int(numsback_str[1]), int(numsback_str[2]))
-            q_data[indexes[0], indexes[1], indexes[2]] = float(numsback_str[3])
-            strind += 1
+            str = line.split(',')
+            strind = 0
+            for r_i in range(0, self.n_cuts):
+                for phi_i in range(0, self.n_cuts):
+                    for psi_i in range(0, self.n_cuts):
+                        q_data[r_i,phi_i,psi_i] = str[strind]
+                        strind += 1
+
 
     def load_cube(self, cube):
         self.q_data = cube.copy()
@@ -613,15 +613,17 @@ class QState:
         for r_i in range(0, self.n_cuts):
             for phi_i in range(0, self.n_cuts):
                 for psi_i in range(0, self.n_cuts):
-                    nearest_coords = self.get_cell_val_by_index(r_i, phi_i, psi_i)
-                    q_str += '{0},{1},{2},{3}\n'.format(int(nearest_coords[0]), int(nearest_coords[1]), int(nearest_coords[2]), data[r_i, phi_i, psi_i])
+                    #nearest_coords = self.get_cell_val_by_index(r_i, phi_i, psi_i)
+                    #q_str += '{0},{1},{2},{3},'.format(int(nearest_coords[0]), int(nearest_coords[1]), int(nearest_coords[2]), data[r_i, phi_i, psi_i])
+                    #q_str += '{0},{1},{2},{3},'.format(r_i, phi_i, psi_i, data[r_i, phi_i, psi_i])
+                    q_str +='{},'.format(data[r_i, phi_i, psi_i])
         q_str = q_str[:-1]
         if num_shuffle:
             file_name += '_' + str(num_shuffle) + '.txt'
         with open(file_name, 'w') as f:
             f.write(q_str + '\n')
 
-
+    '''
     def random_shuffle_cube(self, file, ver, delta=0.05):
         print("loading cube file for shuffle")
         with open(file, 'r') as fd:
@@ -643,6 +645,7 @@ class QState:
                     self.shuffled[r_i,phi_i,psi_i] = cube[r_i,phi_i,psi_i] + delta * np.random.randint(-100, 100) * 0.01
                     print(cube[r_i,phi_i,psi_i], self.shuffled[r_i,phi_i,psi_i], r_i, phi_i, psi_i)
         return self.shuffled
+    '''
 
 def calc_polar_grid(self, objects, width, height, step_number=16, player_number=13, max_range=605):
     self.steps = [25, 35, 45, 65, 85, 105, 155, 205, 255, 305, 355, 405, 455, 505, 555, 605]

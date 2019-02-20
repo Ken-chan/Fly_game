@@ -66,8 +66,8 @@ class Game:
             self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, cube=self.cube)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger)
-        self.gui_controls = GUIcontrols(self.messenger)
-        self.renderer = Renderer(self.screen_width, self.screen_height, self.battle_field_size)
+            self.renderer = Renderer(self.screen_width, self.screen_height, self.battle_field_size)
+            self.gui_controls = GUIcontrols(self.messenger)
         self.game_window = None
         self.objects = None
         self.history_list = []

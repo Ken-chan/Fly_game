@@ -3,21 +3,20 @@ import numpy as np
 from tools import QState
 from multiprocessing import Queue
 
-eras = 200
-tries = 200
-mutations = 15
-epoches = 1
+eras = 300
+tries = 100
+mutations = 10
 n_cuts = 20
 
 #cube2 = np.random.rand(n_cuts, n_cuts, n_cuts) #random cube
 qs = QState(n_cuts)
 cube = np.zeros((n_cuts, n_cuts, n_cuts))
-file_path = "cubev2(-1).txt"
+file_path = "firstly.txt"
 qs.load_cube_file(file_path, cube)
 
 #sucess = obj.success
 best_cube = cube
-best_score = 0.0
+best_score = 0.1
 cur_score = -1.0
 
 def randomize_cube(cube):
@@ -30,25 +29,30 @@ def randomize_cube(cube):
     return shuffled
 
 count_cubes = 0
+count_goods = 0
+q = Queue()
 #Start genetic algorythm
 for i in range(0, eras):
     print('<-----Era number:', i)
     cube = best_cube
     is_mutated_good_that_base = False
     for j in range(0, mutations):
-        cube = randomize_cube(cube)
+        cur_cube = randomize_cube(cube)
         print('<----Shuffled cube number:', j)
-        q = Queue()
-        game_obj = game.Game(1000,1000,train_mode=True, tries=tries, cube=cube, queue_res=q)
+        game_obj = game.Game(1000,1000,train_mode=True, tries=tries, cube=cur_cube, queue_res=q)
         cur_score = q.get()
         print(">succesfully from genetic:{}".format(cur_score))
-        if cur_score > best_score:
+        if cur_score >= best_score:
             best_score = cur_score
-            best_cube = cube
+            best_cube = cur_cube
             is_mutated_good_that_base = True
+        if cur_score > 0.99:
+            count_goods += 1
+            qs.save_history_file('good_shufled_cube', cube, num_shuffle=count_goods)
+        print('<__{}__> Cur but best <__{}__>'.format(cur_score, best_score))
     if is_mutated_good_that_base:
-        qs.save_history_file('best_shuffled_cube', best_cube, num_shuffle=i + 1)
         count_cubes += 1
+        qs.save_history_file('best_shuffled_cube', best_cube, num_shuffle=count_cubes)
         print('->>>>Add new shuffled cube file: {},  with best score: {}'.format(count_cubes, best_score))
     else:
         i -= 1 #restart epoch

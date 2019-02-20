@@ -220,8 +220,7 @@ class Objects:
         self.history_time_len = time_len
 
     def save_history_file(self, file_name, obj_array):
-        pass
-        """
+        return
         flat_obj = np.reshape(obj_array, ObjectType.ObjArrayTotal * ObjectProp.Total)
         obj_str = ''
         for item in flat_obj:
@@ -231,7 +230,6 @@ class Objects:
             file_name = str(self.restart_counter)+'_'+ file_name
         with open(file_name, 'a') as f:
             f.write(obj_str + '\n')
-        """
 
     def update_game_settings(self, configuration, shuffled=False):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
