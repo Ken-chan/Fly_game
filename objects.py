@@ -152,6 +152,7 @@ class Objects:
         self.victories = np.int32(0)
         self.defeats = np.int32(0)
         self.draws = np.int32(0)
+        self.time_succ = np.float(0.0)
         self.success = np.float(0.0)
 
         if self.train_mode:
@@ -305,6 +306,7 @@ class Objects:
                 self.defeats += 1
             elif self.dire < 1:
                 self.victories += 1
+            self.time_succ += self.playtime/self.maxplaytime
 
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1 or (self.playtime >= self.maxplaytime):
@@ -313,7 +315,8 @@ class Objects:
                 if self.train_mode:
                     print('-> Wins:{}, Loses:{}, Draws:{}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.restart_counter,'_'))
                     if self.victories+self.defeats+self.draws == self.tries:
-                        self.success = self.victories/(self.victories+self.defeats) * (1 - self.draws/self.tries) if self.victories+self.defeats != 0 else 0
+                        #self.success = self.victories/(self.victories+self.defeats) * (1 - self.draws/self.tries) if self.victories+self.defeats != 0 else 0
+                        self.success = (self.victories - self.defeats - 0.5*self.draws - 0.1*self.time_succ)/self.tries
                         self.queue_res.put(self.success)
                     self.restart()
 
