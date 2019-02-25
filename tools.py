@@ -230,7 +230,7 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "firstly.txt"
+        self.cube_path = "good_shufled_cube_7.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
@@ -592,7 +592,7 @@ class QState:
                     self.data_arr[r_i, phi_i, psi_i] = val
 
     def load_cube_file(self, file, q_data):
-        print("loading cube file")
+        print("loading cube file, file name:{}".format(file))
         with open(file, 'r') as fd:
             state_str = fd.readlines()
         for line in state_str:

@@ -153,6 +153,7 @@ class Objects:
         self.defeats = np.int32(0)
         self.draws = np.int32(0)
         self.time_succ = np.float(0.0)
+        self.is_it_draw = False
         self.success = np.float(0.0)
 
         if self.train_mode:
@@ -302,21 +303,26 @@ class Objects:
 
             if (self.radiant < 1 and self.dire < 1) or self.playtime >= self.maxplaytime:
                 self.draws += 1
+                #if it draw, play time = 2x*playtime
+                self.is_it_draw = True
             elif self.radiant < 1:
                 self.defeats += 1
             elif self.dire < 1:
                 self.victories += 1
-            self.time_succ += self.playtime/self.maxplaytime
 
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1 or (self.playtime >= self.maxplaytime):
+                self.time_succ += self.playtime / self.maxplaytime
+                if self.is_it_draw:
+                    self.time_succ += self.playtime / self.maxplaytime
+                    self.is_it_draw = False
                 self.messenger.end_of_game()
                 self.objects_state = ObjectsState.Pause
                 if self.train_mode:
-                    print('-> Wins:{}, Loses:{}, Draws:{}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.restart_counter,'_'))
+                    print('-> Wins:{}, Loses:{}, Draws:{}, Time Succ:{}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.time_succ, self.restart_counter,'_'))
                     if self.victories+self.defeats+self.draws == self.tries:
                         #self.success = self.victories/(self.victories+self.defeats) * (1 - self.draws/self.tries) if self.victories+self.defeats != 0 else 0
-                        self.success = (self.victories - self.defeats - 0.5*self.draws - 0.1*self.time_succ)/self.tries
+                        self.success = (self.victories - self.defeats - 0.5*self.draws - 0.5*self.time_succ)/self.tries
                         self.queue_res.put(self.success)
                     self.restart()
 
