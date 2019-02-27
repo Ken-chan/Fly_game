@@ -307,6 +307,7 @@ class Objects:
                 self.is_it_draw = True
             elif self.radiant < 1:
                 self.defeats += 1
+                self.time_succ += 1
             elif self.dire < 1:
                 self.victories += 1
 
@@ -316,10 +317,11 @@ class Objects:
                 if self.is_it_draw:
                     self.time_succ += self.playtime / self.maxplaytime
                     self.is_it_draw = False
-                self.messenger.end_of_game()
+                self.messenger.end_of_game(trainmode=self.train_mode)
                 self.objects_state = ObjectsState.Pause
                 if self.train_mode:
-                    print('-> Wins:{}, Loses:{}, Draws:{}, Time Succ:{}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.time_succ, self.restart_counter,'_'))
+                    #print('-> Wins:{}, Loses:{}, Draws:{}, Time Succ:{}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.time_succ, self.restart_counter,'_'))
+                    #print('-> Wins:{}, Loses:{}, Draws:{}, Play time:{}'.format(self.victories, self.defeats, self.draws, self.time_succ))
                     if self.victories+self.defeats+self.draws == self.tries:
                         #self.success = self.victories/(self.victories+self.defeats) * (1 - self.draws/self.tries) if self.victories+self.defeats != 0 else 0
                         self.success = (self.victories - self.defeats - 0.5*self.draws - 0.5*self.time_succ)/self.tries
@@ -328,8 +330,9 @@ class Objects:
 
 
     def delete_object(self, jndex, objects, second_unit=None):
-        print('Killed unit number: {:2} team: {:2} with type {:2}' \
-              .format(jndex, Teams.team_by_id(jndex), ObjectType.name_of_type_by_id(jndex)))
+        if not self.train_mode:
+            print('Killed unit number: {:2} team: {:2} with type {:2}' \
+                .format(jndex, Teams.team_by_id(jndex), ObjectType.name_of_type_by_id(jndex)))
 
         for kndex in range(1, ObjectProp.Total):
             objects[jndex][kndex] = 0
@@ -339,8 +342,9 @@ class Objects:
             self.dire -= 1
 
         if second_unit is not None:
-            print('Killed unit number: {:2} team: {:2} with type {:2}' \
-                  .format(second_unit, Teams.team_by_id(second_unit), ObjectType.name_of_type_by_id(second_unit)))
+            if not self.train_mode:
+                print('Killed unit number: {:2} team: {:2} with type {:2}' \
+                    .format(second_unit, Teams.team_by_id(second_unit), ObjectType.name_of_type_by_id(second_unit)))
             for kndex in range(1, ObjectProp.Total):
                 objects[second_unit][kndex] = 0
             if Teams.team_by_id(second_unit) == Teams.Team1:

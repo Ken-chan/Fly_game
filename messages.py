@@ -63,8 +63,9 @@ class Messenger:
         self.game_unpause()
         print('Restart game')
 
-    def end_of_game(self):
-        print("End of game")
+    def end_of_game(self, trainmode=False):
+        if not trainmode:
+            print("End of game")
         self.game_pause() #THINKING ABOUT THAT
 
     #def player_pressed_key(self, pressed, key):
@@ -112,15 +113,15 @@ class Messenger:
         self.send_message(self.ai_controls_queue, AIcontrols.UpdateObjects, {'objects_copy': objects_copy})
 
     def shutdown(self):
-        print("terminate controls")
+        #print("terminate controls")
         self.controls_terminate()
-        print("terminate screen")
+        #print("terminate screen")
         self.screen_terminate()
 
         self.writable = False
         #make sure threads ended
         for t in range(0, 2):
-            print("waiting for queues: {}".format(t))
+            #print("waiting for queues: {}".format(t))
             time.sleep(0.1)
 
         for key in self.binding:
@@ -129,4 +130,4 @@ class Messenger:
                 if not data:
                     break
             self.binding[key].close()
-        print("all data is read. write is locked")
+        #print("all data is read. write is locked")

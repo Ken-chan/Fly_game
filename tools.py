@@ -230,7 +230,7 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "good_shufled_cube_7.txt"
+        self.cube_path = "best_shuffled_cube_with_time_6.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
