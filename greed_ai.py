@@ -7,36 +7,34 @@ class GreedAi:
     def __init__(self, index, battle_field_size, cube=None):
         # print("hello its me")
         self.current_controller = None
+        self.index = index
         self.nearest_enemy_id = 13
         self.num_actions = 4
-        self.index = index
         self.cube = cube
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
         self.obj = np.zeros(ObjectProp.Total)
 
+        #reward options#
         self.loss = Loss(cube=self.cube)
+        #reward options#
+
 
         self.acts = []
         for step_v in range(0, 5):
             for step_d in range(0, 5):
                 self.acts.append((-1 + 0.5 * step_v, -1 + 0.5 * step_d))
 
-    def collect_reward(self, objects_state):
-        wall_reward = 0  # np.exp(self.distance_to_walls(unit))-1.5
-        # reward for killed units
-        obj = objects_state[self.index]
-        enemy = objects_state[self.nearest_enemy_id]
-        # x = unit[ObjectProp.Xcoord] / self.battle_field_size[1]
-        # y = unit[ObjectProp.Ycoord] / self.battle_field_size[0]
-        # xe = enemy[ObjectProp.Xcoord] / self.battle_field_size[0]
-        # ye = enemy[ObjectProp.Ycoord] / self.battle_field_size[1]
+    def get_nearest_enemy_id(self):
+        pass
 
-        # object_reward = (1 - np.sqrt((x-xe)*(x-xe) + (y-ye)*(y-ye)))/10
+    def collect_reward(self, objects_state):
+        obj = objects_state[self.index]
+        #self.nearest_enemy_id = self.get_nearest_enemy_id()
+        enemy = objects_state[self.nearest_enemy_id]
         diff_vector = np.array(
             [enemy[ObjectProp.Xcoord] - obj[ObjectProp.Xcoord], enemy[ObjectProp.Ycoord] - obj[ObjectProp.Ycoord]])
         dir2 = enemy[ObjectProp.Dir]
-        vec2 = np.array([np.cos(np.radians(dir2)), np.sin(np.radians(dir2))])
         distance = np.linalg.norm(diff_vector)
         arr_dir = np.array(
             [enemy[ObjectProp.Xcoord] - obj[ObjectProp.Xcoord], enemy[ObjectProp.Ycoord] - obj[ObjectProp.Ycoord]])
@@ -53,17 +51,6 @@ class GreedAi:
         angle_between_objects = np.fabs((obj[ObjectProp.Dir] - enemy[ObjectProp.Dir]) % 360)
         total_reward = self.loss.loss_result(obj, distance, angle_between_radius, angle_between_objects, 1, 1)
 
-        # reward for time in simulation
-        timer_reward = 0  # (time.time() - self.simulation_started_time)/10
-        # print(timer_reward)
-
-        # velocity reward
-        velocity_reward = 0  # (unit[ObjectProp.Velocity]/self.max_speed)
-        if velocity_reward < 0:
-            velocity_reward = 0
-
-        # total_reward = wall_reward + object_reward + timer_reward + velocity_reward
-        # print(total_reward)
         return total_reward
 
     def set_control_signal(self, objects_copy, obj_index, sig_type, sig_val):
@@ -116,7 +103,6 @@ class GreedAi:
                 self.max_revard_action = act
         #print("max_revard: {}".format(self.max_revard_action))
         return self.max_revard_action
-
 
     def calc_behaviour(self, objects_copy):
         self.rot_side, self.vel_ctrl = (0, 0)

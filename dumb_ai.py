@@ -61,7 +61,11 @@ class DumbAI(Dummy):
         self.vec1, self.vec2 = vec1 / np.linalg.norm(vec1), vec2 / np.linalg.norm(vec2)
         self.rotation_matrix[0][0], self.rotation_matrix[0][1], self.rotation_matrix[1][0], self.rotation_matrix[1][1]= vec1[0], vec1[1], -vec1[1], vec1[0]
         self.vec2_rel = np.matmul(self.rotation_matrix, self.vec2)
-        self.angle_min = np.degrees(np.abs(np.arccos(self.vec2_rel[0])))
+        if self.vec2_rel[0] > 1:
+            self.vec2_rel[0] = 1
+        elif self.vec2_rel[0] < -1:
+            self.vec2_rel[0] = -1
+        self.angle_min = np.degrees(np.abs(np.arccos(self.vec2_rel[0]))) ## THERE CATCH WARNING ARCOS -1 1
         self.rotation_side = np.float(1) if np.sign(self.vec2_rel[1]) >= 0 else np.float(-1)
         return self.angle_min, self.rotation_side
 

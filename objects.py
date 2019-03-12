@@ -321,10 +321,15 @@ class Objects:
                 self.objects_state = ObjectsState.Pause
                 if self.train_mode:
                     #print('-> Wins:{}, Loses:{}, Draws:{}, Time Succ:{}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.time_succ, self.restart_counter,'_'))
-                    #print('-> Wins:{}, Loses:{}, Draws:{}, Play time:{}'.format(self.victories, self.defeats, self.draws, self.time_succ))
+                    #print('-> Wins:{}, Loses:{}, Draws:{}, Play time:{:.5f}'.format(self.victories, self.defeats, self.draws, self.time_succ))
+
+                    #if (self.victories % 100) == 0:
+                    #    print('-> Wins:{}, Loses:{}, Draws:{}, Play time:{:.5f}'.format(self.victories, self.defeats, self.draws, self.time_succ))
+
                     if self.victories+self.defeats+self.draws == self.tries:
                         #self.success = self.victories/(self.victories+self.defeats) * (1 - self.draws/self.tries) if self.victories+self.defeats != 0 else 0
-                        self.success = (self.victories - self.defeats - 0.5*self.draws - 0.5*self.time_succ)/self.tries
+                        self.success = (self.victories - self.defeats - 0.5*self.draws - 0.5*self.time_succ)/self.tries #w time
+                        #self.success = (self.victories - self.defeats - 0.5 * self.draws)/self.tries #w/o time
                         self.queue_res.put(self.success)
                     self.restart()
 
