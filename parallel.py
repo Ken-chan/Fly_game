@@ -30,7 +30,7 @@ if __name__ == '__main__':
     n_cuts = 20
     qs = QState(n_cuts)
     load_cube = np.zeros((n_cuts, n_cuts, n_cuts))
-    file_path = "zero_cube.txt"
+    file_path = "from_gen_2try_4.txt"
     qs.load_cube_file(file_path, load_cube)
     best_cube = load_cube
 
@@ -39,8 +39,8 @@ if __name__ == '__main__':
 
     eras = 10000
     mutations = 30
-    count_cubes = 0
-    max_q = -1
+    count_cubes = 4
+    max_q = 0.90525
 
 
     for i in range(eras):
@@ -71,7 +71,7 @@ if __name__ == '__main__':
             count_cubes += 1
             best_cube = q_and_cubes[index_max][1]
             print('-> Add parallel best cube: {},  with best score: {}'.format(count_cubes, max_q))
-            qs.save_history_file('from_zero_parallel', best_cube, num_shuffle=count_cubes)
+            qs.save_history_file('from_gen_2try', best_cube, num_shuffle=count_cubes)
         else:
             print('<- Do not found better : ( Local max:{}'.format(local_max))
 

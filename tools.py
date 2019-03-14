@@ -181,6 +181,8 @@ class Loss():
         return self.loss_amount_in_teams
 
     def calc_loss_of_alies_collision(self, distance):
+        if distance == None:
+            return 0
         self.danger_distance_alies = (distance - 2 * Constants.DefaultObjectRadius) / Constants.AttackRange
         self.loss_alies = -1 / (self.danger_distance_alies + self.c) + self.d if (
                     self.danger_distance_alies < self.norm_danger_distance_alies and
@@ -217,8 +219,9 @@ class Loss():
         #print(int(self.r_i), int(self.phi_i), int(self.psi_i), self.loss_objects_interaction)
         #return self.loss_objects_interaction
 
-    def loss_result(self, object, radius, phi, psi, radiant, dire):
-        self.result = 0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]) + self.calc_qstate(radius, phi, psi) + self.calc_loss_of_distance(object)
+    def loss_result(self, object, radius, phi, psi, radiant, dire,near_friend_dist):
+        self.result = 0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]) + self.calc_qstate(radius, phi, psi) + \
+                      self.calc_loss_of_distance(object) + self.calc_loss_of_alies_collision(near_friend_dist)
         #print("dist: {}, vel: {}, qstate: {}, amount: {}".format(dist, vel, qstate, amount))
         return self.result
 
@@ -227,7 +230,7 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "xXx_best_best_best_2.txt"
+        self.cube_path = "from_gen_2try_4.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
@@ -290,10 +293,7 @@ class QState:
         return np.array(data_out), np.array(func_out)
 
     def is_near_angle(self, obj, value, accurate=15):
-        if ((obj < (value + accurate)) and (obj > (value - accurate))):
-            return True
-        else:
-            return False
+        return (obj < (value + accurate)) and (obj > (value - accurate))
 
     def fill_by_experiment(self):
         for r_i in range(0, self.n_cuts):
@@ -576,6 +576,19 @@ class QState:
                                 self.feed_data(self.coords, 0.5)
                             else:
                                 self.feed_data(self.coords, 0.3)
+
+    def fill_by_experiment_for_alies(self):
+        for r_i in range(0, self.n_cuts):
+            for phi_i in range(0, self.n_cuts):
+                for psi_i in range(0, self.n_cuts):
+                    self.coords = self.get_cell_val_by_index(r_i, phi_i, psi_i)
+                    if self.coords[0] > self.attack_range:
+                        pass
+                    elif self.is_near_angle(self.coords[1], 0) or self.is_near_angle(self.coords[1],  360):
+                        pass
+                    else:
+                        self.feed_data(self.coords, 0)
+
 
     def fill_data_arr(self):
         for r_i in range(0, self.n_cuts):
