@@ -26,8 +26,8 @@ class Game:
         self.cube = cube
         self.queue_res = queue_res
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 1
-        self.dire_bots = 1
+        self.radiant_bots = 3
+        self.dire_bots = 3
         self.is_player1_play = 0
         self.is_player2_play = 0
         self.radiant = self.radiant_bots + self.is_player1_play
@@ -91,13 +91,13 @@ class Game:
 
         for i in range(1, bot1 + 1):
             self.configuration[ObjectType.Bot1].append(
-                (pos1 + np.random.randint(-50, 50), 50 + np.random.randint(50),
-                90 + np.random.randint(-30, 30), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))
+                (pos1 * (i + player1) + np.random.randint(-50, 50), 50 + np.random.randint(50),
+                 90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))
 
         for i in range(1, bot2 + 1):
             self.configuration[ObjectType.Bot2].append(
-                (pos2 + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
-                 270 + np.random.randint(-30, 30), ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
+                (pos2 * (i + player2) + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
+                 270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
 
     def clear_file(self, file_path):

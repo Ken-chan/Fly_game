@@ -9,14 +9,23 @@ class GreedAi:
         self.current_controller = None
         self.index = index
         self.nearest_enemy_id = None
-        self.nearest_object_id = None
-        self.num_actions = 4
         self.cube = cube
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
         self.obj = np.zeros(ObjectProp.Total)
         self.obj_coord = np.array([0.0, 0.0])
         self.nearest_distance = None
+        self.enemy_distance = None
+        self.obj = None
+        self.enemy = None
+        self.total_reward = np.float(0.0)
+        self.diff_vector = np.array([0.0,0.0])
+        self.distance = np.float(0.0)
+        self.arr_dir = np.array([0.0,0.0])
+        self.obj_dir = np.array([0.0,0.0])
+        self.angle_between_radius = np.float(0.0)
+        self.angle_between_objects = np.float(0.0)
+        self.arr_turned = np.array([0.0,0.0])
         self.alone = False
 
 
@@ -27,66 +36,62 @@ class GreedAi:
 
         #reward options#
         self.loss = Loss(cube=self.cube)
+
         #reward options#
 
 
         self.acts = []
-        for step_v in range(0, 5):
-            for step_d in range(0, 5):
-                self.acts.append((-1 + 0.5 * step_v, -1 + 0.5 * step_d))
+        self.num_actions = 3
+        for step_v in range(0, self.num_actions+1):
+            for step_d in range(0, self.num_actions+1):
+                self.acts.append((-1 + (2/self.num_actions * step_v), -1 + (2/self.num_actions * step_d)))
 
     def calc_nearest_obj_and_enemy(self, objects_state):
         self.nearest_enemy_id = None ## AHTING HARDCODE
-        enemy_distance = None
+        self.enemy_distance = None
         for ind in self.enemy_ids:
             if ind == self.index:
                 continue
             if objects_state[ind][ObjectProp.ObjType] != ObjectType.Absent:
                 curr_dist = np.linalg.norm(np.array([objects_state[ind][ObjectProp.Xcoord] - self.obj_coord[0],
                                                      objects_state[ind][ObjectProp.Ycoord] - self.obj_coord[1]]))
-                if enemy_distance is None or enemy_distance > curr_dist:
-                    enemy_distance = curr_dist
+                if self.enemy_distance is None or self.enemy_distance > curr_dist:
+                    self.enemy_distance = curr_dist
                     self.nearest_enemy_id = ind
-        self.nearest_object_id = self.nearest_enemy_id
         self.alone = True
         for ind in self.friendly_ids:
             if ind == self.index:
                 continue
             if objects_state[ind][ObjectProp.ObjType] != ObjectType.Absent:
-                curr_dist = np.linalg.norm(np.array([objects_state[ind][ObjectProp.Xcoord] - self.obj_coord[0],
-                                                     objects_state[ind][ObjectProp.Ycoord] - self.obj_coord[1]]))
                 self.alone = False
-                if self.nearest_distance is None or self.nearest_distance > curr_dist:
-                    self.nearest_distance = curr_dist
-                    self.nearest_object_id = ind
+                self.nearest_distance = np.linalg.norm(np.array([objects_state[ind][ObjectProp.Xcoord] - self.obj_coord[0],
+                                                     objects_state[ind][ObjectProp.Ycoord] - self.obj_coord[1]]))
         if self.alone:
             self.nearest_distance = None
         return self.nearest_enemy_id
 
     def collect_reward(self, objects_state):
-        obj = objects_state[self.index]
+        self.obj = objects_state[self.index]
         #self.nearest_enemy_id = self.get_nearest_enemy_id()
-        enemy = objects_state[self.nearest_enemy_id] if self.nearest_enemy_id is not None else None
-        diff_vector = np.array(
-                [enemy[ObjectProp.Xcoord] - obj[ObjectProp.Xcoord], enemy[ObjectProp.Ycoord] - obj[ObjectProp.Ycoord]])
-        dir2 = enemy[ObjectProp.Dir]
-        distance = np.linalg.norm(diff_vector)
-        arr_dir = np.array(
-            [enemy[ObjectProp.Xcoord] - obj[ObjectProp.Xcoord], enemy[ObjectProp.Ycoord] - obj[ObjectProp.Ycoord]])
-        arr_dir = arr_dir / np.linalg.norm(arr_dir)
-        obj_dir = np.array([np.cos(np.radians(obj[ObjectProp.Dir])), np.sin(np.radians(obj[ObjectProp.Dir]))])
-        arr_turned = np.array(
-            [arr_dir[0] * obj_dir[0] + arr_dir[1] * obj_dir[1], arr_dir[0] * obj_dir[1] - arr_dir[1] * obj_dir[0]])
-        # angle_between_radius = 180 - np.degrees(np.arccos((diff_vector[0] * vec2[0] + diff_vector[1] * vec2[1]) / ((np.sqrt(pow(diff_vector[0], 2) + pow(diff_vector[1], 2))) * (np.sqrt(pow(vec2[0], 2) + pow(vec2[1], 2)))))) if (diff_vector[0] != 0 and vec2[0] != 0) else 0
-        angle_between_radius = np.degrees(np.arccos(arr_turned[0]))
-        if arr_turned[1] < 0:
-            angle_between_radius = 360 - angle_between_radius
-        # if (diff_vector[0] * vec2[1] - diff_vector[1] * vec2[0]) > 0:
-        #    angle_between_radius = 360 - angle_between_radius
-        angle_between_objects = np.fabs((obj[ObjectProp.Dir] - enemy[ObjectProp.Dir]) % 360)
-        total_reward = self.loss.loss_result(obj, distance, angle_between_radius, angle_between_objects, 1, 1, self.nearest_distance)
+        self.enemy = objects_state[self.nearest_enemy_id] if self.nearest_enemy_id is not None else None
+        if self.enemy is not None:
+            self.diff_vector = np.array(
+                    [self.enemy[ObjectProp.Xcoord] - self.obj[ObjectProp.Xcoord], self.enemy[ObjectProp.Ycoord] - self.obj[ObjectProp.Ycoord]])
+            self.distance = np.linalg.norm(self.diff_vector)
+            self.arr_dir = np.array(
+                [self.enemy[ObjectProp.Xcoord] - self.obj[ObjectProp.Xcoord], self.enemy[ObjectProp.Ycoord] - self.obj[ObjectProp.Ycoord]])
+            self.arr_dir = self.arr_dir / np.linalg.norm(self.arr_dir)
+            self.obj_dir = np.array([np.cos(np.radians(self.obj[ObjectProp.Dir])), np.sin(np.radians(self.obj[ObjectProp.Dir]))])
+            self.arr_turned = np.array(
+                [self.arr_dir[0] * self.obj_dir[0] + self.arr_dir[1] * self.obj_dir[1], self.arr_dir[0] * self.obj_dir[1] - self.arr_dir[1] * self.obj_dir[0]])
+            self.angle_between_radius = np.degrees(np.arccos(self.arr_turned[0]))
+            if self.arr_turned[1] < 0:
+                self.angle_between_radius = 360 - self.angle_between_radius
 
-        return total_reward
+            self.angle_between_objects = np.fabs((self.obj[ObjectProp.Dir] - self.enemy[ObjectProp.Dir]) % 360)
+            self.total_reward = self.loss.loss_result(self.obj, self.distance, self.angle_between_radius, self.angle_between_objects, 1, 1, self.nearest_distance)
+
+        return self.total_reward
 
     def set_control_signal(self, objects_copy, obj_index, sig_type, sig_val):
         if  -1 <= sig_val <= 1 and sig_type in (ObjectProp.TurnControl, ObjectProp.VelControl):

@@ -152,6 +152,8 @@ class Objects:
         self.victories = np.int32(0)
         self.defeats = np.int32(0)
         self.draws = np.int32(0)
+        self.norm_red_team = np.float(0.0)
+        self.norm_blue_team = np.float(0.0)
         self.time_succ = np.float(0.0)
         self.is_it_draw = False
         self.success = np.float(0.0)
@@ -313,6 +315,8 @@ class Objects:
 
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1 or (self.playtime >= self.maxplaytime):
+                self.norm_red_team += self.radiant/self.radiant_start
+                self.norm_blue_team += self.dire/self.dire_start
                 self.time_succ += self.playtime / self.maxplaytime
                 if self.is_it_draw:
                     self.time_succ += self.playtime / self.maxplaytime
@@ -323,13 +327,12 @@ class Objects:
                     #print('-> Wins:{}, Loses:{}, Draws:{}, Time Succ:{}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.time_succ, self.restart_counter,'_'))
                     #print('-> Wins:{}, Loses:{}, Draws:{}, Play time:{:.5f}'.format(self.victories, self.defeats, self.draws, self.time_succ))
 
-                    #if (self.victories % 100) == 0:
-                    #    print('-> Wins:{}, Loses:{}, Draws:{}, Play time:{:.5f}'.format(self.victories, self.defeats, self.draws, self.time_succ))
 
                     if self.victories+self.defeats+self.draws == self.tries:
                         #self.success = self.victories/(self.victories+self.defeats) * (1 - self.draws/self.tries) if self.victories+self.defeats != 0 else 0
-                        self.success = (self.victories - self.defeats - 0.5*self.draws - 0.5*self.time_succ)/self.tries #w time
+                        #self.success = (self.victories - self.defeats - 0.5*self.draws - 0.5*self.time_succ)/self.tries #w time
                         #self.success = (self.victories - self.defeats - 0.5 * self.draws)/self.tries #w/o time
+                        self.success = (self.norm_red_team - self.norm_blue_team)/self.tries
                         self.queue_res.put(self.success)
                     self.restart()
 

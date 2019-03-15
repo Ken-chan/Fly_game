@@ -70,7 +70,7 @@ class Loss():
         self.norm_min_distance = np.float(0.0)
         self.danger_distance_norm = np.float(0.2) #critical distance to danger objects(normalize)
         self.danger_distance_alies = np.float(0.0)
-        self.norm_danger_distance_alies = np.float(0.5)  # value is piece of attack range
+        self.norm_danger_distance_alies = np.float(0.7)  # value is piece of attack range
         self.max_speed_of_objects = 400
         self.dir = np.float(0.0)
         self.vec = np.array([np.float(0.0), np.float(0.0)])
@@ -194,7 +194,7 @@ class Loss():
         #print(self.loss_of_velocity)
         return self.loss_of_velocity
 
-    def calc_qstate(self, radius, phi_betw_r, psi_betw_enem):
+    def calc_qstate_enemy(self, radius, phi_betw_r, psi_betw_enem):
         r_i, phi_i, psi_i = self.qstate.get_index_by_values(radius, phi_betw_r, psi_betw_enem)
         #print("inner: {}".format(self.qstate.q_data[0:2, 0:2, 0:2]))
         coefs_list, q_list = [], []
@@ -215,12 +215,14 @@ class Loss():
         #print("value: {}".format(val))
         return val
 
+    def calc_qstate_friends(self, friendly_ids, cube):
+        pass
         #self.loss_objects_interaction = self.q_data[int(self.r_i), int(self.phi_i), int(self.psi_i)]
         #print(int(self.r_i), int(self.phi_i), int(self.psi_i), self.loss_objects_interaction)
         #return self.loss_objects_interaction
 
     def loss_result(self, object, radius, phi, psi, radiant, dire,near_friend_dist):
-        self.result = 0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]) + self.calc_qstate(radius, phi, psi) + \
+        self.result = 0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]) + self.calc_qstate_enemy(radius, phi, psi) + \
                       self.calc_loss_of_distance(object) + self.calc_loss_of_alies_collision(near_friend_dist)
         #print("dist: {}, vel: {}, qstate: {}, amount: {}".format(dist, vel, qstate, amount))
         return self.result
@@ -230,7 +232,7 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "from_gen_2try_4.txt"
+        self.cube_path = "best_2.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
