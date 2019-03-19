@@ -49,21 +49,26 @@ class SimpleLoss:
 
 
 class Loss():
-    def __init__(self, cube=None):
+    def __init__(self, cube=None, alies_cube=None):
         self.cube = cube
+        self.alies_cube = alies_cube
         self.battle_field_size = np.array([1000.0, 1000.0])
         #self.set_congiguration(configuration)
         self.qstate = QState(20)
         self.n_cuts = self.qstate.n_cuts
         self.q_data = np.zeros((self.qstate.n_cuts, self.qstate.n_cuts, self.qstate.n_cuts))
+        self.q_data_alies = np.zeros((self.qstate.n_cuts, self.qstate.n_cuts, self.qstate.n_cuts))
+        self.h = Helper()
 
-
-        if self.cube is None:
+        if self.cube is None or self.alies_cube is None:
             self.qstate.load_cube_file(self.qstate.cube_path, self.q_data)
+            self.qstate.load_cube_file(self.qstate.alies_cube_path, self.q_data_alies)
             #self.qstate.save_history_file('second_trie.txt', self.q_data)
         else:
-            self.qstate.load_cube(self.cube)
+            self.qstate.load_cube(self.cube, self.alies_cube)
             self.q_data = self.qstate.q_data
+            self.q_data_alies = self.qstate.q_data_alies
+            #self.alies_cube
 
         self.min_x = np.float(0.0)
         self.min_y = np.float(0.0)
@@ -104,6 +109,7 @@ class Loss():
         self.loss_objects_interaction = np.float(0.0)
         self.loss_amount_in_teams = np.float(0.0)
         self.loss_of_velocity = np.float(0.0)
+        self.q_alies = np.float(0.0)
         self.result = np.float(0.0)
 
         self.r_i, self.phi_i, self.psi_i = np.int32(0), np.int32(0), np.int32(0)
@@ -194,7 +200,7 @@ class Loss():
         #print(self.loss_of_velocity)
         return self.loss_of_velocity
 
-    def calc_qstate_enemy(self, radius, phi_betw_r, psi_betw_enem):
+    def calc_qstate_enemy(self, radius, phi_betw_r, psi_betw_enem, q_data):
         r_i, phi_i, psi_i = self.qstate.get_index_by_values(radius, phi_betw_r, psi_betw_enem)
         #print("inner: {}".format(self.qstate.q_data[0:2, 0:2, 0:2]))
         coefs_list, q_list = [], []
@@ -204,7 +210,7 @@ class Loss():
                     new_r, new_phi, new_psi = r_i + i, phi_i + j, psi_i + k
                     if 0 <= new_r < self.n_cuts and 0 <= new_phi < self.n_cuts and 0 <= new_psi < self.n_cuts:
                         #print(new_r, new_phi, new_psi)
-                        q = self.q_data[int(new_r), int(new_phi), int(new_psi)]
+                        q = q_data[int(new_r), int(new_phi), int(new_psi)]
                         val_r, val_phi, val_psi = self.qstate.get_cell_val_by_index(new_r, new_phi, new_psi)
                         coefs_list.append([val_r, val_phi, val_psi])
                         q_list.append(q)
@@ -215,15 +221,21 @@ class Loss():
         #print("value: {}".format(val))
         return val
 
-    def calc_qstate_friends(self, friendly_ids, cube):
-        pass
-        #self.loss_objects_interaction = self.q_data[int(self.r_i), int(self.phi_i), int(self.psi_i)]
-        #print(int(self.r_i), int(self.phi_i), int(self.psi_i), self.loss_objects_interaction)
-        #return self.loss_objects_interaction
+    def calc_qstate_friends(self, objects_state, friendly_ids, index_self):
+        self.q_alies = np.float(0.0)
+        for ind in friendly_ids:
+            if ind == index_self:
+                continue
+            if objects_state[ind][ObjectProp.ObjType] != ObjectType.Absent:
+                obj1 = objects_state[index_self]
+                obj2 = objects_state[ind]
+                r_alies, phi_alies, psi_alies = self.h.get_r_phi_psi(obj1, obj2)
+                self.q_alies += self.calc_qstate_enemy(r_alies, phi_alies, psi_alies, self.q_data_alies)
+        return self.q_alies
 
-    def loss_result(self, object, radius, phi, psi, radiant, dire,near_friend_dist):
-        self.result = 0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]) + self.calc_qstate_enemy(radius, phi, psi) + \
-                      self.calc_loss_of_distance(object) + self.calc_loss_of_alies_collision(near_friend_dist)
+    def loss_result(self, object, radius, phi, psi, radiant, dire):
+        self.result = 0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]) + self.calc_qstate_enemy(radius, phi, psi, self.q_data) + \
+                      self.calc_loss_of_distance(object)
         #print("dist: {}, vel: {}, qstate: {}, amount: {}".format(dist, vel, qstate, amount))
         return self.result
 
@@ -232,7 +244,8 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "best_2.txt"
+        self.cube_path = "with_team_fightes_3.txt"
+        self.alies_cube_path = "alies_zero_cube.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
@@ -250,6 +263,7 @@ class QState:
         self.give_state_q = []  # [ Q1, ... ]
 
         self.q_data = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
+        self.q_data_alies = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
         self.shuffled = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
 
         #self.fill_by_experiment()
@@ -617,8 +631,9 @@ class QState:
                         strind += 1
 
 
-    def load_cube(self, cube):
+    def load_cube(self, cube, alies_cube):
         self.q_data = cube.copy()
+        self.q_data_alies = alies_cube.copy()
 
     def save_history_file(self, file_name, data, num_shuffle=None, zeros=False):
         q_str = ''
@@ -637,6 +652,44 @@ class QState:
             file_name += '_' + str(num_shuffle) + '.txt'
         with open(file_name, 'w') as f:
             f.write(q_str + '\n')
+
+class Helper():
+    def __init__(self):
+        self.obj = None
+        self.enemy = None
+        self.diff_vector = np.array([0.0,0.0])
+        self.arr_dir = np.array([0.0,0.0])
+        self.obj_dir = np.array([0.0,0.0])
+        self.arr_turned = np.array([0.0,0.0])
+
+        self.distance = np.float(0.0)
+        self.angle_between_radius = np.float(0.0)
+        self.angle_between_objects = np.float(0.0)
+
+    def get_r_phi_psi(self, obj1, obj2):
+        self.obj = obj1
+        self.enemy = obj2
+        self.diff_vector = np.array(
+                [self.enemy[ObjectProp.Xcoord] - self.obj[ObjectProp.Xcoord],
+                 self.enemy[ObjectProp.Ycoord] - self.obj[ObjectProp.Ycoord]])
+        self.distance = np.linalg.norm(self.diff_vector)
+        self.arr_dir = np.array(
+                [self.enemy[ObjectProp.Xcoord] - self.obj[ObjectProp.Xcoord],
+                 self.enemy[ObjectProp.Ycoord] - self.obj[ObjectProp.Ycoord]])
+        self.arr_dir = self.arr_dir / np.linalg.norm(self.arr_dir)
+        self.obj_dir = np.array(
+                [np.cos(np.radians(self.obj[ObjectProp.Dir])), np.sin(np.radians(self.obj[ObjectProp.Dir]))])
+        self.arr_turned = np.array(
+                [self.arr_dir[0] * self.obj_dir[0] + self.arr_dir[1] * self.obj_dir[1],
+                 self.arr_dir[0] * self.obj_dir[1] - self.arr_dir[1] * self.obj_dir[0]])
+        self.angle_between_radius = np.degrees(np.arccos(self.arr_turned[0]))
+        if self.arr_turned[1] < 0:
+            self.angle_between_radius = 360 - self.angle_between_radius
+
+        self.angle_between_objects = np.fabs((self.obj[ObjectProp.Dir] - self.enemy[ObjectProp.Dir]) % 360)
+
+
+        return self.distance, self.angle_between_radius, self.angle_between_objects
 
 def calc_polar_grid(self, objects, width, height, step_number=16, player_number=13, max_range=605):
     self.steps = [25, 35, 45, 65, 85, 105, 155, 205, 255, 305, 355, 405, 455, 505, 555, 605]

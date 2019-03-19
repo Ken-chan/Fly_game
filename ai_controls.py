@@ -13,7 +13,7 @@ class AItype:
     Dummy, DumbAi, QAi, GreedAi = range(4)
 
     @classmethod
-    def contruct_ai(cls, aitype, index, battle_field_size, configuration, controller=None, cube=None):
+    def contruct_ai(cls, aitype, index, battle_field_size, configuration, controller=None, cube=None, alies_cube=None):
 
         if aitype == cls.DumbAi:
             return DumbAI(index, battle_field_size, configuration)
@@ -23,11 +23,11 @@ class AItype:
         #    q_ai = QAi(index, battle_field_size, controller)
         #    return q_ai
         elif aitype == cls.GreedAi:
-            return GreedAi(index, battle_field_size, cube)
+            return GreedAi(index, battle_field_size, cube, alies_cube)
 
 
 class AIcontrols:
-    def __init__(self, configuration, messenger=None, train_mode=False, cube=None):
+    def __init__(self, configuration, messenger=None, train_mode=False, cube=None, alies_cube=None):
         self.ai_state = AIcontrolsState.Start
         self.train_mode = train_mode
         self.messenger = messenger
@@ -38,6 +38,7 @@ class AIcontrols:
         self.controller = None
         self.ai_objs = []
         self.cube = cube
+        self.alies_cube = alies_cube
         for index in range(0, ObjectType.ObjArrayTotal):
             self.ai_objs.append(Dummy(index))
         self.update_ai_settings(configuration)
@@ -86,7 +87,7 @@ class AIcontrols:
                             off_counter = offset_counter[key]
                             obj_offset, _ = ObjectType.offset(key)
                             obj_ind = obj_offset + off_counter
-                            self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size, configuration, controller=self.controller, cube=self.cube)
+                            self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size, configuration, controller=self.controller, cube=self.cube, alies_cube=self.alies_cube)
 
     def recalc(self, dt, objects_for_train=None):
         self.result = []

@@ -66,7 +66,10 @@ class DumbAI(Dummy):
         elif self.vec2_rel[0] < -1:
             self.vec2_rel[0] = -1
         self.angle_min = np.degrees(np.abs(np.arccos(self.vec2_rel[0]))) ## THERE CATCH WARNING ARCOS -1 1
-        self.rotation_side = np.float(1) if np.sign(self.vec2_rel[1]) >= 0 else np.float(-1)
+        #self.rotation_side = np.float(1.0) if np.sign(self.vec2_rel[1]) >= 0 else np.float(-1.0)
+        self.rotation_side = np.float(np.sign(self.vec2_rel[1]))
+        if self.rotation_side == .0:
+            self.rotation_side = 1.0
         return self.angle_min, self.rotation_side
 
     def calc_nearest_obj_and_enemy(self, objects_state):

@@ -17,13 +17,14 @@ class GameState:
 
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1, cube=None, queue_res=None):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1, cube=None, alies_cube=None, queue_res=None):
         gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.train_mode = train_mode
         self.cube = cube
+        self.alies_cube = alies_cube
         self.queue_res = queue_res
         self.battle_field_size = (1000, 1000)
         self.radiant_bots = 3
@@ -57,13 +58,13 @@ class Game:
                             self.battle_field_size[0], self.battle_field_size[1])
         self.messenger = Messenger()
         if self.train_mode:
-            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True, cube=self.cube)
+            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True, cube=self.cube, alies_cube=self.alies_cube)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger, ai_controls=self.ai_controls, tries=tries,
                                    bot1=self.radiant_bots, bot2=self.dire_bots, player1=self.is_player1_play,
                                    player2=self.is_player2_play, sizeX=self.battle_field_size[0], sizeY=self.battle_field_size[1], queue_res=self.queue_res)
         else:
-            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, cube=self.cube)
+            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, cube=self.cube, alies_cube=self.alies_cube)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger)
             self.renderer = Renderer(self.screen_width, self.screen_height, self.battle_field_size)
