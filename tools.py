@@ -245,7 +245,7 @@ class QState:
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
         self.cube_path = "with_team_fightes_3.txt"
-        self.alies_cube_path = "alies_zero_cube.txt"
+        self.alies_cube_path = "alies_after_generation.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
@@ -266,9 +266,10 @@ class QState:
         self.q_data_alies = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
         self.shuffled = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
 
-        #self.fill_by_experiment()
+        #self.fill_by_experiment_for_alies()
         #self.fill_data_arr()
         #self.save_history_file(self.cube_path, self.data_arr)
+        #self.save_history_file(self.alies_cube_path, self.data_arr)
 
 
     def get_index_by_values(self, r, phi, psi): ##get nearest cords
@@ -277,10 +278,10 @@ class QState:
         r_ind = int(r // self.r_wide + r_ind_add)
 
         phi_ind_add = 1 if phi % self.phi_wide > self.phi_wide / 2 else 0
-        phi_ind = int(phi // self.phi_wide + phi_ind_add)
+        phi_ind = int(phi % 360 // self.phi_wide + phi_ind_add)
 
         psi_ind_add = 1 if psi % self.psi_wide > self.psi_wide / 2 else 0
-        psi_ind = int(psi // self.psi_wide + psi_ind_add)
+        psi_ind = int(psi % 360 // self.psi_wide + psi_ind_add)
 
         #print(r, phi % 360, psi % 360 , r_ind, phi_ind, psi_ind)
         return r_ind, phi_ind, psi_ind
@@ -291,9 +292,12 @@ class QState:
         psi_wide = self.psi_wide // 2 + self.psi_wide * psi_ind
         return r_cell, phi_cell, psi_wide
 
-    def feed_data(self, state_vector, q_value):
-        self.given_state_vectors.append(state_vector)
-        self.give_state_q.append(q_value)
+    def feed_data(self, state_vector, q_value, alies=False):
+        if alies:
+            pass
+        else:
+            self.given_state_vectors.append(state_vector)
+            self.give_state_q.append(q_value)
 
     def get_nearest(self, r, phi, psi):
         disted = []
@@ -598,10 +602,45 @@ class QState:
             for phi_i in range(0, self.n_cuts):
                 for psi_i in range(0, self.n_cuts):
                     self.coords = self.get_cell_val_by_index(r_i, phi_i, psi_i)
-                    if self.coords[0] > self.attack_range:
-                        pass
+                    if self.coords[0] > 2*self.attack_range:
+                        self.feed_data(self.coords, 0)
                     elif self.is_near_angle(self.coords[1], 0) or self.is_near_angle(self.coords[1],  360):
-                        pass
+                        if self.is_near_angle(self.coords[2], 0) or self.is_near_angle(self.coords[2], 360):
+                            if self.coords[0] < 0.5*self.attack_range:
+                                self.feed_data(self.coords, -0.5)
+                            elif self.coords[0] < self.attack_range:
+                                self.feed_data(self.coords, -0.2)
+                            elif self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, -0.1)
+                        if self.is_near_angle(self.coords[2], 180): ##VAZHNO
+                            if self.coords[0] < 0.5*self.attack_range:
+                                self.feed_data(self.coords, -1)
+                            elif self.coords[0] < self.attack_range:
+                                self.feed_data(self.coords, -0.5)
+                            elif self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, -0.3)
+                    elif self.is_near_angle(self.coords[1], 180):
+                        if self.is_near_angle(self.coords[2], 0) or self.is_near_angle(self.coords[2], 360):
+                            if self.coords[0] < 0.5*self.attack_range:
+                                self.feed_data(self.coords, -0.5)
+                            elif self.coords[0] < self.attack_range:
+                                self.feed_data(self.coords, -0.2)
+                            elif self.coords[0] < 2*self.attack_range:
+                                self.feed_data(self.coords, -0.1)
+                        elif self.is_near_angle(self.coords[2], 180):
+                            self.feed_data(self.coords, 0.1)
+                    elif self.is_near_angle(self.coords[1], 90):
+                        if self.is_near_angle(self.coords[2], 270):
+                            if self.coords[0] < 0.5 * self.attack_range:
+                                self.feed_data(self.coords, -0.7)
+                            elif self.coords[0] < self.attack_range:
+                                self.feed_data(self.coords, -0.4)
+                    elif self.is_near_angle(self.coords[1], 270):
+                        if self.is_near_angle(self.coords[2], 90):
+                            if self.coords[0] < 0.5 * self.attack_range:
+                                self.feed_data(self.coords, -0.7)
+                            elif self.coords[0] < self.attack_range:
+                                self.feed_data(self.coords, -0.4)
                     else:
                         self.feed_data(self.coords, 0)
 
@@ -629,7 +668,6 @@ class QState:
                     for psi_i in range(0, self.n_cuts):
                         q_data[r_i,phi_i,psi_i] = str[strind]
                         strind += 1
-
 
     def load_cube(self, cube, alies_cube):
         self.q_data = cube.copy()
