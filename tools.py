@@ -114,6 +114,10 @@ class Loss():
 
         self.r_i, self.phi_i, self.psi_i = np.int32(0), np.int32(0), np.int32(0)
 
+        self.q_list_enemies = []
+        self.q_list_friends = []
+
+
     def set_congiguration(self, configuration):
         self.configuration = configuration
         if configuration:
@@ -221,8 +225,20 @@ class Loss():
         #print("value: {}".format(val))
         return val
 
+    def calc_qstate_enemies(self, objects_state, enemy_ids, index_self):
+        self.q_list_enemies = []
+        for ind in enemy_ids:
+            if ind == index_self:
+                continue
+            if objects_state[ind][ObjectProp.ObjType] != ObjectType.Absent:
+                obj1 = objects_state[index_self]
+                obj2 = objects_state[ind]
+                r_enemy, phi_enemy, psi_enemy = self.h.get_r_phi_psi(obj1, obj2)
+                self.q_list_enemies.append(self.calc_qstate_enemy(r_enemy, phi_enemy, psi_enemy, self.q_data))
+        return self.q_list_enemies
+
     def calc_qstate_friends(self, objects_state, friendly_ids, index_self):
-        self.q_alies = np.float(0.0)
+        self.q_list_friends = []
         for ind in friendly_ids:
             if ind == index_self:
                 continue
@@ -230,8 +246,8 @@ class Loss():
                 obj1 = objects_state[index_self]
                 obj2 = objects_state[ind]
                 r_alies, phi_alies, psi_alies = self.h.get_r_phi_psi(obj1, obj2)
-                self.q_alies += self.calc_qstate_enemy(r_alies, phi_alies, psi_alies, self.q_data_alies)
-        return self.q_alies
+                self.q_list_friends.append(self.calc_qstate_enemy(r_alies, phi_alies, psi_alies, self.q_data_alies))
+        return self.q_list_friends
 
     def loss_result(self, object, radius, phi, psi, radiant, dire):
         self.result = 0.02 * self.calc_loss_of_velocity(object[ObjectProp.Velocity]) + self.calc_qstate_enemy(radius, phi, psi, self.q_data) + \
@@ -244,8 +260,8 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "with_team_fightes_3.txt"
-        self.alies_cube_path = "alies_after_generation.txt"
+        self.cube_path = "best_enemy_cube.txt"
+        self.alies_cube_path = "alies_cube_aft_gen_ver1_1.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)

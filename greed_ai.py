@@ -8,19 +8,24 @@ class GreedAi:
         # print("hello its me")
         self.current_controller = None
         self.index = index
-        self.nearest_enemy_id = None
         self.cube = cube
         self.alies_cube = alies_cube
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
         self.obj = np.zeros(ObjectProp.Total)
         self.obj_coord = np.array([0.0, 0.0])
-        self.nearest_distance = None
-        self.enemy_distance = None
         self.obj = None
         self.enemy = None
-        self.total_reward = np.float(0.0)
-        self.alies_reward = np.float(0.0)
+
+
+        self.total_rewards = []
+        self.target_reward = np.float(0.0)
+        self.alies_rewards = []
+        self.enemy_rewards = []
+        self.walls_reward = np.float(0.0)
+        self.min_threshold = np.float(-0.5)
+        self.max_threshold = np.float(0.5)
+
 
         self.diff_vector = np.array([0.0,0.0])
         self.distance = np.float(0.0)
@@ -49,39 +54,23 @@ class GreedAi:
             for step_d in range(0, self.num_actions+1):
                 self.acts.append((-1 + (2/self.num_actions * step_v), -1 + (2/self.num_actions * step_d)))
 
-    def calc_nearest_obj_and_enemy(self, objects_state):
-        self.nearest_enemy_id = None ## AHTING HARDCODE
-        self.enemy_distance = None
-        for ind in self.enemy_ids:
-            if ind == self.index:
-                continue
-            if objects_state[ind][ObjectProp.ObjType] != ObjectType.Absent:
-                curr_dist = np.linalg.norm(np.array([objects_state[ind][ObjectProp.Xcoord] - self.obj_coord[0],
-                                                     objects_state[ind][ObjectProp.Ycoord] - self.obj_coord[1]]))
-                if self.enemy_distance is None or self.enemy_distance > curr_dist:
-                    self.enemy_distance = curr_dist
-                    self.nearest_enemy_id = ind
-        self.alone = True
-        for ind in self.friendly_ids:
-            if ind == self.index:
-                continue
-            if objects_state[ind][ObjectProp.ObjType] != ObjectType.Absent:
-                self.alone = False
-                self.nearest_distance = np.linalg.norm(np.array([objects_state[ind][ObjectProp.Xcoord] - self.obj_coord[0],
-                                                     objects_state[ind][ObjectProp.Ycoord] - self.obj_coord[1]]))
-        if self.alone:
-            self.nearest_distance = None
-        return self.nearest_enemy_id
-
     def collect_reward(self, objects_state):
-        self.obj = objects_state[self.index]
-        self.enemy = objects_state[self.nearest_enemy_id] if self.nearest_enemy_id is not None else None
-        if self.enemy is not None:
-            self.distance, self.angle_between_radius, self.angle_between_objects = self.h.get_r_phi_psi(self.obj, self.enemy)
-        self.total_reward = self.loss.loss_result(self.obj, self.distance, self.angle_between_radius, self.angle_between_objects, 1, 1)
-        self.alies_reward = self.loss.calc_qstate_friends(objects_state, self.friendly_ids, self.index)
+        self.enemy_rewards = []
+        self.alies_rewards = []
+        self.total_rewards = []
 
-        return self.total_reward + self.alies_reward
+        self.enemy_rewards = self.loss.calc_qstate_enemies(objects_state, self.enemy_ids, self.index)
+        self.alies_rewards = self.loss.calc_qstate_friends(objects_state, self.friendly_ids, self.index)
+        self.walls_reward = self.loss.calc_loss_of_distance(objects_state[self.index])
+        self.total_rewards = self.enemy_rewards + self.alies_rewards
+        self.total_rewards.append(self.walls_reward)
+
+
+        self.target_reward = np.max(self.total_rewards)
+        if np.min(self.total_rewards) < self.min_threshold:
+            self.target_reward = np.min(self.total_rewards)
+
+        return self.target_reward
 
     def set_control_signal(self, objects_copy, obj_index, sig_type, sig_val):
         if  -1 <= sig_val <= 1 and sig_type in (ObjectProp.TurnControl, ObjectProp.VelControl):
@@ -141,7 +130,6 @@ class GreedAi:
         #new_action = (0, -1)
         #print(new_action)
         self.obj_coord[0], self.obj_coord[1] = self.obj[ObjectProp.Xcoord], self.obj[ObjectProp.Ycoord]
-        self.nearest_enemy_id = self.calc_nearest_obj_and_enemy(objects_copy)
 
         new_action = self.get_gready_action(objects_copy)
         self.rot_side, self.vel_ctrl = new_action
