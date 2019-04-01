@@ -20,7 +20,7 @@ class ObjectArray:
         self.start_ind, self.end_ind = None, None
         self.generate_empty_objects()
 
-    def set_objects_settings(self, configuration=None, shuffled=False):
+    def set_objects_settings(self, configuration=None, shuffled=False, count_in_teams=0):
         if configuration:
             for key in configuration:
                 for item in configuration[key]:
@@ -29,9 +29,10 @@ class ObjectArray:
                     elif len(item) == 6:
                         x, y, direction, vehicle_type, r, aitype = item
                         if shuffled:
-                            x += np.random.randint(-350, 350)
+                            delta_x = int(0.8*self.battle_field_width//2//(1+count_in_teams))
+                            x += np.random.randint(-delta_x, delta_x)
                             y += np.random.randint(-20, 20)
-                            direction += np.random.randint(-35, 35)
+                            direction += np.random.randint(-15, 15)
                     else:
                         x, y = item
                         direction, vehicle_type, r = 0, 0, 0
@@ -82,6 +83,7 @@ class Objects:
         self.dire_start = dire
         self.radiant = self.radiant_start
         self.dire = self.dire_start
+        self.max_in_one_team = np.maximum(self.radiant_start, self.dire_start)
         self.configuration = configuration
         self.ai_controls = ai_controls
         self.battle_field_width = 0
@@ -193,11 +195,11 @@ class Objects:
             self.objects_state = ObjectsState.Run
             if self.train_mode:
                 self.objects.generate_empty_objects()
-                self.update_game_settings(self.configuration, shuffled=True)
+                self.update_game_settings(self.configuration, shuffled=True, count_in_teams=self.max_in_one_team)
                 self.ai_controls.update_ai_settings(self.configuration)
             else:
                 self.objects.generate_empty_objects()
-                self.objects.set_objects_settings(self.configuration)
+                self.objects.set_objects_settings(self.configuration, shuffled=True, count_in_teams=self.max_in_one_team)
             self.restart_counter += 1
             self.playtime = 0
             self.radiant = self.radiant_start
@@ -235,10 +237,10 @@ class Objects:
         with open(file_name, 'a') as f:
             f.write(obj_str + '\n')
 
-    def update_game_settings(self, configuration, shuffled=False):
+    def update_game_settings(self, configuration, shuffled=False, count_in_teams=0):
         if self.objects_state == ObjectsState.Run or self.objects_state == ObjectsState.RunFromFile:
             self.configuration = configuration
-            self.objects.set_objects_settings(configuration, shuffled=shuffled)
+            self.objects.set_objects_settings(configuration, shuffled=shuffled, count_in_teams=count_in_teams)
             self.battle_field_height = self.objects.battle_field_height
             self.battle_field_width = self.objects.battle_field_width
 
@@ -289,19 +291,6 @@ class Objects:
                                     self.is_inside_cone(self.vec1, self.vec2, self.diff_vector, Constants.AttackConeWide):
                                 self.delete_object(jndex, objects)
 
-                            """
-                            ##FOR LOSS
-                            self.angle_between_radius = 180 - np.degrees(np.arccos((self.diff_vector[0]*self.vec2[0] + self.diff_vector[1]*self.vec2[1])/
-                                                                                   ((np.sqrt(pow(self.diff_vector[0], 2) + pow(self.diff_vector[1], 2)))*
-                                                                                    (np.sqrt(pow(self.vec2[0], 2) + pow(self.vec2[1], 2)))))) if (self.diff_vector[0] != 0 and self.vec2[0] != 0) else 0
-                            if (self.diff_vector[0]*self.vec2[1] - self.diff_vector[1]*self.vec2[0]) > 0:
-                                self.angle_between_radius = 360 - self.angle_between_radius
-                            self.angle_between_objects = np.fabs(
-                                (objects[index][ObjectProp.Dir] - objects[jndex][ObjectProp.Dir]) % 360)
-                            if Teams.team_by_id(jndex) == Teams.Team1:
-                                print(self.loss.loss_result(objects[jndex], self.distance, self.angle_between_radius, self.angle_between_objects, self.radiant, self.dire))
-                            """
-
 
             if (self.radiant < 1 and self.dire < 1) or self.playtime >= self.maxplaytime:
                 self.draws += 1
@@ -338,8 +327,9 @@ class Objects:
 
     def delete_object(self, jndex, objects, second_unit=None):
         if not self.train_mode:
-            print('Killed unit number: {:2} team: {:2} with type {:2}' \
-                .format(jndex, Teams.team_by_id(jndex), ObjectType.name_of_type_by_id(jndex)))
+            team_alone = "Blue" if Teams.team_by_id(jndex) == 1 else "Red"
+            print('Killed {} unit from {} team with number: {}'\
+                .format(ObjectType.name_of_type_by_id(jndex), team_alone, jndex))
 
         for kndex in range(1, ObjectProp.Total):
             objects[jndex][kndex] = 0
@@ -350,8 +340,9 @@ class Objects:
 
         if second_unit is not None:
             if not self.train_mode:
-                print('Killed unit number: {:2} team: {:2} with type {:2}' \
-                    .format(second_unit, Teams.team_by_id(second_unit), ObjectType.name_of_type_by_id(second_unit)))
+                team_twice = "Blue" if Teams.team_by_id(second_unit) == 1 else "Red"
+                print('Killed {} unit from {} team with number: {}'\
+                    .format(ObjectType.name_of_type_by_id(second_unit), team_twice, second_unit))
             for kndex in range(1, ObjectProp.Total):
                 objects[second_unit][kndex] = 0
             if Teams.team_by_id(second_unit) == Teams.Team1:

@@ -35,24 +35,25 @@ class ParallelOptions():
 if __name__ == '__main__':
     n_cuts = 20
     qs = QState(n_cuts)
-    load_cube = np.zeros((n_cuts, n_cuts, n_cuts))
+    enemies_cube = np.zeros((n_cuts, n_cuts, n_cuts))
     alies_cube = np.zeros((n_cuts, n_cuts, n_cuts))
-    file_path = "best_2.txt"
-    alies_file_path = "alies_after_generation.txt"
-    qs.load_cube_file(file_path, load_cube)
+    enemy_file_path = "./cubes/best_enemy_cube.txt"
+    alies_file_path = "./cubes/alies_after_generation.txt"
+    qs.load_cube_file(enemy_file_path, enemies_cube)
     qs.load_cube_file(alies_file_path, alies_cube)
-    opt = ParallelOptions(cube=load_cube)
+    opt = ParallelOptions(cube=enemies_cube)
 
     best_cube = alies_cube ##alies_cube
 
-    count_download_cubes = 15
+    #count_download_cubes = 15
 
     eras = 10000
     mutations = 30
-    count_cubes = 0
+    count_cubes = int(alies_file_path[-5]) if alies_file_path[-6] == '_' else 0
+    #print(count_cubes)
     max_q = 0.1
 
-
+    pool = Pool(processes=mutations)
     for i in range(eras):
         cur_cube = best_cube
         find_better = False
@@ -60,13 +61,12 @@ if __name__ == '__main__':
 
         randomized_cubes = []
         for j in range(mutations):
-            rand_cube = opt.randomize_cube(cur_cube, delta=0.7, small_distance=300) #0.05
+            rand_cube = opt.randomize_cube(cur_cube, delta=0.2) #0.05
             randomized_cubes.append(rand_cube)
 
         #print("Makes {} list of randomized cubes!, Era number:{}".format(mutations, i))
-        pool = Pool(processes=mutations)
         q_and_cubes = pool.map(opt.run_gen, randomized_cubes)
-        local_max = 0
+        local_max = -1
 
         index_max = 0
         for k in range(mutations):
@@ -81,8 +81,6 @@ if __name__ == '__main__':
             count_cubes += 1
             best_cube = q_and_cubes[index_max][1]
             print('-> Add parallel best cube: {},  with best score: {}'.format(count_cubes, max_q))
-            qs.save_history_file('alies_cube_aft_gen_ver1', best_cube, num_shuffle=count_cubes)
+            qs.save_history_file('alies_sec_ver', best_cube, num_shuffle=count_cubes, score=max_q)
         else:
             print('<- Do not found better : ( Local max:{}'.format(local_max))
-
-

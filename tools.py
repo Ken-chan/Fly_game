@@ -118,6 +118,28 @@ class Loss():
         self.q_list_friends = []
 
 
+        #add memory:
+        self.r_i = np.int32(0)
+        self.phi_i = np.int32(0)
+        self.psi_i = np.int32(0)
+        self.coefs_list = []
+        self.q_list = []
+        self.new_r = np.int32(0)
+        self.new_phi = np.int32(0)
+        self.new_psi = np.int32(0)
+
+        self.val_r = np.int32(0)
+        self.val_phi = np.int32(0)
+        self.val_psi = np.int32(0)
+        self.params = None
+        self.qarr = None
+        self.coefs = None
+        self.val = np.float(0.0)
+        self.q_value = None
+
+        #self.obj1 = None
+        #self.obj2 = None
+
     def set_congiguration(self, configuration):
         self.configuration = configuration
         if configuration:
@@ -205,25 +227,28 @@ class Loss():
         return self.loss_of_velocity
 
     def calc_qstate_enemy(self, radius, phi_betw_r, psi_betw_enem, q_data):
-        r_i, phi_i, psi_i = self.qstate.get_index_by_values(radius, phi_betw_r, psi_betw_enem)
+        self.r_i, self.phi_i, self.psi_i = self.qstate.get_index_by_values(radius, phi_betw_r, psi_betw_enem)
         #print("inner: {}".format(self.qstate.q_data[0:2, 0:2, 0:2]))
-        coefs_list, q_list = [], []
+        self.coefs_list, self.q_list = [], []
         for i in (-1, 0, 1):
             for j in (-1, 0, 1):
                 for k in (-1, 0, 1):
-                    new_r, new_phi, new_psi = r_i + i, phi_i + j, psi_i + k
-                    if 0 <= new_r < self.n_cuts and 0 <= new_phi < self.n_cuts and 0 <= new_psi < self.n_cuts:
+                    self.new_r, self.new_phi, self.new_psi = self.r_i + i, self.phi_i + j, self.psi_i + k
+                    if 0 <= self.new_r < self.n_cuts and 0 <= self.new_phi < self.n_cuts and 0 <= self.new_psi < self.n_cuts:
                         #print(new_r, new_phi, new_psi)
-                        q = q_data[int(new_r), int(new_phi), int(new_psi)]
-                        val_r, val_phi, val_psi = self.qstate.get_cell_val_by_index(new_r, new_phi, new_psi)
-                        coefs_list.append([val_r, val_phi, val_psi])
-                        q_list.append(q)
-        params = np.array(coefs_list)
-        qarr = np.array(q_list)
-        coefs = np.linalg.lstsq(params, qarr, rcond=None)[0]
-        val = np.dot(coefs, np.array([radius, phi_betw_r, psi_betw_enem]))
+                        self.q_value = q_data[int(self.new_r), int(self.new_phi), int(self.new_psi)]
+                        self.val_r, self.val_phi, self.val_psi = self.qstate.get_cell_val_by_index(self.new_r, self.new_phi, self.new_psi)
+                        self.coefs_list.append([self.val_r, self.val_phi, self.val_psi])
+                        self.q_list.append(self.q_value)
+        self.params = np.array(self.coefs_list)
+        self.qarr = np.array(self.q_list)
+        #try:
+        self.coefs = np.linalg.lstsq(self.params, self.qarr, rcond=None)[0]
+        self.val = np.dot(self.coefs, np.array([radius, phi_betw_r, psi_betw_enem]))
+        #except Exception as e:
+        #print(self.params,self.qarr, len(self.params),len(self.qarr), np.array([radius, phi_betw_r, psi_betw_enem]))
         #print("value: {}".format(val))
-        return val
+        return self.val
 
     def calc_qstate_enemies(self, objects_state, enemy_ids, index_self):
         self.q_list_enemies = []
@@ -260,8 +285,8 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "best_enemy_cube.txt"
-        self.alies_cube_path = "alies_cube_aft_gen_ver1_1.txt"
+        self.cube_path = "./cubes/best_enemy_cube.txt"
+        self.alies_cube_path = "./cubes/alies_after_generation.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
@@ -287,26 +312,43 @@ class QState:
         #self.save_history_file(self.cube_path, self.data_arr)
         #self.save_history_file(self.alies_cube_path, self.data_arr)
 
+        #some things:
+        self.r_ind_add = np.int32(0)
+        self.r_ind = np.int32(0)
+        self.phi_ind_add = np.int32(0)
+        self.phi_ind = np.int32(0)
+        self.psi_ind_add = np.int32(0)
+        self.psi_ind = np.int32(0)
+
+        self.r_cell = np.int32(0)
+        self.phi_cell = np.int32(0)
+        self.psi_wide_cell = np.int32(0)
 
     def get_index_by_values(self, r, phi, psi): ##get nearest cords
+
+        r = r if r < self.range_r[1] else self.range_r[1] # r wide = 75
 
         r_ind_add = 1 if r % self.r_wide > self.r_wide / 2 else 0
         r_ind = int(r // self.r_wide + r_ind_add)
 
-        phi_ind_add = 1 if phi % self.phi_wide > self.phi_wide / 2 else 0
-        phi_ind = int(phi % 360 // self.phi_wide + phi_ind_add)
+
+        try:
+            phi_ind_add = 1 if phi % self.phi_wide > self.phi_wide / 2 else 0
+            phi_ind = int(phi // self.phi_wide + phi_ind_add)
+        except ValueError:
+            print(phi, self.phi_wide)
 
         psi_ind_add = 1 if psi % self.psi_wide > self.psi_wide / 2 else 0
-        psi_ind = int(psi % 360 // self.psi_wide + psi_ind_add)
+        psi_ind = int(psi // self.psi_wide + psi_ind_add)
 
         #print(r, phi % 360, psi % 360 , r_ind, phi_ind, psi_ind)
         return r_ind, phi_ind, psi_ind
 
     def get_cell_val_by_index(self, r_ind, phi_ind, psi_ind):
-        r_cell = self.r_wide // 2 + self.r_wide * r_ind
-        phi_cell = self.phi_wide // 2 + self.phi_wide * phi_ind
-        psi_wide = self.psi_wide // 2 + self.psi_wide * psi_ind
-        return r_cell, phi_cell, psi_wide
+        self.r_cell = self.r_wide // 2 + self.r_wide * r_ind
+        self.phi_cell = self.phi_wide // 2 + self.phi_wide * phi_ind
+        self.psi_wide_cell = self.psi_wide // 2 + self.psi_wide * psi_ind
+        return self.r_cell, self.phi_cell, self.psi_wide_cell
 
     def feed_data(self, state_vector, q_value, alies=False):
         if alies:
@@ -689,7 +731,7 @@ class QState:
         self.q_data = cube.copy()
         self.q_data_alies = alies_cube.copy()
 
-    def save_history_file(self, file_name, data, num_shuffle=None, zeros=False):
+    def save_history_file(self, file_name, data, num_shuffle=None, score=None, zeros=False):
         q_str = ''
         for r_i in range(0, self.n_cuts):
             for phi_i in range(0, self.n_cuts):
@@ -703,7 +745,7 @@ class QState:
                         q_str += '0,'
         q_str = q_str[:-1]
         if num_shuffle:
-            file_name += '_' + str(num_shuffle) + '.txt'
+            file_name += "_{:.4f}_{}.txt".format(score, num_shuffle)
         with open(file_name, 'w') as f:
             f.write(q_str + '\n')
 

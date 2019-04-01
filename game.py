@@ -10,6 +10,7 @@ import argparse
 import datetime
 from objects import Objects
 from obj_def import *
+from tools import Helper
 import gc
 
 class GameState:
@@ -77,27 +78,30 @@ class Game:
                           messages.Game.Pause: self.game_pause_simulation,
                           messages.Game.Polar_grid: self.show_polar_grid,
                           messages.Game.ActiveGame: self.game_unpaused}
+
+        ##
+        self.hepler = Helper()
+        #self.configuration = self.hepler.get
+        ##
         self.run_game()
 
     def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
         pos1 = sizeX / (bot1 + player1 + 1)
-
+        delta_y = 75
         pos2 = sizeX / (bot2 + player2 + 1)
         if player1:
-            self.configuration[ObjectType.Player1].append((pos1 + np.random.randint(-50, 50), 50 + np.random.randint(50),
+            self.configuration[ObjectType.Player1].append((pos1, delta_y,
                                                        90, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
         if player2:
-            self.configuration[ObjectType.Player2].append((pos2 + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
+            self.configuration[ObjectType.Player2].append((pos2, sizeY - delta_y,
                                                        270, ObjectSubtype.Plane, Constants.DefaultObjectRadius))
 
         for i in range(1, bot1 + 1):
-            self.configuration[ObjectType.Bot1].append(
-                (pos1 * (i + player1) + np.random.randint(-50, 50), 50 + np.random.randint(50),
+            self.configuration[ObjectType.Bot1].append((pos1 * (i + player1), delta_y,
                  90, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.GreedAi))
 
         for i in range(1, bot2 + 1):
-            self.configuration[ObjectType.Bot2].append(
-                (pos2 * (i + player2) + np.random.randint(-50, 50), sizeY - 50 - np.random.randint(50),
+            self.configuration[ObjectType.Bot2].append((pos2 * (i + player2), sizeY - delta_y,
                  270, ObjectSubtype.Plane, Constants.DefaultObjectRadius, AItype.DumbAi))
 
 
