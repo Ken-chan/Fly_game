@@ -73,7 +73,7 @@ class Loss():
         self.min_x = np.float(0.0)
         self.min_y = np.float(0.0)
         self.norm_min_distance = np.float(0.0)
-        self.danger_distance_norm = np.float(0.2) #critical distance to danger objects(normalize)
+        self.danger_distance_norm = np.float(0.3) #0.2 critical distance to danger objects(normalize)
         self.danger_distance_alies = np.float(0.0)
         self.norm_danger_distance_alies = np.float(0.7)  # value is piece of attack range
         self.max_speed_of_objects = 400
@@ -226,6 +226,26 @@ class Loss():
         #print(self.loss_of_velocity)
         return self.loss_of_velocity
 
+    def calc_qstate_enemy_ver_2(self, radius, phi_betw_r, psi_betw_enem, q_data):
+        self.r_i, self.phi_i, self.psi_i = self.qstate.get_index_by_values_old_ver(radius, phi_betw_r, psi_betw_enem)
+        self.coefs_list, self.q_list = [], []
+        for i in (0, 1):
+            for j in (0, 1):
+                for k in (0, 1):
+                    self.new_r, self.new_phi, self.new_psi = self.r_i + i, self.phi_i + j, self.psi_i + k
+                    if self.new_r < self.n_cuts and self.new_phi < self.n_cuts and self.new_psi < self.n_cuts:
+                        self.q_value = q_data[int(self.new_r), int(self.new_phi), int(self.new_psi)]
+                        self.val_r, self.val_phi, self.val_psi = self.qstate.get_cell_val_by_index(self.new_r,
+                                                                                                   self.new_phi,
+                                                                                                   self.new_psi)
+                        self.coefs_list.append([self.val_r, self.val_phi, self.val_psi])
+                        self.q_list.append(self.q_value)
+        self.params = np.array(self.coefs_list)
+        self.qarr = np.array(self.q_list)
+        self.coefs = np.linalg.lstsq(self.params, self.qarr, rcond=None)[0]
+        self.val = np.dot(self.coefs, np.array([radius, phi_betw_r, psi_betw_enem]))
+        return self.val
+
     def calc_qstate_enemy(self, radius, phi_betw_r, psi_betw_enem, q_data):
         self.r_i, self.phi_i, self.psi_i = self.qstate.get_index_by_values(radius, phi_betw_r, psi_betw_enem)
         #print("inner: {}".format(self.qstate.q_data[0:2, 0:2, 0:2]))
@@ -259,7 +279,7 @@ class Loss():
                 obj1 = objects_state[index_self]
                 obj2 = objects_state[ind]
                 r_enemy, phi_enemy, psi_enemy = self.h.get_r_phi_psi(obj1, obj2)
-                self.q_list_enemies.append(self.calc_qstate_enemy(r_enemy, phi_enemy, psi_enemy, self.q_data))
+                self.q_list_enemies.append(self.calc_qstate_enemy_ver_2(r_enemy, phi_enemy, psi_enemy, self.q_data))
         return self.q_list_enemies
 
     def calc_qstate_friends(self, objects_state, friendly_ids, index_self):
@@ -271,7 +291,7 @@ class Loss():
                 obj1 = objects_state[index_self]
                 obj2 = objects_state[ind]
                 r_alies, phi_alies, psi_alies = self.h.get_r_phi_psi(obj1, obj2)
-                self.q_list_friends.append(self.calc_qstate_enemy(r_alies, phi_alies, psi_alies, self.q_data_alies))
+                self.q_list_friends.append(self.calc_qstate_enemy_ver_2(r_alies, phi_alies, psi_alies, self.q_data_alies))
         return self.q_list_friends
 
     def loss_result(self, object, radius, phi, psi, radiant, dire):
@@ -322,33 +342,40 @@ class QState:
 
         self.r_cell = np.int32(0)
         self.phi_cell = np.int32(0)
-        self.psi_wide_cell = np.int32(0)
+        self.psi_cell = np.int32(0)
 
-    def get_index_by_values(self, r, phi, psi): ##get nearest cords
+    def get_index_by_values_old_ver(self, r, phi, psi):
+        r = r if r < self.range_r[1] else self.range_r[1]  # r wide = 75
+        phi = phi % 360
+        psi = psi % 360
 
+        self.r_ind = int(r//self.r_wide)
+        self.phi_ind = int(phi//self.phi_wide)
+        self.psi_ind = int(psi//self.psi_wide)
+
+        return self.r_ind, self.phi_ind, self.psi_ind
+
+    def get_index_by_values(self, r=1000, phi=180, psi=0): ##get nearest cords/ star neutral position
         r = r if r < self.range_r[1] else self.range_r[1] # r wide = 75
+        phi = phi % 360
+        psi = psi % 360
 
-        r_ind_add = 1 if r % self.r_wide > self.r_wide / 2 else 0
-        r_ind = int(r // self.r_wide + r_ind_add)
+        self.r_ind_add = 1 if r % self.r_wide >= self.r_wide/2 else 0
+        self.r_ind = int(r // self.r_wide + self.r_ind_add)
 
+        self.phi_ind_add = 1 if phi % self.phi_wide >= self.phi_wide/2 else 0
+        self.phi_ind = int(phi // self.phi_wide + self.phi_ind_add)
 
-        try:
-            phi_ind_add = 1 if phi % self.phi_wide > self.phi_wide / 2 else 0
-            phi_ind = int(phi // self.phi_wide + phi_ind_add)
-        except ValueError:
-            print(phi, self.phi_wide)
+        self.psi_ind_add = 1 if psi % self.psi_wide >= self.psi_wide / 2 else 0
+        self.psi_ind = int(psi // self.psi_wide + self.psi_ind_add)
 
-        psi_ind_add = 1 if psi % self.psi_wide > self.psi_wide / 2 else 0
-        psi_ind = int(psi // self.psi_wide + psi_ind_add)
-
-        #print(r, phi % 360, psi % 360 , r_ind, phi_ind, psi_ind)
-        return r_ind, phi_ind, psi_ind
+        return self.r_ind, self.phi_ind, self.psi_ind
 
     def get_cell_val_by_index(self, r_ind, phi_ind, psi_ind):
         self.r_cell = self.r_wide // 2 + self.r_wide * r_ind
         self.phi_cell = self.phi_wide // 2 + self.phi_wide * phi_ind
-        self.psi_wide_cell = self.psi_wide // 2 + self.psi_wide * psi_ind
-        return self.r_cell, self.phi_cell, self.psi_wide_cell
+        self.psi_cell = self.psi_wide // 2 + self.psi_wide * psi_ind
+        return self.r_cell, self.phi_cell, self.psi_cell
 
     def feed_data(self, state_vector, q_value, alies=False):
         if alies:

@@ -23,52 +23,53 @@ class ParallelOptions():
         score = q.get()
         return score, cur_cube
 
-    def download_best_cubes(self, count=20):
-        list = []
+    def download_best_cubes(self, count):
+        list_of_cubes = []
         for i in range(count):
             file_path = "best_shuffled_cube_with_time_{}.txt".format(i)
             cube = np.zeros((n_cuts, n_cuts, n_cuts))
             qs.load_cube_file(file_path, cube)
-            list.append(cube)
-        return list
+            list_of_cubes.append(cube)
+        return list_of_cubes
+
+    def make_list_of_cubes(self, count, cube=None, download=False, delta=0.05):
+        list_of_cubes = []
+        if download:
+            list_of_cubes = self.download_best_cubes(count=count)
+        else:
+            for j in range(count):
+                rand_cube = self.randomize_cube(cube, delta=delta)  # 0.05
+                list_of_cubes.append(rand_cube)
+        return list_of_cubes
 
 if __name__ == '__main__':
     n_cuts = 20
     qs = QState(n_cuts)
-    enemies_cube = np.zeros((n_cuts, n_cuts, n_cuts))
-    alies_cube = np.zeros((n_cuts, n_cuts, n_cuts))
+    enemies_cube, alies_cube = np.zeros((n_cuts, n_cuts, n_cuts)), np.zeros((n_cuts, n_cuts, n_cuts))
     enemy_file_path = "./cubes/best_enemy_cube.txt"
     alies_file_path = "./cubes/alies_after_generation.txt"
     qs.load_cube_file(enemy_file_path, enemies_cube)
     qs.load_cube_file(alies_file_path, alies_cube)
+
     opt = ParallelOptions(cube=enemies_cube)
 
     best_cube = alies_cube ##alies_cube
 
-    #count_download_cubes = 15
-
     eras = 10000
     mutations = 30
     count_cubes = int(alies_file_path[-5]) if alies_file_path[-6] == '_' else 0
-    #print(count_cubes)
     max_q = 0.1
+    delta = 0.2
 
     pool = Pool(processes=mutations)
     for i in range(eras):
         cur_cube = best_cube
         find_better = False
-        #list_of_best_cubes = download_best_cubes(count=count_download_cubes)
 
-        randomized_cubes = []
-        for j in range(mutations):
-            rand_cube = opt.randomize_cube(cur_cube, delta=0.2) #0.05
-            randomized_cubes.append(rand_cube)
+        list_of_cubes = opt.make_list_of_cubes(count=mutations, cube=cur_cube, delta=delta)
+        q_and_cubes = pool.map(opt.run_gen, list_of_cubes)
 
-        #print("Makes {} list of randomized cubes!, Era number:{}".format(mutations, i))
-        q_and_cubes = pool.map(opt.run_gen, randomized_cubes)
-        local_max = -1
-
-        index_max = 0
+        local_max, index_max = -1, 0
         for k in range(mutations):
             if q_and_cubes[k][0] > max_q:
                 max_q = q_and_cubes[k][0]
@@ -80,7 +81,7 @@ if __name__ == '__main__':
         if find_better:
             count_cubes += 1
             best_cube = q_and_cubes[index_max][1]
-            print('-> Add parallel best cube: {},  with best score: {}'.format(count_cubes, max_q))
-            qs.save_history_file('alies_sec_ver', best_cube, num_shuffle=count_cubes, score=max_q)
+            print('-> Add parallel best cube: {},  with best score: {:.4f}'.format(count_cubes, max_q))
+            qs.save_history_file('alies_gen_ford_ver', best_cube, num_shuffle=count_cubes, score=max_q)
         else:
             print('<- Do not found better : ( Local max:{}'.format(local_max))

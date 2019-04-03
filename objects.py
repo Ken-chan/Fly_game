@@ -328,7 +328,7 @@ class Objects:
     def delete_object(self, jndex, objects, second_unit=None):
         if not self.train_mode:
             team_alone = "Blue" if Teams.team_by_id(jndex) == 1 else "Red"
-            print('Killed {} unit from {} team with number: {}'\
+            print("Killed '{}' unit from {} team with number: {}"\
                 .format(ObjectType.name_of_type_by_id(jndex), team_alone, jndex))
 
         for kndex in range(1, ObjectProp.Total):
@@ -341,7 +341,7 @@ class Objects:
         if second_unit is not None:
             if not self.train_mode:
                 team_twice = "Blue" if Teams.team_by_id(second_unit) == 1 else "Red"
-                print('Killed {} unit from {} team with number: {}'\
+                print("Killed '{}' unit from {} team with number: {}"\
                     .format(ObjectType.name_of_type_by_id(second_unit), team_twice, second_unit))
             for kndex in range(1, ObjectProp.Total):
                 objects[second_unit][kndex] = 0
