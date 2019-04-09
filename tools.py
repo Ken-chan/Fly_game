@@ -49,9 +49,10 @@ class SimpleLoss:
 
 
 class Loss():
-    def __init__(self, cube=None, alies_cube=None):
+    def __init__(self, cube=None, alies_cube=None, wall_param=None):
         self.cube = cube
         self.alies_cube = alies_cube
+        self.danger_wall_distance = wall_param
         self.battle_field_size = np.array([1000.0, 1000.0])
         #self.set_congiguration(configuration)
         self.qstate = QState(20)
@@ -73,7 +74,7 @@ class Loss():
         self.min_x = np.float(0.0)
         self.min_y = np.float(0.0)
         self.norm_min_distance = np.float(0.0)
-        self.danger_distance_norm = np.float(0.3) #0.2 critical distance to danger objects(normalize)
+        self.danger_distance_norm = self.danger_wall_distance #0.3 critical distance to danger objects(normalize)
         self.danger_distance_alies = np.float(0.0)
         self.norm_danger_distance_alies = np.float(0.7)  # value is piece of attack range
         self.max_speed_of_objects = 400
@@ -260,14 +261,12 @@ class Loss():
                         self.val_r, self.val_phi, self.val_psi = self.qstate.get_cell_val_by_index(self.new_r, self.new_phi, self.new_psi)
                         self.coefs_list.append([self.val_r, self.val_phi, self.val_psi])
                         self.q_list.append(self.q_value)
+
         self.params = np.array(self.coefs_list)
         self.qarr = np.array(self.q_list)
-        #try:
         self.coefs = np.linalg.lstsq(self.params, self.qarr, rcond=None)[0]
         self.val = np.dot(self.coefs, np.array([radius, phi_betw_r, psi_betw_enem]))
-        #except Exception as e:
-        #print(self.params,self.qarr, len(self.params),len(self.qarr), np.array([radius, phi_betw_r, psi_betw_enem]))
-        #print("value: {}".format(val))
+
         return self.val
 
     def calc_qstate_enemies(self, objects_state, enemy_ids, index_self):
@@ -279,7 +278,7 @@ class Loss():
                 obj1 = objects_state[index_self]
                 obj2 = objects_state[ind]
                 r_enemy, phi_enemy, psi_enemy = self.h.get_r_phi_psi(obj1, obj2)
-                self.q_list_enemies.append(self.calc_qstate_enemy_ver_2(r_enemy, phi_enemy, psi_enemy, self.q_data))
+                self.q_list_enemies.append(self.calc_qstate_enemy(r_enemy, phi_enemy, psi_enemy, self.q_data))
         return self.q_list_enemies
 
     def calc_qstate_friends(self, objects_state, friendly_ids, index_self):
@@ -291,7 +290,7 @@ class Loss():
                 obj1 = objects_state[index_self]
                 obj2 = objects_state[ind]
                 r_alies, phi_alies, psi_alies = self.h.get_r_phi_psi(obj1, obj2)
-                self.q_list_friends.append(self.calc_qstate_enemy_ver_2(r_alies, phi_alies, psi_alies, self.q_data_alies))
+                self.q_list_friends.append(self.calc_qstate_enemy(r_alies, phi_alies, psi_alies, self.q_data_alies))
         return self.q_list_friends
 
     def loss_result(self, object, radius, phi, psi, radiant, dire):
@@ -305,8 +304,8 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "./cubes/best_enemy_cube.txt"
-        self.alies_cube_path = "./cubes/alies_after_generation.txt"
+        self.cube_path = "./cubes/enemy_best.txt"
+        self.alies_cube_path = "./cubes/alies_0.3067.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
@@ -344,30 +343,36 @@ class QState:
         self.phi_cell = np.int32(0)
         self.psi_cell = np.int32(0)
 
-    def get_index_by_values_old_ver(self, r, phi, psi):
+    def get_index_by_values_old_ver(self, r=1000, phi=0, psi=180):
         r = r if r < self.range_r[1] else self.range_r[1]  # r wide = 75
         phi = phi % 360
         psi = psi % 360
 
-        self.r_ind = int(r//self.r_wide)
-        self.phi_ind = int(phi//self.phi_wide)
-        self.psi_ind = int(psi//self.psi_wide)
+        try:
+            self.r_ind = int(r // self.r_wide)
+            self.phi_ind = int(phi // self.phi_wide)
+            self.psi_ind = int(psi // self.psi_wide)
+        except RuntimeWarning:
+            print(r, phi, psi, self.r_ind, self.phi_ind, self.psi_ind, self.r_wide, self.phi_wide, self.psi_wide)
 
         return self.r_ind, self.phi_ind, self.psi_ind
 
-    def get_index_by_values(self, r=1000, phi=180, psi=0): ##get nearest cords/ star neutral position
+    def get_index_by_values(self, r, phi, psi): ##get nearest cords/ star neutral position
         r = r if r < self.range_r[1] else self.range_r[1] # r wide = 75
         phi = phi % 360
         psi = psi % 360
 
-        self.r_ind_add = 1 if r % self.r_wide >= self.r_wide/2 else 0
-        self.r_ind = int(r // self.r_wide + self.r_ind_add)
+        try:
+            self.r_ind_add = 1 if r % self.r_wide >= self.r_wide/2 else 0
+            self.r_ind = int(r // self.r_wide + self.r_ind_add)
 
-        self.phi_ind_add = 1 if phi % self.phi_wide >= self.phi_wide/2 else 0
-        self.phi_ind = int(phi // self.phi_wide + self.phi_ind_add)
+            self.phi_ind_add = 1 if phi % self.phi_wide >= self.phi_wide/2 else 0
+            self.phi_ind = int(phi // self.phi_wide + self.phi_ind_add)
 
-        self.psi_ind_add = 1 if psi % self.psi_wide >= self.psi_wide / 2 else 0
-        self.psi_ind = int(psi // self.psi_wide + self.psi_ind_add)
+            self.psi_ind_add = 1 if psi % self.psi_wide >= self.psi_wide / 2 else 0
+            self.psi_ind = int(psi // self.psi_wide + self.psi_ind_add)
+        except:
+            print(r, phi, psi)
 
         return self.r_ind, self.phi_ind, self.psi_ind
 
@@ -776,6 +781,16 @@ class QState:
         with open(file_name, 'w') as f:
             f.write(q_str + '\n')
 
+    def save_params_in_file(self, file_name, params, num_shuffle=None):
+        q_str = ''
+        for i in range(len(params)):
+            q_str += '{}\n'.format(params[i])
+        if num_shuffle:
+            file_name += "_{}.txt".format(num_shuffle)
+        with open(file_name, 'w') as f:
+            f.write(q_str + '\n')
+
+
 class Helper():
     def __init__(self):
         self.obj = None
@@ -805,7 +820,10 @@ class Helper():
         self.arr_turned = np.array(
                 [self.arr_dir[0] * self.obj_dir[0] + self.arr_dir[1] * self.obj_dir[1],
                  self.arr_dir[0] * self.obj_dir[1] - self.arr_dir[1] * self.obj_dir[0]])
-        self.angle_between_radius = np.degrees(np.arccos(self.arr_turned[0]))
+        try:
+            self.angle_between_radius = np.degrees(np.arccos(self.arr_turned[0]))
+        except RuntimeWarning:
+            print(obj1, '\n', obj2, self.arr_turned)
         if self.arr_turned[1] < 0:
             self.angle_between_radius = 360 - self.angle_between_radius
 

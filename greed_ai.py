@@ -4,12 +4,14 @@ import time
 
 
 class GreedAi:
-    def __init__(self, index, battle_field_size, cube=None, alies_cube=None):
+    def __init__(self, index, battle_field_size, cube=None, alies_cube=None, params=None):
         # print("hello its me")
         self.current_controller = None
         self.index = index
         self.cube = cube
         self.alies_cube = alies_cube
+        self.params = params
+        self.min_crit_val = self.params[0]
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
         self.obj = np.zeros(ObjectProp.Total)
@@ -23,8 +25,6 @@ class GreedAi:
         self.alies_rewards = []
         self.enemy_rewards = []
         self.walls_reward = np.float(0.0)
-        self.min_threshold = np.float(-0.5)
-        self.max_threshold = np.float(0.5)
 
 
         self.diff_vector = np.array([0.0,0.0])
@@ -43,7 +43,7 @@ class GreedAi:
         self.enemy_ids = Teams.get_team_obj_ids(self.enemy_team)
 
         #reward options#
-        self.loss = Loss(cube=self.cube, alies_cube=self.alies_cube)
+        self.loss = Loss(cube=self.cube, alies_cube=self.alies_cube, wall_param=params[1])
         self.h = Helper()
         #reward options#
 
@@ -53,6 +53,10 @@ class GreedAi:
         for step_v in range(0, self.num_actions+1):
             for step_d in range(0, self.num_actions+1):
                 self.acts.append((-1 + (2/self.num_actions * step_v), -1 + (2/self.num_actions * step_d)))
+
+        self.min_v_add = 0
+        self.dv_calc = np.float(0.0)
+        self.w_calc = np.float(0.0)
 
     def collect_reward(self, objects_state):
         self.enemy_rewards = []
@@ -67,7 +71,7 @@ class GreedAi:
 
 
         self.target_reward = np.max(self.total_rewards)
-        if np.min(self.total_rewards) < self.min_threshold:
+        if np.min(self.total_rewards) < self.min_crit_val:
             self.target_reward = np.min(self.total_rewards)
 
         return self.target_reward

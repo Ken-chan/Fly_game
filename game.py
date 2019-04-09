@@ -12,21 +12,40 @@ from objects import Objects
 from obj_def import *
 from tools import Helper
 import gc
+import cProfile
+
+
+
+def profiler(func):
+    """Decorator for run function profile"""
+    def wrapper(*args, **kwargs):
+        profile_filename = func.__name__ + '.prof'
+        profiler = cProfile.Profile()
+        result = profiler.runcall(func, *args, **kwargs)
+        profiler.dump_stats(profile_filename)
+        return result
+    ### write it in console to get profile
+    # import pstats
+    # p = pstats.Stats('run_game.prof')
+    # p.sort_stats('tottime').print_stats() #'calls' and etc
+    return wrapper
 
 class GameState:
     Start, ActiveGame, Menu, Exit, Pause = range(5)
 
-
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1, cube=None, alies_cube=None, queue_res=None):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1, cube=None, alies_cube=None, queue_res=None, params=None):
         gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.train_mode = train_mode
+
         self.cube = cube
         self.alies_cube = alies_cube
         self.queue_res = queue_res
+        self.params = params
+
         self.battle_field_size = (1000, 1000)
         self.radiant_bots = 3
         self.dire_bots = 3
@@ -59,7 +78,7 @@ class Game:
                             self.battle_field_size[0], self.battle_field_size[1])
         self.messenger = Messenger()
         if self.train_mode:
-            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True, cube=self.cube, alies_cube=self.alies_cube)
+            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True, cube=self.cube, alies_cube=self.alies_cube, params=self.params)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger, ai_controls=self.ai_controls, tries=tries,
                                    bot1=self.radiant_bots, bot2=self.dire_bots, player1=self.is_player1_play,
@@ -79,10 +98,6 @@ class Game:
                           messages.Game.Polar_grid: self.show_polar_grid,
                           messages.Game.ActiveGame: self.game_unpaused}
 
-        ##
-        self.hepler = Helper()
-        #self.configuration = self.hepler.get
-        ##
         self.run_game()
 
     def prepare_config(self, bot1, bot2, player1, player2, sizeX, sizeY):
@@ -147,6 +162,7 @@ class Game:
             self.renderer.update_objects(objects_copy)
             self.renderer.update_graphics()
 
+    #@profiler
     def run_game(self):
         if self.train_mode:
             pyglet.clock.schedule_interval(self.read_messages, 1.0 / 2)
@@ -199,6 +215,7 @@ if __name__ == "__main__":
     args["screen_width"] = 1000
     args["screen_height"] = 1000
     print("{}".format(args))
+
     Game(**args)
     #for index in range(0, 1):
     #    proc_arr.append(Process(target=Game, args=args_for_game))

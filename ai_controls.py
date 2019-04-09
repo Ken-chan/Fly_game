@@ -13,7 +13,7 @@ class AItype:
     Dummy, DumbAi, QAi, GreedAi = range(4)
 
     @classmethod
-    def contruct_ai(cls, aitype, index, battle_field_size, configuration, controller=None, cube=None, alies_cube=None):
+    def contruct_ai(cls, aitype, index, battle_field_size, configuration, controller=None, cube=None, alies_cube=None, params=None):
 
         if aitype == cls.DumbAi:
             return DumbAI(index, battle_field_size, configuration)
@@ -23,11 +23,11 @@ class AItype:
         #    q_ai = QAi(index, battle_field_size, controller)
         #    return q_ai
         elif aitype == cls.GreedAi:
-            return GreedAi(index, battle_field_size, cube, alies_cube)
+            return GreedAi(index, battle_field_size, cube, alies_cube, params)
 
 
 class AIcontrols:
-    def __init__(self, configuration, messenger=None, train_mode=False, cube=None, alies_cube=None):
+    def __init__(self, configuration, messenger=None, train_mode=False, cube=None, alies_cube=None, params=None):
         self.ai_state = AIcontrolsState.Start
         self.train_mode = train_mode
         self.messenger = messenger
@@ -39,6 +39,8 @@ class AIcontrols:
         self.ai_objs = []
         self.cube = cube
         self.alies_cube = alies_cube
+        self.params = params
+
         for index in range(0, ObjectType.ObjArrayTotal):
             self.ai_objs.append(Dummy(index))
         self.update_ai_settings(configuration)
@@ -87,7 +89,8 @@ class AIcontrols:
                             off_counter = offset_counter[key]
                             obj_offset, _ = ObjectType.offset(key)
                             obj_ind = obj_offset + off_counter
-                            self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size, configuration, controller=self.controller, cube=self.cube, alies_cube=self.alies_cube)
+                            self.ai_objs[obj_ind] = AItype.contruct_ai(aitype, obj_ind, self.battle_field_size, configuration,
+                                                                       controller=self.controller, cube=self.cube, alies_cube=self.alies_cube, params=self.params)
 
     def recalc(self, dt, objects_for_train=None):
         self.result = []
