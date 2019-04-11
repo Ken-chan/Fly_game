@@ -1,7 +1,7 @@
 import pyglet
 import messages
 from obj_def import *
-from tools import Loss
+from tools import Loss, Helper
 from ai_controls import AItype
 import numpy as np
 
@@ -158,7 +158,11 @@ class Objects:
         self.norm_blue_team = np.float(0.0)
         self.time_succ = np.float(0.0)
         self.is_it_draw = False
+
         self.success = np.float(0.0)
+        self.package_from_games = None
+        self.helper = Helper()
+        self.dict_score = self.helper.create_dict_score(self.radiant_start, self.dire_start)
 
         if self.train_mode:
             self._index, self._vel_ctrl, self._turn_ctrl = 0, 0, 0
@@ -291,11 +295,10 @@ class Objects:
                                     self.is_inside_cone(self.vec1, self.vec2, self.diff_vector, Constants.AttackConeWide):
                                 self.delete_object(jndex, objects)
 
-
+            ### Strings to calculate succes with enof of game score
             if (self.radiant < 1 and self.dire < 1) or self.playtime >= self.maxplaytime:
                 self.draws += 1
-                #if it draw, play time = 2x*playtime
-                self.is_it_draw = True
+                self.time_succ += 0.5
             elif self.radiant < 1:
                 self.defeats += 1
                 self.time_succ += 1
@@ -304,24 +307,23 @@ class Objects:
 
             # END_OF_GAME_TRIGGERED
             if self.radiant < 1 or self.dire < 1 or (self.playtime >= self.maxplaytime):
+                self.time_succ += self.playtime / self.maxplaytime
                 self.norm_red_team += self.radiant/self.radiant_start
                 self.norm_blue_team += self.dire/self.dire_start
-                self.time_succ += self.playtime / self.maxplaytime
-                if self.is_it_draw:
-                    self.time_succ += self.playtime / self.maxplaytime
-                    self.is_it_draw = False
+
+                self.dict_score["Red '{}':Blue '{}'".format(self.radiant, self.dire)] += 1
+
                 self.messenger.end_of_game(trainmode=self.train_mode)
                 self.objects_state = ObjectsState.Pause
-                if self.train_mode:
-                    #print('-> Wins:{}, Loses:{}, Draws:{}, Time Succ:{}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.time_succ, self.restart_counter,'_'))
-                    #print('-> Wins:{}, Loses:{}, Draws:{}, Play time:{:.5f}'.format(self.victories, self.defeats, self.draws, self.time_succ))
 
+                if self.train_mode:
+                    #print('-> Wins:{}, Loses:{}, Draws:{}, Time Succ:{:.5f}. > Restarted game number:{}{}'.format(self.victories, self.defeats, self.draws, self.time_succ, self.restart_counter,'_'))
                     if self.victories+self.defeats+self.draws == self.tries:
-                        #self.success = self.victories/(self.victories+self.defeats) * (1 - self.draws/self.tries) if self.victories+self.defeats != 0 else 0
                         #self.success = (self.victories - self.defeats - 0.5*self.draws - 0.5*self.time_succ)/self.tries #w time
-                        #self.success = (self.victories - self.defeats - 0.5 * self.draws)/self.tries #w/o time
+
                         self.success = (self.norm_red_team - self.norm_blue_team)/self.tries
-                        self.queue_res.put(self.success)
+                        self.package_from_games = [self.success, self.dict_score]
+                        self.queue_res.put(self.package_from_games)
                     self.restart()
 
 

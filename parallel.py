@@ -49,6 +49,26 @@ class ParallelOptions():
                 list_of_cubes.append(rand_cube)
         return list_of_cubes
 
+    def make_list_of_params(self, count, params, delta_cubes=0.05, delta_params=0.02):
+        mutations = count
+        list_of_enemies_cubes = self.make_list_of_cubes(count=mutations, cube=params[0], delta=delta_cubes)
+        list_of_alies_cubes = self.make_list_of_cubes(count=mutations, cube=params[1], delta=delta_cubes)
+        list_of_params_crit = self.randomize_params(count=mutations, param=params[2], delta=delta_params)
+        list_of_params_walls = self.randomize_params(count=mutations, param=params[3], delta=delta_params)
+
+        main_list = []
+        for j in range(mutations):
+            list_params = list_of_enemies_cubes[j], list_of_alies_cubes[j], list_of_params_crit[j], \
+                          list_of_params_walls[j]
+            main_list.append(list_params)
+        return main_list
+
+    def make_string_score(self, dict_score):
+        str = ''
+        for j in dict_score:
+            if dict_score[j] != 0:
+                str += "{}: {}, ".format(j, dict_score[j])
+        return str[:-2]
 
 if __name__ == '__main__':
     n_cuts = 20
@@ -75,33 +95,31 @@ if __name__ == '__main__':
         cur_params = best_params
         find_better = False
 
-        list_of_enemies_cubes = opt.make_list_of_cubes(count=mutations, cube=cur_params[0], delta=delta_cubes)
-        list_of_alies_cubes = opt.make_list_of_cubes(count=mutations, cube=cur_params[1], delta=delta_cubes)
-        list_of_params_crit = opt.randomize_params(count=mutations, param=cur_params[2], delta=delta_params)
-        list_of_params_walls = opt.randomize_params(count=mutations, param=cur_params[3], delta=delta_params)
-
-        main_list = []
-        for j in range(mutations):
-            list_params = list_of_enemies_cubes[j], list_of_alies_cubes[j], list_of_params_crit[j], list_of_params_walls[j]
-            main_list.append(list_params)
+        main_list = opt.make_list_of_params(mutations, cur_params, delta_cubes, delta_params)
 
         q_and_cubes = pool.map(opt.run_gen, main_list)
 
-        local_max, index_max = -1, 0
+        local_max, index_local_max, index_max = -1, 0, 0
         for k in range(mutations):
-            if q_and_cubes[k][0] > max_q:
-                max_q = q_and_cubes[k][0]
+            if q_and_cubes[k][0][0] > max_q:
+                max_q = q_and_cubes[k][0][0]
                 index_max = k
                 find_better = True
-            if q_and_cubes[k][0] > local_max:
-                local_max = q_and_cubes[k][0]
+            if q_and_cubes[k][0][0] > local_max:
+                local_max = q_and_cubes[k][0][0]
+                index_local_max = k
 
         if find_better:
             count_cubes += 1
             best_params = q_and_cubes[index_max][1]
+            str_score = opt.make_string_score(q_and_cubes[index_max][0][1])
             print('-> Add parallel best cube: {},  with best score: {:.4f}'.format(count_cubes, max_q))
+            print(str_score)
+
             qs.save_history_file('enemies_first_ver', best_params[0], num_shuffle=count_cubes, score=max_q)
             qs.save_history_file('alies_first_ver', best_params[1], num_shuffle=count_cubes, score=max_q)
             qs.save_params_in_file('crit_and_walls', best_params[2:4], num_shuffle=count_cubes)
         else:
+            str_score = opt.make_string_score(q_and_cubes[index_local_max][0][1])
             print('<- Do not found better : ( Local max:{:.4f}'.format(local_max))
+            print(str_score)

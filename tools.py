@@ -804,6 +804,7 @@ class Helper():
         self.angle_between_radius = np.float(0.0)
         self.angle_between_objects = np.float(0.0)
 
+        self.dict_score = {}
     def get_r_phi_psi(self, obj1, obj2):
         self.obj = obj1
         self.enemy = obj2
@@ -831,6 +832,13 @@ class Helper():
 
 
         return self.distance, self.angle_between_radius, self.angle_between_objects
+
+    def create_dict_score(self, count_red, count_blue):
+        self.dict_score = {}
+        for i in range(count_red, -1, -1):
+            for j in range(count_blue, -1, -1):
+                self.dict_score["Red '{}':Blue '{}'".format(i, j)] = np.int32(0)
+        return self.dict_score
 
 def calc_polar_grid(self, objects, width, height, step_number=16, player_number=13, max_range=605):
     self.steps = [25, 35, 45, 65, 85, 105, 155, 205, 255, 305, 355, 405, 455, 505, 555, 605]
