@@ -103,7 +103,6 @@ class Objects:
         self.framerate = 30
         self.maxplaytime = 25 #* self.framerate
 
-
         #self.loss = Loss() #loss take config from objects(not from game)
         self.angle_between_objects = np.float(0.0)
         self.angle_between_radius = np.float(0.0)

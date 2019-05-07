@@ -74,21 +74,24 @@ if __name__ == '__main__':
     n_cuts = 20
     qs = QState(n_cuts)
     enemies_cube, alies_cube = np.zeros((n_cuts, n_cuts, n_cuts)), np.zeros((n_cuts, n_cuts, n_cuts))
-    enemy_file_path = "./cubes/enemy_best.txt"
-    alies_file_path = "./cubes/alies_0.3067.txt"
+    list_downdload_params = []
+    enemy_file_path = "./cubes/enemies_first_ver_0.3867_3.txt"
+    alies_file_path = "./cubes/alies_first_ver_0.3867_3.txt"
+    params_file_path = "./cubes/crit_and_walls_dangerous.txt"
     qs.load_cube_file(enemy_file_path, enemies_cube)
     qs.load_cube_file(alies_file_path, alies_cube)
+    qs.load_params_file(params_file_path, list_downdload_params)
 
     opt = ParallelOptions()
 
-    best_params = enemies_cube, alies_cube, -0.5, 0.3
+    best_params = enemies_cube, alies_cube, list_downdload_params[0], list_downdload_params[1] #0.32: -0.49, 0.25
 
     #count_cubes = int(alies_file_path[-5]) if alies_file_path[-6] == '_' else 0
-    count_cubes=0
+    count_cubes = 0
     eras, mutations = 10000, 30
-    max_q = 0.3
-    delta_cubes = 0.07
-    delta_params = 0.03
+    max_q = 0.1
+    delta_cubes = 0
+    delta_params = 0.05
 
     pool = Pool(processes=mutations)
     for i in range(eras):
@@ -116,9 +119,9 @@ if __name__ == '__main__':
             print('-> Add parallel best cube: {},  with best score: {:.4f}'.format(count_cubes, max_q))
             print(str_score)
 
-            qs.save_history_file('enemies_first_ver', best_params[0], num_shuffle=count_cubes, score=max_q)
-            qs.save_history_file('alies_first_ver', best_params[1], num_shuffle=count_cubes, score=max_q)
-            qs.save_params_in_file('crit_and_walls', best_params[2:4], num_shuffle=count_cubes)
+            #qs.save_history_file('enemy_target_vers', best_params[0], num_shuffle=count_cubes, score=max_q)
+            #qs.save_history_file('alies_target_vers', best_params[1], num_shuffle=count_cubes, score=max_q)
+            qs.save_params_in_file('crit_and_walls_target_ver', best_params[2:4], num_shuffle=count_cubes)
         else:
             str_score = opt.make_string_score(q_and_cubes[index_local_max][0][1])
             print('<- Do not found better : ( Local max:{:.4f}'.format(local_max))

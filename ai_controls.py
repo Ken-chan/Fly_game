@@ -8,6 +8,27 @@ from obj_def import *
 class AIcontrolsState:
     Start, Run, Exit = range(3)
 
+class TargetMatch:
+    def __init__(self):
+
+        self.mapping = []
+        self.mapping_index = 0
+        self.enemy_index = None
+
+        self.own_team = Teams.Team1
+        self.enemy_team = Teams.get_opposite_team(self.own_team)
+        self.friendly_ids = Teams.get_team_obj_ids(self.own_team)
+        self.enemy_ids = Teams.get_team_obj_ids(self.enemy_team)
+
+    def get_mapping(self, objects):
+        self.mapping = []
+        self.mapping_index = 0
+        for ind in self.enemy_ids:
+            if objects[ind][ObjectProp.ObjType] != ObjectType.Absent:
+                self.mapping.append(self.mapping_index)
+                #print(self.mapping_index)
+                self.mapping_index += 1
+        return self.mapping #индекс бота и его цели
 
 class AItype:
     Dummy, DumbAi, QAi, GreedAi = range(4)
@@ -27,7 +48,7 @@ class AItype:
 
 
 class AIcontrols:
-    def __init__(self, configuration, messenger=None, train_mode=False, cube=None, alies_cube=None, params=None):
+    def __init__(self, configuration, messenger=None, train_mode=False, cube=None, alies_cube=None, params=None, team_strategy=None):
         self.ai_state = AIcontrolsState.Start
         self.train_mode = train_mode
         self.messenger = messenger
@@ -40,6 +61,12 @@ class AIcontrols:
         self.cube = cube
         self.alies_cube = alies_cube
         self.params = params
+
+        self.team_strategy = team_strategy
+
+        self.teamiter = TargetMatch()
+        self.list_maps = []
+        self.mapping_iter = np.int32(0)
 
         for index in range(0, ObjectType.ObjArrayTotal):
             self.ai_objs.append(Dummy(index))
@@ -98,6 +125,11 @@ class AIcontrols:
             self.train_mode = True
             self.objects_copy = objects_for_train
         if self.ai_state == AIcontrolsState.Run and (self.objects_copy is not None or self.train_mode):
+
+            self.list_maps = []
+            self.list_maps = self.teamiter.get_mapping(self.objects_copy) #словарик
+            self.mapping_iter = -1
+
             for index in range(0, ObjectType.ObjArrayTotal):
                 if self.objects_copy[index][ObjectProp.ObjType] == ObjectType.Absent:
                     continue
@@ -105,7 +137,23 @@ class AIcontrols:
                 #if self.ai_objs[index].current_controller is not None:
                 #    self.controller = self.ai_objs[index].current_controller
                 #    #print(self.controller.actions_executed_so_far)
-                result = self.ai_objs[index].calc_behaviour(self.objects_copy)
+
+
+
+                if len(self.list_maps) != 0:
+                    self.mapping_iter += 1
+                    self.mapping_iter = self.mapping_iter % len(self.list_maps)
+                    if self.team_strategy == TeamInteractions.All_for_one:
+                        self.teamiter.enemy_index = self.list_maps[0]
+                    elif self.team_strategy == TeamInteractions.OneGoal_oneTarget:
+                        self.teamiter.enemy_index = self.list_maps[self.mapping_iter] if Teams.team_by_id(index) == self.teamiter.own_team else None
+                    elif self.team_strategy == TeamInteractions.Dynamical_choose:
+                        self.teamiter.enemy_index = None
+                else:
+                    self.teamiter.enemy_index = None
+
+                result = self.ai_objs[index].calc_behaviour(self.objects_copy, self.teamiter.enemy_index) ###ВОТ ТУТ НАДО ЕЩЕ ЦЕЛЬ ПРОБРАСЫВАТЬ
+
                 if result is None:
                     continue
                 turn_ctrl, vel_ctrl = result

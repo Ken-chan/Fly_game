@@ -3,6 +3,12 @@ from tools import calc_polar_grid, Loss, Helper
 import time
 
 
+class TeamInteractions:
+    def __init__(self, interact):
+        self.currunt_interact = interact
+    #def
+
+
 class GreedAi:
     def __init__(self, index, battle_field_size, cube=None, alies_cube=None, params=None):
         # print("hello its me")
@@ -10,7 +16,8 @@ class GreedAi:
         self.index = index
         self.cube = cube
         self.alies_cube = alies_cube
-        self.params = params
+        self.default_params = (-0.44, 0.258)
+        self.params = params if params is not None else self.default_params
         self.min_crit_val = self.params[0]
         self.battle_field_size = battle_field_size
         self.centre_coord = self.battle_field_size / 2
@@ -43,7 +50,7 @@ class GreedAi:
         self.enemy_ids = Teams.get_team_obj_ids(self.enemy_team)
 
         #reward options#
-        self.loss = Loss(cube=self.cube, alies_cube=self.alies_cube, wall_param=params[1])
+        self.loss = Loss(cube=self.cube, alies_cube=self.alies_cube, wall_param=self.params[1])
         self.h = Helper()
         #reward options#
 
@@ -58,7 +65,7 @@ class GreedAi:
         self.dv_calc = np.float(0.0)
         self.w_calc = np.float(0.0)
 
-    def collect_reward(self, objects_state):
+    def collect_reward(self, objects_state, enemy_index=None):
         self.enemy_rewards = []
         self.alies_rewards = []
         self.total_rewards = []
@@ -69,8 +76,10 @@ class GreedAi:
         self.total_rewards = self.enemy_rewards + self.alies_rewards
         self.total_rewards.append(self.walls_reward)
 
-
-        self.target_reward = np.max(self.total_rewards)
+        if enemy_index is not None:
+            self.target_reward = self.enemy_rewards[enemy_index]
+        else:
+            self.target_reward = np.max(self.total_rewards) # self.enemy_reward[index_enemy]
         if np.min(self.total_rewards) < self.min_crit_val:
             self.target_reward = np.min(self.total_rewards)
 
@@ -112,13 +121,13 @@ class GreedAi:
                     self.tmp_objects[index][ObjectProp.Velocity] * np.sin(self.cur_rad) * dt
         return self.tmp_objects
 
-    def get_gready_action(self, objects_copy):
+    def get_gready_action(self, objects_copy, enemy_index=None):
         self.max_revard = -2
         self.max_revard_action = (0, 0)
         #print(objects_copy[self.index])
         for act in self.acts:
             self.tmp_obj = self.test_update_units(objects_copy, act)
-            self.tmp_revard = self.collect_reward(self.tmp_obj)
+            self.tmp_revard = self.collect_reward(self.tmp_obj, enemy_index)
             #print("action = ", act, "revard = ", self.tmp_revard)
             #print(self.tmp_obj[self.index])
             if self.tmp_revard > self.max_revard:
@@ -127,16 +136,13 @@ class GreedAi:
         #print("max_revard: {}".format(self.max_revard_action))
         return self.max_revard_action
 
-    def calc_behaviour(self, objects_copy):
+    def calc_behaviour(self, objects_copy, enemy_index=None):
         self.rot_side, self.vel_ctrl = (0, 0)
         self.obj = objects_copy[self.index]
 
-        #new_action = (0, -1)
-        #print(new_action)
         self.obj_coord[0], self.obj_coord[1] = self.obj[ObjectProp.Xcoord], self.obj[ObjectProp.Ycoord]
 
-        new_action = self.get_gready_action(objects_copy)
-        self.rot_side, self.vel_ctrl = new_action
+        self.rot_side, self.vel_ctrl = self.get_gready_action(objects_copy, enemy_index) #new_action = (0, -1)
 
         return self.rot_side, self.vel_ctrl
 

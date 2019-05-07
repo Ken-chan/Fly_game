@@ -119,3 +119,8 @@ class Constants:
     TurnDissipationCoef = np.float(0.01)
     AirResistanceCoef = np.float(0.05)
     TurnAccCoef = np.int32(110)
+
+class TeamInteractions:
+    Dynamical_choose = np.int32(1)
+    OneGoal_oneTarget = np.int32(2)
+    All_for_one = np.int32(3)

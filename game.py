@@ -34,7 +34,8 @@ class GameState:
     Start, ActiveGame, Menu, Exit, Pause = range(5)
 
 class Game:
-    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1, cube=None, alies_cube=None, queue_res=None, params=None):
+    def __init__(self, screen_width, screen_height, history_path=None, train_mode=False, prefix=None, tries=1,
+                 cube=None, alies_cube=None, queue_res=None, params=None, team_strategy=None):
         gc.disable()
         self.game_state = GameState.Start
         self.screen_width = screen_width
@@ -45,6 +46,7 @@ class Game:
         self.alies_cube = alies_cube
         self.queue_res = queue_res
         self.params = params
+        self.team_strategy = team_strategy
 
         self.battle_field_size = (1000, 1000)
         self.radiant_bots = 3
@@ -78,13 +80,15 @@ class Game:
                             self.battle_field_size[0], self.battle_field_size[1])
         self.messenger = Messenger()
         if self.train_mode:
-            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True, cube=self.cube, alies_cube=self.alies_cube, params=self.params)
+            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, train_mode=True, cube=self.cube, alies_cube=self.alies_cube,
+                                          params=self.params, team_strategy=self.team_strategy)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger, ai_controls=self.ai_controls, tries=tries,
                                    bot1=self.radiant_bots, bot2=self.dire_bots, player1=self.is_player1_play,
-                                   player2=self.is_player2_play, sizeX=self.battle_field_size[0], sizeY=self.battle_field_size[1], queue_res=self.queue_res)
+                                   player2=self.is_player2_play, sizeX=self.battle_field_size[0], sizeY=self.battle_field_size[1],
+                                   queue_res=self.queue_res)
         else:
-            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, cube=self.cube, alies_cube=self.alies_cube)
+            self.ai_controls = AIcontrols(self.configuration, messenger=self.messenger, cube=self.cube, alies_cube=self.alies_cube, team_strategy=self.team_strategy)
             self.Objects = Objects(self.configuration, self.radiant, self.dire, history_path=self.history_path,
                                    messenger=self.messenger)
             self.renderer = Renderer(self.screen_width, self.screen_height, self.battle_field_size)
@@ -168,6 +172,13 @@ class Game:
             pyglet.clock.schedule_interval(self.read_messages, 1.0 / 2)
             pyglet.app.run()
             return 0
+        if self.team_strategy:
+            if self.team_strategy == TeamInteractions.Dynamical_choose:
+                print('-> Now strategy of red team is: Dynamical choose of target ')
+            elif self.team_strategy == TeamInteractions.All_for_one:
+                print('-> Now strategy of red team is: All team attack one target ')
+            elif self.team_strategy == TeamInteractions.OneGoal_oneTarget:
+                print('-> Now strategy of red team is: Static choose of target ')
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height,resizable=True)
         pyglet.gl.glClearColor(0.9, 0.9, 0.9, 0)
         self.game_window.set_location(200, 50)
@@ -216,7 +227,7 @@ if __name__ == "__main__":
     args["screen_height"] = 1000
     print("{}".format(args))
 
-    Game(**args)
+    Game(**args, team_strategy=TeamInteractions.All_for_one)
     #for index in range(0, 1):
     #    proc_arr.append(Process(target=Game, args=args_for_game))
     #    proc_arr[index].start()

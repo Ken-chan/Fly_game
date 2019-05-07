@@ -52,7 +52,7 @@ class Loss():
     def __init__(self, cube=None, alies_cube=None, wall_param=None):
         self.cube = cube
         self.alies_cube = alies_cube
-        self.danger_wall_distance = wall_param
+        self.danger_wall_distance = wall_param if wall_param is not None else 0.25
         self.battle_field_size = np.array([1000.0, 1000.0])
         #self.set_congiguration(configuration)
         self.qstate = QState(20)
@@ -304,8 +304,9 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "./cubes/enemy_best.txt"
-        self.alies_cube_path = "./cubes/alies_0.3067.txt"
+        self.cube_path = "./cubes/enemies_first_ver_0.3867_3.txt"
+        self.alies_cube_path = "./cubes/alies_first_ver_0.3867_3.txt"
+        self.params_file_path = "./cubes/crit_and_walls_3.txt"
         self.version_of_shufled_cube = 0
         #self.loaded_cube = np.zeros(pow(self.n_cuts, 3))
         self.range_phi = (0, 360)
@@ -324,7 +325,10 @@ class QState:
 
         self.q_data = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
         self.q_data_alies = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
+        self.list_of_parameters = []
         self.shuffled = np.zeros((self.n_cuts, self.n_cuts, self.n_cuts))
+
+        #self.load_params_file(self.params_file_path, self.list_of_parameters)
 
         #self.fill_by_experiment_for_alies()
         #self.fill_data_arr()
@@ -758,6 +762,13 @@ class QState:
                     for psi_i in range(0, self.n_cuts):
                         q_data[r_i,phi_i,psi_i] = str[strind]
                         strind += 1
+
+    def load_params_file(self, file, params_list):
+        print("loading parameters file, file name:{}".format(file))
+        with open(file, 'r') as fd:
+            state_str = fd.readlines()
+        for i in range(len(state_str)-1):
+            params_list.append(float(state_str[i]))
 
     def load_cube(self, cube, alies_cube):
         self.q_data = cube.copy()

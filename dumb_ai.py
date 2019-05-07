@@ -6,7 +6,7 @@ class Dummy:
         self.index = index
         self.current_controller = None
 
-    def calc_behaviour(self, objects_state):
+    def calc_behaviour(self, objects_state, enemy_index=None):
         return None
 
 class DumbAI(Dummy):
@@ -97,7 +97,7 @@ class DumbAI(Dummy):
                     self.nearest_object_id = ind
         return self.nearest_enemy_id, self.nearest_object_id
 
-    def calc_behaviour(self, objects_state):
+    def calc_behaviour(self, objects_state, enemy_index=None):
         self.obj = objects_state[self.index]
         self.obj_coord[0], self.obj_coord[1] = self.obj[ObjectProp.Xcoord], self.obj[ObjectProp.Ycoord]
         self.obj_dir = self.obj[ObjectProp.Dir]
