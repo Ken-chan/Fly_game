@@ -49,9 +49,9 @@ class Game:
         self.team_strategy = team_strategy
 
         self.battle_field_size = (1000, 1000)
-        self.radiant_bots = 3
-        self.dire_bots = 3
-        self.is_player1_play = 0
+        self.radiant_bots = 0
+        self.dire_bots = 2
+        self.is_player1_play = 1
         self.is_player2_play = 0
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
@@ -157,8 +157,8 @@ class Game:
     def update_graphics(self, dt):
         if self.game_state != GameState.Pause:
             self.renderer.update_graphics()
-            self.game_window.clear()
-            self.renderer.batch.draw()
+            #self.game_window.clear()
+            #self.renderer.batch.draw()
 
     def update_objects(self, objects_copy):
         if self.game_state != GameState.Pause:
@@ -179,7 +179,7 @@ class Game:
                 print('-> Now strategy of red team is: All team attack one target ')
             elif self.team_strategy == TeamInteractions.OneGoal_oneTarget:
                 print('-> Now strategy of red team is: Static choose of target ')
-        self.game_window = pyglet.window.Window(self.screen_width, self.screen_height,resizable=True)
+        self.game_window = pyglet.window.Window(self.screen_width, self.screen_height, resizable=True)
         pyglet.gl.glClearColor(0.9, 0.9, 0.9, 0)
         self.game_window.set_location(200, 50)
         self.game_state = GameState.ActiveGame
@@ -189,10 +189,10 @@ class Game:
             self.messenger.objects_run_simulation()
         self.messenger.ai_start_game()
 
-        #@self.game_window.event
-        #def on_draw():
-        #    if self.game_state != GameState.Pause:
-        #        self.fps_display.draw()
+        @self.game_window.event
+        def on_draw():
+            self.game_window.clear()
+            self.renderer.batch.draw()
 
         @self.game_window.event
         def on_key_press(key, modif):
@@ -227,10 +227,4 @@ if __name__ == "__main__":
     args["screen_height"] = 1000
     print("{}".format(args))
 
-    Game(**args, team_strategy=TeamInteractions.All_for_one)
-    #for index in range(0, 1):
-    #    proc_arr.append(Process(target=Game, args=args_for_game))
-    #    proc_arr[index].start()
-
-    #for index in range(0, 1):
-    #    proc_arr[index].join()
+    Game(**args)

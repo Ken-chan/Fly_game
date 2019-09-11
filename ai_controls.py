@@ -139,7 +139,6 @@ class AIcontrols:
                 #    #print(self.controller.actions_executed_so_far)
 
 
-
                 if len(self.list_maps) != 0:
                     self.mapping_iter += 1
                     self.mapping_iter = self.mapping_iter % len(self.list_maps)

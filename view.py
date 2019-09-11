@@ -201,7 +201,6 @@ class Renderer:
                     if self.pil_img_sprite:
                         self.pil_img_sprite.visible = False
 
-
 class Sprite(pyglet.sprite.Sprite):
     def __init__(self, batch, img, scaling_factor, layer):
         self.img = img
@@ -253,5 +252,31 @@ class Cone_sprite(Sprite):
         self.img.anchor_y = self.img.height // 2
         super(Cone_sprite, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=1)
         self.update(scale_x = 0.45*self.scaling_factor, scale_y = 0.45*self.scaling_factor) #PERFECTLY CALCULATED ON FIELD(800, 600)
+'''
+class Ball(pyglet.sprite.Sprite):
+    ball_image = pyglet.resource.image("images/bot1.png")
+    width = ball_image.width
+    height = ball_image.height
 
+    def __init__(self):
+        x = random.random() * (window.width - self.width)
+        y = random.random() * (window.height - self.height)
 
+        super(Ball, self).__init__(self.ball_image, x, y, batch=balls_batch)
+
+        self.dx = (random.random() - 0.5) * 1000
+        self.dy = (random.random() - 0.5) * 1000
+
+    def update(self, dt):
+        if self.x <= 0 or self.x + self.width >= window.width:
+            self.dx *= -1
+            sound.play()
+        if self.y <= 0 or self.y + self.height >= window.height:
+            self.dy *= -1
+            sound.play()
+        self.x += self.dx * dt
+        self.y += self.dy * dt
+
+        self.x = min(max(self.x, 0), window.width - self.width)
+        self.y = min(max(self.y, 0), window.height - self.height)
+'''

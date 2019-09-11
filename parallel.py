@@ -2,6 +2,7 @@ import game
 import numpy as np
 from tools import QState
 from multiprocessing import Queue, Pool
+from obj_def import TeamInteractions
 
 class ParallelOptions():
     def __init__(self, cube=None, alies_cube=None):
@@ -24,9 +25,10 @@ class ParallelOptions():
             list_params.append(param + np.random.normal(0, delta))
         return list_params
 
-    def run_gen(self, cur_params, tries=100):
+    def run_gen(self, cur_params, tries=500):
         q = Queue()
-        game_obj = game.Game(1000, 1000, train_mode=True, tries=tries, cube=cur_params[0], alies_cube=cur_params[1], queue_res=q, params=cur_params[2:4])
+        game_obj = game.Game(1000, 1000, train_mode=True, tries=tries, cube=cur_params[0], alies_cube=cur_params[1],
+                             queue_res=q, params=cur_params[2:4], team_strategy=TeamInteractions.All_for_one)
         score = q.get()
         return score, cur_params
 
@@ -77,7 +79,7 @@ if __name__ == '__main__':
     list_downdload_params = []
     enemy_file_path = "./cubes/enemies_first_ver_0.3867_3.txt"
     alies_file_path = "./cubes/alies_first_ver_0.3867_3.txt"
-    params_file_path = "./cubes/crit_and_walls_dangerous.txt"
+    params_file_path = "./cubes/crit_and_walls_allforone.txt"
     qs.load_cube_file(enemy_file_path, enemies_cube)
     qs.load_cube_file(alies_file_path, alies_cube)
     qs.load_params_file(params_file_path, list_downdload_params)
@@ -88,10 +90,10 @@ if __name__ == '__main__':
 
     #count_cubes = int(alies_file_path[-5]) if alies_file_path[-6] == '_' else 0
     count_cubes = 0
-    eras, mutations = 10000, 30
-    max_q = 0.1
+    eras, mutations = 10000, 28
+    max_q = 0.3
     delta_cubes = 0
-    delta_params = 0.05
+    delta_params = 0.04
 
     pool = Pool(processes=mutations)
     for i in range(eras):
@@ -121,7 +123,7 @@ if __name__ == '__main__':
 
             #qs.save_history_file('enemy_target_vers', best_params[0], num_shuffle=count_cubes, score=max_q)
             #qs.save_history_file('alies_target_vers', best_params[1], num_shuffle=count_cubes, score=max_q)
-            qs.save_params_in_file('crit_and_walls_target_ver', best_params[2:4], num_shuffle=count_cubes)
+            qs.save_params_in_file('crit_and_walls_dynamic_choose', best_params[2:4], num_shuffle=count_cubes)
         else:
             str_score = opt.make_string_score(q_and_cubes[index_local_max][0][1])
             print('<- Do not found better : ( Local max:{:.4f}'.format(local_max))
