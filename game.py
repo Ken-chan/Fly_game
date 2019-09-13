@@ -50,9 +50,9 @@ class Game:
 
         self.battle_field_size = (1000, 1000)
         self.radiant_bots = 0
-        self.dire_bots = 2
-        self.is_player1_play = 1
-        self.is_player2_play = 0
+        self.dire_bots = 1
+        self.is_player1_play = True
+        self.is_player2_play = False
         self.radiant = self.radiant_bots + self.is_player1_play
         self.dire = self.dire_bots + self.is_player2_play
         self.is_it_move_from_history = False
@@ -181,7 +181,7 @@ class Game:
                 print('-> Now strategy of red team is: Static choose of target ')
         self.game_window = pyglet.window.Window(self.screen_width, self.screen_height, resizable=True)
         pyglet.gl.glClearColor(0.9, 0.9, 0.9, 0)
-        self.game_window.set_location(200, 50)
+        self.game_window.set_location(350, 35)
         self.game_state = GameState.ActiveGame
         if self.is_it_move_from_history:
             self.messenger.objects_run_from_file_simulation()
@@ -227,4 +227,4 @@ if __name__ == "__main__":
     args["screen_height"] = 1000
     print("{}".format(args))
 
-    Game(**args)
+    Game(**args, team_strategy=TeamInteractions.Dynamical_choose)

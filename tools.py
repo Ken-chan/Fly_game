@@ -304,7 +304,7 @@ class QState:
     def __init__(self, n_cuts=20):
         #self.cube_path = "C:\\Users\\user\\Documents\\Fly_game\\cubev2(-1).txt"
         #self.cube_path = "cubev2(-1).txt"
-        self.cube_path = "./cubes/enemies_first_ver_0.3867_3.txt"
+        self.cube_path = "./cubes/enemy_best.txt" # enemies_first_ver_0.3867_3.txt
         self.alies_cube_path = "./cubes/alies_first_ver_0.3867_3.txt"
         self.params_file_path = "./cubes/crit_and_walls_3.txt"
         self.version_of_shufled_cube = 0

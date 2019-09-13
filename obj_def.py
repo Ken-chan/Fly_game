@@ -44,6 +44,7 @@ class ObjectType:
     Player1 = np.int32(4)
     Player2 = np.int32(5)
 
+    Cone_sprite = np.int32(8)
     ObjArrayTotal = np.int32(24)
     offsets = {
         Player1: (np.int32(0), np.int32(0)),

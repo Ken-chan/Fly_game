@@ -62,16 +62,9 @@ class Renderer:
         for index in range(0, ObjectType.ObjArrayTotal):
             self.objects_type = ObjectType.type_by_id(index)
 
-            if self.objects_type == ObjectType.Player1:
-                self.new_obj_sprite = Player_sprite1(batch=self.batch, scaling_factor=self.scaling_factor)
-            elif self.objects_type == ObjectType.Player2:
-                self.new_obj_sprite = Player_sprite2(batch=self.batch, scaling_factor=self.scaling_factor)
-            elif self.objects_type == ObjectType.Bot1:
-                self.new_obj_sprite = Bot_sprite1(batch=self.batch, scaling_factor=self.scaling_factor)
-            elif self.objects_type == ObjectType.Bot2:
-                self.new_obj_sprite = Bot_sprite2(batch=self.batch, scaling_factor=self.scaling_factor)
-            self.cone = Cone_sprite(batch=self.batch, scaling_factor=self.scaling_factor)
-            self.rev_cone = Cone_sprite(batch=self.batch, scaling_factor=self.scaling_factor)
+            self.new_obj_sprite = Sprite(object=self.objects_type, batch=self.batch)
+            self.cone = Sprite(ObjectType.Cone_sprite, batch=self.batch)
+            self.rev_cone = Sprite(ObjectType.Cone_sprite, batch=self.batch)
 
             self.objects_sprites.append(self.new_obj_sprite)
             self.rev_cone_sprites.append(self.rev_cone)
@@ -93,7 +86,7 @@ class Renderer:
                     self.rev_cone_sprites[index].visible = False
                 else:
                     self.objects_sprites[index].visible = True
-                    self.cone_sprites[index].visible = False
+                    self.cone_sprites[index].visible = True
                     self.rev_cone_sprites[index].visible = False
                     self.current_object = self.objects_copy[index]
                     self.size_proportion_width = self.screen_width / self.battle_field_width
@@ -202,81 +195,28 @@ class Renderer:
                         self.pil_img_sprite.visible = False
 
 class Sprite(pyglet.sprite.Sprite):
-    def __init__(self, batch, img, scaling_factor, layer):
-        self.img = img
-        self.layer = pyglet.graphics.OrderedGroup(layer)
-        self.scaling_factor = scaling_factor
-        super(Sprite, self).__init__(img=self.img, batch=batch, group=self.layer)
-
-
-class Bot_sprite1(Sprite):
-    def __init__(self, batch, scaling_factor):
-        self.img = pyglet.image.load("images/bot1.png")
-        self.img.anchor_x = self.img.width // 2
+    def __init__(self, object, batch):
+        self.layer = 2
+        if object is None:
+            self.img = pyglet.resource.image('images/collision.png')
+            self.layer = 0
+        elif object == ObjectType.Player1:
+            self.img = pyglet.resource.image('images/player1.png')
+        elif object == ObjectType.Player2:
+            self.img = pyglet.resource.image('images/player2.png')
+        elif object == ObjectType.Bot1:
+            self.img = pyglet.resource.image('images/red_plane.png')
+        elif object == ObjectType.Bot2:
+            self.img = pyglet.resource.image('images/blue_plane.png')
+        elif object == ObjectType.Cone_sprite:
+            self.img = pyglet.resource.image('images/coneRot.png')
+            self.layer = 1
+        self.img.anchor_x = self.img.width // 2 if object != ObjectType.Cone_sprite else self.img.width
         self.img.anchor_y = self.img.height // 2
-        super(Bot_sprite1, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
-        self.update(scale_x=0.15*self.scaling_factor, scale_y = 0.11*self.scaling_factor)
+        self.layer_group = pyglet.graphics.OrderedGroup(self.layer)
+        super(Sprite, self).__init__(img=self.img, batch=batch, group=self.layer_group)
+        if object == ObjectType.Cone_sprite:
+            self.update(scale_x=0.45, scale_y=0.45)
+        else:
+            self.update(scale_x=0.15, scale_y=0.11)
 
-
-class Bot_sprite2(Sprite):
-    def __init__(self, batch, scaling_factor):
-        self.img = pyglet.image.load("images/bot2.png")
-        self.img.anchor_x = self.img.width // 2
-        self.img.anchor_y = self.img.height // 2
-        super(Bot_sprite2, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
-        self.update(scale_x=0.15*self.scaling_factor, scale_y = 0.1*self.scaling_factor)
-
-
-class Player_sprite1(Sprite):
-    def __init__(self, batch, scaling_factor):
-        self.img = pyglet.image.load("images/player1.png")
-        self.img.anchor_x = self.img.width // 2
-        self.img.anchor_y = self.img.height // 2
-        super(Player_sprite1, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
-        self.update(scale_x=0.15*self.scaling_factor, scale_y = 0.1*self.scaling_factor)
-
-
-class Player_sprite2(Sprite):
-    def __init__(self, batch, scaling_factor):
-        self.img = pyglet.image.load("images/player2.png")
-        self.img.anchor_x = self.img.width // 2
-        self.img.anchor_y = self.img.height // 2
-        super(Player_sprite2, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=2)
-        self.update(scale_x=0.15*self.scaling_factor, scale_y = 0.1*self.scaling_factor)
-
-
-class Cone_sprite(Sprite):
-    def __init__(self, batch, scaling_factor):
-        self.img = pyglet.image.load("images/coneRot.png")
-        self.img.anchor_x = self.img.width - 15
-        self.img.anchor_y = self.img.height // 2
-        super(Cone_sprite, self).__init__(batch=batch, img=self.img, scaling_factor=scaling_factor, layer=1)
-        self.update(scale_x = 0.45*self.scaling_factor, scale_y = 0.45*self.scaling_factor) #PERFECTLY CALCULATED ON FIELD(800, 600)
-'''
-class Ball(pyglet.sprite.Sprite):
-    ball_image = pyglet.resource.image("images/bot1.png")
-    width = ball_image.width
-    height = ball_image.height
-
-    def __init__(self):
-        x = random.random() * (window.width - self.width)
-        y = random.random() * (window.height - self.height)
-
-        super(Ball, self).__init__(self.ball_image, x, y, batch=balls_batch)
-
-        self.dx = (random.random() - 0.5) * 1000
-        self.dy = (random.random() - 0.5) * 1000
-
-    def update(self, dt):
-        if self.x <= 0 or self.x + self.width >= window.width:
-            self.dx *= -1
-            sound.play()
-        if self.y <= 0 or self.y + self.height >= window.height:
-            self.dy *= -1
-            sound.play()
-        self.x += self.dx * dt
-        self.y += self.dy * dt
-
-        self.x = min(max(self.x, 0), window.width - self.width)
-        self.y = min(max(self.y, 0), window.height - self.height)
-'''
