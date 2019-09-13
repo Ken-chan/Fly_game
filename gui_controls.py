@@ -81,6 +81,8 @@ class KbControl(BaseControl):
             self.messenger.restart_game()
         elif key == pygletkey.G and pushed:
             self.messenger.show_polar_grid()
+        elif key == pygletkey.H and pushed:
+            self.messenger.show_message_clouds()
 
     def change_player_control(self, team, pushed, key):
         vel, turn = self.player_controls[team]

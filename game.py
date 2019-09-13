@@ -100,6 +100,7 @@ class Game:
                           messages.Game.UpdateObjects: self.update_objects,
                           messages.Game.Pause: self.game_pause_simulation,
                           messages.Game.Polar_grid: self.show_polar_grid,
+                          messages.Game.Message_clouds: self.show_message_clouds,
                           messages.Game.ActiveGame: self.game_unpaused}
 
         self.run_game()
@@ -146,6 +147,9 @@ class Game:
         else:
             self.game_window.set_size(self.screen_width, self.screen_height)
             self.renderer.show_polar_grid()
+
+    def show_message_clouds(self):
+        self.renderer.show_message_clouds()
 
     def read_messages(self, dt):
         while True:

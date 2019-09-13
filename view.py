@@ -19,8 +19,11 @@ class Renderer:
         self.objects_sprites = None
         self.cone_sprites = None
         self.rev_cone_sprites = None
+        self.message_clouds = None
+        self.labels = None
         self.new_obj_sprite = None
         self.cone, self.rev_cone = None, None
+        self.cloud = None
         self.objects_type = None
         self.current_object = None
         self.size_proportion_width = np.float(0.0)
@@ -34,6 +37,7 @@ class Renderer:
         self.step_number = 16
         self.polar_grid = np.zeros((self.step_number, self.step_number + 1))
         self._polar_grid = False                    ### changeable
+        self._message_clouds = False
         self.recalc = 1
         self.draw = True
         self.pil_img = None
@@ -56,6 +60,7 @@ class Renderer:
         self.objects_sprites = []
         self.cone_sprites = []
         self.rev_cone_sprites = []
+        self.message_clouds = []
         self.labels = []
         self.scaling_factor = self.screen_width / self.battle_field_width
 
@@ -65,14 +70,19 @@ class Renderer:
             self.new_obj_sprite = Sprite(object=self.objects_type, batch=self.batch)
             self.cone = Sprite(ObjectType.Cone_sprite, batch=self.batch)
             self.rev_cone = Sprite(ObjectType.Cone_sprite, batch=self.batch)
+            self.cloud = Sprite(ObjectType.Message_cloud, batch=self.batch)
 
             self.objects_sprites.append(self.new_obj_sprite)
             self.rev_cone_sprites.append(self.rev_cone)
             self.cone_sprites.append(self.cone)
+            self.message_clouds.append(self.cloud)
 
 
     def show_polar_grid(self):
-        self._polar_grid = False if self._polar_grid else True
+        self._polar_grid = not self._polar_grid
+
+    def show_message_clouds(self):
+        self._message_clouds = not self._message_clouds
 
     def update_objects(self, objects):
         self.objects_copy = objects
@@ -84,9 +94,10 @@ class Renderer:
                     self.objects_sprites[index].visible = False
                     self.cone_sprites[index].visible = False
                     self.rev_cone_sprites[index].visible = False
+                    self.message_clouds[index].visible = False
                 else:
                     self.objects_sprites[index].visible = True
-                    self.cone_sprites[index].visible = True
+                    self.cone_sprites[index].visible = False # Turn on cones here
                     self.rev_cone_sprites[index].visible = False
                     self.current_object = self.objects_copy[index]
                     self.size_proportion_width = self.screen_width / self.battle_field_width
@@ -108,6 +119,13 @@ class Renderer:
                     self.rev_cone_sprites[index].update(x=self.size_proportion_width * (self.current_object[ObjectProp.Xcoord]),
                                                         y=self.size_proportion_height * (self.current_object[ObjectProp.Ycoord]),
                                                         rotation=-self.current_object[ObjectProp.Dir] + 180)
+
+                    if self._message_clouds:
+                        self.message_clouds[index].visible = True
+                        self.message_clouds[index].update(x=self.size_proportion_width * (self.current_object[ObjectProp.Xcoord]),
+                                                          y=self.size_proportion_height * (self.current_object[ObjectProp.Ycoord]))
+                    else:
+                        self.message_clouds[index].visible = False
 
             if self._polar_grid:
                 if self.recalc == 1:
@@ -211,12 +229,29 @@ class Sprite(pyglet.sprite.Sprite):
         elif object == ObjectType.Cone_sprite:
             self.img = pyglet.resource.image('images/coneRot.png')
             self.layer = 1
-        self.img.anchor_x = self.img.width // 2 if object != ObjectType.Cone_sprite else self.img.width
-        self.img.anchor_y = self.img.height // 2
+        elif object == ObjectType.Message_cloud:
+            self.img = pyglet.resource.image('images/cloud_message_resized.png')
+            self.layer = 3
+
+        if object == ObjectType.Cone_sprite:
+            self.img.anchor_x = self.img.width // 2 if object != ObjectType.Cone_sprite else self.img.width
+            self.img.anchor_y = self.img.height // 2
+        if object == ObjectType.Message_cloud:
+            self.img.anchor_x = -5
+            self.img.anchor_y = -15
+        else:
+            self.img.anchor_x = self.img.width // 2
+            self.img.anchor_y = self.img.height // 2
+
+
         self.layer_group = pyglet.graphics.OrderedGroup(self.layer)
         super(Sprite, self).__init__(img=self.img, batch=batch, group=self.layer_group)
+
         if object == ObjectType.Cone_sprite:
             self.update(scale_x=0.45, scale_y=0.45)
+        elif object == ObjectType.Message_cloud:
+            self.update(scale_x=0.9, scale_y=0.5)
         else:
             self.update(scale_x=0.15, scale_y=0.11)
+
 
